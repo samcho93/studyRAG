@@ -1,0 +1,381 @@
+/* Teacher slide deck (PPT-style 16:9) inside the three-column shell. Tokens only. */
+
+/* Middle column of the shell: toolbar · 16:9 viewport · notes */
+.deck-col {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+}
+
+.deck-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.deck-bar__title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: var(--weight-bold);
+}
+
+.deck-bar__controls {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.deck-bar__counter,
+.deck-bar__timer {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  white-space: nowrap;
+}
+
+.deck-bar__timer {
+  color: var(--color-accent);
+}
+
+.deck-bar__timer[data-running="false"] {
+  color: var(--color-text-muted);
+}
+
+.icon-btn[aria-pressed="true"] {
+  background: var(--color-accent-soft);
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+@media (max-width: 640px) {
+  .deck-bar .hide-sm {
+    display: none;
+  }
+}
+
+.deck-viewport {
+  position: relative;
+  flex: none;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  max-height: calc(100dvh - var(--header-h) - 120px);
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-2);
+}
+
+.deck-viewport:fullscreen {
+  max-height: none;
+  border: 0;
+  border-radius: 0;
+  background: #000;
+}
+
+.deck-stage {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 1280px;
+  height: 720px;
+  transform-origin: 0 0;
+}
+
+.deck-blackout {
+  position: absolute;
+  inset: 0;
+  background: #000;
+  z-index: 5;
+}
+
+.deck-nav-btn {
+  position: absolute;
+  top: 50%;
+  translate: 0 -50%;
+  z-index: 4;
+  opacity: 0.35;
+}
+
+.deck-nav-btn:hover,
+.deck-nav-btn:focus-visible {
+  opacity: 1;
+}
+
+.deck-nav-btn--prev {
+  left: var(--space-2);
+}
+
+.deck-nav-btn--next {
+  right: var(--space-2);
+}
+
+/* Notes under the slide */
+.deck-notes {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  padding: var(--space-4);
+  font-size: var(--text-sm);
+}
+
+.deck-notes h2 {
+  font-size: var(--text-md);
+  margin: 0 0 var(--space-3);
+  color: var(--color-accent);
+}
+
+.deck-notes table {
+  margin-bottom: var(--space-3);
+}
+
+.deck-notes__next {
+  margin: var(--space-4) 0 0;
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--color-border);
+  color: var(--color-text-muted);
+}
+
+/* ---------- Slides ---------- */
+.slide {
+  display: none;
+  position: absolute;
+  inset: 0;
+  padding: 56px 72px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: 26px;
+  line-height: 1.55;
+  overflow: hidden;
+  flex-direction: column;
+}
+
+.slide.is-active {
+  display: flex;
+}
+
+.slide > .notes {
+  display: none;
+}
+
+.slide h2 {
+  font-size: 40px;
+  margin: 0 0 28px;
+  padding-bottom: 14px;
+  border-bottom: 3px solid var(--color-accent);
+}
+
+.slide h3 {
+  font-size: 28px;
+  margin: 0 0 12px;
+}
+
+.slide p,
+.slide ul,
+.slide ol {
+  margin: 0 0 18px;
+}
+
+.slide li + li {
+  margin-top: 10px;
+}
+
+.slide .muted {
+  color: var(--color-text-muted);
+}
+
+.slide small {
+  font-size: 20px;
+}
+
+.slide pre {
+  font-size: 19px;
+  line-height: 1.5;
+  padding: 18px 22px;
+  margin: 0 0 16px;
+  overflow: auto;
+}
+
+.slide table {
+  font-size: 22px;
+}
+
+.slide th,
+.slide td {
+  padding: 10px 14px;
+}
+
+.slide .callout {
+  font-size: 23px;
+}
+
+.slide-footer {
+  position: absolute;
+  left: 72px;
+  right: 72px;
+  bottom: 18px;
+  display: flex;
+  justify-content: space-between;
+  font-size: 15px;
+  color: var(--color-text-muted);
+}
+
+.slide--title {
+  justify-content: center;
+  background: var(--color-accent-soft);
+}
+
+.slide--title .kicker {
+  font-size: 24px;
+  font-weight: var(--weight-bold);
+  color: var(--color-accent);
+  margin-bottom: 12px;
+}
+
+.slide--title h1 {
+  font-size: 64px;
+  margin: 0 0 20px;
+}
+
+.slide--title p {
+  font-size: 28px;
+  color: var(--color-text-muted);
+}
+
+.slide--section {
+  justify-content: center;
+  align-items: flex-start;
+}
+
+.slide--section h2 {
+  font-size: 52px;
+  border: 0;
+}
+
+.slide .cols {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 40px;
+  flex: 1;
+  min-height: 0;
+}
+
+.slide .cols--code {
+  grid-template-columns: 1.4fr 1fr;
+}
+
+.slide .big-quote {
+  font-size: 34px;
+  line-height: 1.5;
+  font-weight: var(--weight-medium);
+}
+
+.slide--demo {
+  padding: 24px 32px 40px;
+  overflow-y: auto;
+  font-size: var(--text-md);
+  line-height: var(--leading-body);
+}
+
+.slide--demo h2 {
+  font-size: 28px;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+}
+
+/* Widgets use rem sizes; enlarge them so they stay legible on a projector */
+.slide--demo .widget {
+  box-shadow: none;
+  zoom: 1.6;
+}
+
+.slide--demo .chunk-view,
+.slide--demo .chunk-list {
+  max-height: 260px;
+}
+
+.slide .runner {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+}
+
+.slide .runner textarea {
+  flex: 1;
+  min-height: 0;
+  resize: none;
+  font-size: 18px;
+  overflow: auto;
+}
+
+.slide .runner__bar {
+  font-size: 15px;
+}
+
+.slide .runner__inline {
+  max-height: 200px;
+  overflow: auto;
+}
+
+.slide .fig {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  place-items: center;
+}
+
+/* ---------- Presenter view (second window) ---------- */
+.is-presenter .shell {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.is-presenter .shell-toc,
+.is-presenter .shell-result,
+.is-presenter .role-switch {
+  display: none;
+}
+
+.is-presenter .deck-notes {
+  font-size: var(--text-lg);
+}
+
+@media print {
+  .site-header,
+  .shell-toc,
+  .shell-result,
+  .deck-bar,
+  .deck-notes,
+  .deck-nav-btn {
+    display: none !important;
+  }
+  .app,
+  .shell,
+  .shell > * {
+    display: block;
+    height: auto;
+    overflow: visible;
+  }
+  .deck-viewport {
+    overflow: visible;
+    background: none;
+    aspect-ratio: auto;
+    max-height: none;
+    border: 0;
+  }
+  .deck-stage {
+    position: static;
+    transform: none !important;
+  }
+  .slide {
+    display: flex !important;
+    position: relative;
+    width: 1280px;
+    height: 720px;
+    break-after: page;
+  }
+}

@@ -1,0 +1,80 @@
+{
+  "version": 1,
+  "description": "평가용 골든셋. evidence.quote는 해당 문서 원문에 그대로 존재하는 구간이다(4주차 청킹 위젯이 '근거가 한 청크 안에 온전히 들어갔는지' 확인하는 데도 쓴다).",
+  "items": [
+    {
+      "id": "q01",
+      "question": "실습실에서 GPU 서버를 한 사람이 연속으로 쓸 수 있는 최대 시간은?",
+      "answer": "최대 12시간이다.",
+      "evidence": [{ "doc": "facility-rules", "quote": "한 사람이 연속으로 사용할 수 있는 시간은 최대 12시간이다." }]
+    },
+    {
+      "id": "q02",
+      "question": "RAG 교과목의 팀 프로젝트는 성적에서 몇 퍼센트를 차지하나?",
+      "answer": "40%다.",
+      "evidence": [{ "doc": "course-rag-syllabus", "quote": "팀 프로젝트 40%" }]
+    },
+    {
+      "id": "q03",
+      "question": "수료 요건은 무엇인가?",
+      "answer": "출석률 80% 이상과 팀 프로젝트 최종 발표 통과다.",
+      "evidence": [{ "doc": "dept-overview", "quote": "수료 요건은 출석률 80% 이상과 팀 프로젝트 최종 발표 통과다." }]
+    },
+    {
+      "id": "q04",
+      "question": "오버랩을 두면 어떤 비용이 늘어나나?",
+      "answer": "저장 공간과 임베딩 비용이 겹친 비율만큼 늘어난다.",
+      "evidence": [{ "doc": "rag-chunking", "quote": "대신 저장 공간과 임베딩 비용이 겹친 비율만큼 늘어난다." }]
+    },
+    {
+      "id": "q05",
+      "question": "고정 길이 청킹에서 문장이 잘리면 어떤 문제가 생기나?",
+      "answer": "답에 필요한 정보가 두 청크로 나뉘어 어느 쪽도 검색되지 않을 수 있다.",
+      "evidence": [{ "doc": "rag-chunking", "quote": "문장이 잘리면 답에 필요한 정보가 두 청크에 나뉘어 어느 쪽도 검색되지 않는 문제가 생긴다." }]
+    },
+    {
+      "id": "q06",
+      "question": "e5 계열 임베딩 모델을 쓸 때 주의할 점은?",
+      "answer": "질문에는 \"query: \", 문서에는 \"passage: \" 접두어를 붙여야 한다.",
+      "evidence": [{ "doc": "rag-embedding", "quote": "e5 계열 모델은 질문에는 \"query: \", 문서에는 \"passage: \" 접두어를 붙여야 성능이 제대로 나온다." }]
+    },
+    {
+      "id": "q07",
+      "question": "RRF에서 k 값은 보통 얼마를 쓰나?",
+      "answer": "보통 60을 쓴다.",
+      "evidence": [{ "doc": "rag-hybrid", "quote": "k는 보통 60을 쓴다." }]
+    },
+    {
+      "id": "q08",
+      "question": "Faithfulness는 무엇을 측정하나?",
+      "answer": "답변의 각 주장이 검색된 근거로 뒷받침되는지를 측정한다.",
+      "evidence": [{ "doc": "rag-evaluation", "quote": "답변의 각 주장이 검색된 근거로 뒷받침되는지를 측정한다." }]
+    },
+    {
+      "id": "q09",
+      "question": "HNSW 인덱스의 단점은?",
+      "answer": "가끔 가장 가까운 이웃을 놓치는 근사 검색이다.",
+      "evidence": [{ "doc": "rag-vectordb", "quote": "가끔 가장 가까운 이웃을 놓치는 근사 검색이다." }]
+    },
+    {
+      "id": "q10",
+      "question": "RAG 수업은 무슨 요일 몇 교시이고 어느 강의실인가?",
+      "answer": "화요일 1-3교시, 305호다.",
+      "evidence": [{ "doc": "broken-table", "quote": "화 1-3 검색증강생성(RAG) 시스템 구축 305 조 교수" }],
+      "note": "표가 깨진 문서라 검색·생성 모두 실패하기 쉬운 문항 (3주차 실습)"
+    },
+    {
+      "id": "q11",
+      "question": "성적 우수 장학금 지급액은?",
+      "answer": "수업료의 50%다.",
+      "evidence": [{ "doc": "broken-scan", "quote": "지급액은 수업료의 5O% 이다." }],
+      "note": "OCR이 숫자 0을 영문 O로 인식한 문서 (3주차 실습)"
+    },
+    {
+      "id": "q12",
+      "question": "결석하면 실습 과제는 어떻게 하나?",
+      "answer": "다음 주 수업 전까지 제출하면 인정된다.",
+      "evidence": [{ "doc": "broken-mixed", "quote": "결석한 주의 실습 과제는 다음 주 수업 전까지 제출하면 인정됩니다." }]
+    }
+  ]
+}

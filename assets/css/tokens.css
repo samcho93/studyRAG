@@ -1,0 +1,149 @@
+/* Design tokens — the only place colors, type and spacing are defined.
+   Change the theme here; every other stylesheet reads these variables. */
+
+:root {
+  color-scheme: light;
+
+  /* Color — light */
+  --color-bg: #f8f7f4;
+  --color-surface: #ffffff;
+  --color-surface-2: #efeee9;
+  --color-border: #d9d7cf;
+  --color-border-strong: #b9b6ab;
+  --color-text: #1b1c1f;
+  --color-text-muted: #55585f;
+  --color-accent: #2450c4;
+  --color-accent-hover: #1b3f9e;
+  --color-accent-contrast: #ffffff;
+  --color-accent-soft: #e5ebfa;
+  --color-success: #1d7446;
+  --color-success-soft: #e2f3e9;
+  --color-warning: #8a5300;
+  --color-warning-soft: #fbefd9;
+  --color-danger: #b0261e;
+  --color-danger-soft: #fbe5e3;
+  --color-code-bg: #f1f0ec;
+  --color-focus: #2450c4;
+
+  /* Chunk highlight palette (backgrounds behind body text, AA with --color-text) */
+  --chunk-1: #d6e4ff;
+  --chunk-2: #ffe1c7;
+  --chunk-3: #d4f2dc;
+  --chunk-4: #f6d6ef;
+  --chunk-5: #fff1b8;
+  --chunk-6: #d2f0f4;
+  --chunk-overlap: #c9c2f2;
+
+  /* Typography */
+  --font-sans: system-ui, -apple-system, "Segoe UI", "Apple SD Gothic Neo",
+    "Malgun Gothic", "Noto Sans KR", sans-serif;
+  --font-mono: ui-monospace, "SFMono-Regular", "Cascadia Code", Consolas,
+    "D2Coding", monospace;
+  --text-xs: 0.78rem;
+  --text-sm: 0.875rem;
+  --text-md: 1rem;
+  --text-lg: 1.15rem;
+  --text-xl: 1.4rem;
+  --text-2xl: 1.8rem;
+  --text-3xl: clamp(1.9rem, 5vw, 2.6rem);
+  --leading-tight: 1.3;
+  --leading-body: 1.75;
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-bold: 700;
+
+  /* Spacing */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 64px;
+  --gutter: 16px;
+
+  /* Layout */
+  --measure: 72ch;
+  --wide: 1080px;
+  --header-h: 56px;
+
+  /* Shape */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.06);
+  --shadow-md: 0 4px 16px rgb(0 0 0 / 0.08);
+  --focus-ring: 0 0 0 3px var(--color-focus);
+
+  /* Motion */
+  --dur-fast: 120ms;
+  --dur-med: 220ms;
+}
+
+/* Dark tokens — applied by OS preference unless user forced light, or by manual toggle */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --color-bg: #121316;
+    --color-surface: #1b1d21;
+    --color-surface-2: #24272c;
+    --color-border: #34373e;
+    --color-border-strong: #4a4e57;
+    --color-text: #e8e8ea;
+    --color-text-muted: #a4a7ae;
+    --color-accent: #8aaaff;
+    --color-accent-hover: #a9c0ff;
+    --color-accent-contrast: #0f1320;
+    --color-accent-soft: #1f2a47;
+    --color-success: #6fd39b;
+    --color-success-soft: #173325;
+    --color-warning: #f0b95c;
+    --color-warning-soft: #3a2c12;
+    --color-danger: #ff8f86;
+    --color-danger-soft: #3d1c1a;
+    --color-code-bg: #16181b;
+    --color-focus: #8aaaff;
+    --chunk-1: #203a6b;
+    --chunk-2: #5a3517;
+    --chunk-3: #1d4a2c;
+    --chunk-4: #4f2346;
+    --chunk-5: #4d4312;
+    --chunk-6: #184a52;
+    --chunk-overlap: #3e3570;
+    --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.4);
+    --shadow-md: 0 4px 16px rgb(0 0 0 / 0.45);
+  }
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --color-bg: #121316;
+  --color-surface: #1b1d21;
+  --color-surface-2: #24272c;
+  --color-border: #34373e;
+  --color-border-strong: #4a4e57;
+  --color-text: #e8e8ea;
+  --color-text-muted: #a4a7ae;
+  --color-accent: #8aaaff;
+  --color-accent-hover: #a9c0ff;
+  --color-accent-contrast: #0f1320;
+  --color-accent-soft: #1f2a47;
+  --color-success: #6fd39b;
+  --color-success-soft: #173325;
+  --color-warning: #f0b95c;
+  --color-warning-soft: #3a2c12;
+  --color-danger: #ff8f86;
+  --color-danger-soft: #3d1c1a;
+  --color-code-bg: #16181b;
+  --color-focus: #8aaaff;
+  --chunk-1: #203a6b;
+  --chunk-2: #5a3517;
+  --chunk-3: #1d4a2c;
+  --chunk-4: #4f2346;
+  --chunk-5: #4d4312;
+  --chunk-6: #184a52;
+  --chunk-overlap: #3e3570;
+  --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.4);
+  --shadow-md: 0 4px 16px rgb(0 0 0 / 0.45);
+}
