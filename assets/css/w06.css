@@ -1,0 +1,241 @@
+/* w06 Flat vs HNSW widget. Tokens only. */
+
+.w06-progress {
+  display: grid;
+  gap: 6px;
+  margin: var(--space-3) 0 var(--space-2);
+  font-size: var(--text-sm);
+}
+
+.w06-progress__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 28px;
+  color: var(--color-text-muted);
+}
+
+.w06-progress.is-idle .bar-progress__fill {
+  background: var(--color-success);
+}
+
+.w06-spacer {
+  flex: 1;
+}
+
+.w06-out h4 {
+  margin: 12px 0 6px;
+  font-size: var(--text-sm);
+}
+
+.w06-out .callout {
+  margin: 0 0 8px;
+  padding: 8px 12px;
+  font-size: 13px;
+}
+
+.w06-note {
+  margin: 6px 0 0;
+  color: var(--color-text-muted);
+  font-size: 12.5px;
+}
+
+/* query-time bars */
+.w06-bars {
+  display: grid;
+  gap: 6px;
+}
+
+.w06-bar {
+  display: grid;
+  grid-template-columns: 88px minmax(0, 1fr) 64px;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+}
+
+.w06-bar__track {
+  height: 14px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--color-surface-2);
+}
+
+.w06-bar__fill {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  transition: width var(--dur-med);
+}
+
+.w06-bar__fill--flat {
+  background: var(--color-accent2);
+}
+
+.w06-bar__fill--hnsw {
+  background: var(--color-accent);
+}
+
+.w06-bar__val {
+  font-family: var(--font-mono);
+  text-align: right;
+}
+
+/* found / missed true neighbors */
+.w06-out .w06-hitlist {
+  display: grid;
+  grid-template-columns: repeat(10, minmax(0, 1fr));
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.w06-out .w06-hitlist li {
+  display: grid;
+  justify-items: center;
+  margin: 0;
+  padding: 4px 0;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  font-size: 10.5px;
+  line-height: 1.3;
+}
+
+.w06-out .w06-hitlist li::before,
+.w06-out .w06-hitlist li::marker {
+  content: none;
+}
+
+.w06-hitlist b {
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+.w06-out .w06-hitlist li.is-hit {
+  border-color: var(--color-success);
+  background: var(--color-success-soft);
+  color: var(--color-success);
+}
+
+.w06-out .w06-hitlist li.is-miss {
+  border: 1px dashed var(--color-danger);
+  background: var(--color-danger-soft);
+  color: var(--color-danger);
+}
+
+/* recall vs efSearch */
+.w06-curve {
+  display: block;
+  width: 100%;
+  max-width: 460px;
+  height: auto;
+}
+
+.w06-curve .w06-grid {
+  stroke: var(--color-border);
+  stroke-width: 1;
+}
+
+.w06-curve .w06-grid--target {
+  stroke: var(--color-success);
+  stroke-dasharray: 4 3;
+}
+
+.w06-curve .w06-ax {
+  fill: var(--color-text-muted);
+  font: 10.5px var(--font-sans);
+}
+
+.w06-curve .w06-line {
+  fill: none;
+  stroke: var(--color-accent);
+  stroke-width: 2;
+}
+
+.w06-curve .w06-dot {
+  fill: var(--color-accent);
+}
+
+.w06-curve .w06-cur {
+  fill: none;
+  stroke: var(--color-accent2);
+  stroke-width: 2.5;
+}
+
+/* concept figures on the student page */
+.w06-fig .node {
+  fill: var(--color-surface-2);
+  stroke: var(--color-border-strong);
+}
+
+.w06-fig .node--hot {
+  fill: var(--color-accent-soft);
+  stroke: var(--color-accent);
+  stroke-width: 2;
+}
+
+.w06-fig .node--goal {
+  fill: var(--color-success-soft);
+  stroke: var(--color-success);
+  stroke-width: 2;
+}
+
+.w06-fig .node--q {
+  fill: var(--color-accent2);
+}
+
+.w06-fig .edge {
+  stroke: var(--color-border-strong);
+  stroke-width: 1;
+}
+
+.w06-fig .path {
+  fill: none;
+  stroke: var(--color-accent);
+  stroke-width: 2.5;
+}
+
+.w06-fig .drop {
+  stroke: var(--color-text-muted);
+  stroke-width: 1;
+  stroke-dasharray: 3 3;
+}
+
+.w06-fig .layer {
+  fill: none;
+  stroke: var(--color-border);
+}
+
+.w06-fig .lbl {
+  fill: var(--color-text);
+  font: 600 12.5px var(--font-sans);
+}
+
+.w06-fig .note {
+  fill: var(--color-text-muted);
+  font: 11.5px var(--font-sans);
+}
+
+.w06-fig .cell {
+  fill: var(--color-surface-2);
+  stroke: var(--color-border-strong);
+}
+
+.w06-fig .cell--text {
+  fill: var(--chunk-2);
+}
+
+.w06-fig .cell--meta {
+  fill: var(--chunk-3);
+}
+
+.w06-fig .cell--vec {
+  fill: var(--chunk-1);
+}
+
+.w06-fig .mono {
+  fill: var(--color-text);
+  font: 11px var(--font-mono);
+}

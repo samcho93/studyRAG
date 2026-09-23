@@ -1,0 +1,515 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>5주차 임베딩 &amp; 유사도 · 교사용 · RAG Lab</title>
+  <meta name="description" content="5주차 임베딩 &amp; 유사도 교사용 슬라이드: 강의 흐름, 교사 노트, Challenge 정답, 자주 막히는 지점, 토론 주제, 평가 루브릭.">
+  <script>try{var t=JSON.parse(localStorage.getItem('raglab:theme'));if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+  <link rel="stylesheet" crossorigin="anonymous" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&display=swap">
+  <link rel="stylesheet" href="../../assets/css/tokens.css">
+  <link rel="stylesheet" href="../../assets/css/base.css">
+  <link rel="stylesheet" href="../../assets/css/components.css">
+  <link rel="stylesheet" href="../../assets/css/slides.css">
+  <link rel="stylesheet" href="../../assets/css/w05.css">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%232450c4'/%3E%3Ccircle cx='14' cy='14' r='6' fill='none' stroke='white' stroke-width='3'/%3E%3Cpath d='M19 19l6 6' stroke='white' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E">
+  <script type="module" src="../../assets/js/site/site.js"></script>
+</head>
+<body>
+  <div class="layout" data-layout data-role="teacher" data-week="5" data-crumb="🧑‍🏫 교사용 › <b>5주차 · 임베딩 &amp; 유사도</b>">
+    <main class="pane center" id="main">
+      <div class="slide-view" data-deck data-deck-title="5주차 · 임베딩 &amp; 유사도">
+        <div class="deck-bar"><div class="deck-row" data-deck-controls></div></div>
+        <div class="deck-progress"><i></i></div>
+        <div class="deck-wrap">
+          <div class="deck-viewport">
+        <div class="deck-stage">
+
+          <!-- 1 -->
+          <section class="slide slide--title" data-title="표지">
+            <div class="kicker">검색증강생성(RAG) 시스템 구축 · 5주차</div>
+            <h1>임베딩 &amp; 유사도</h1>
+            <p>“비슷하다”를 숫자로 만들기</p>
+            <div class="deco" aria-hidden="true">🧭</div>
+            <aside class="notes">
+              <p><strong>오늘 흐름 (180분)</strong></p>
+              <table>
+                <tr><td>0:00–0:15</td><td>도입 · 4주차 복습(오늘은 청크를 벡터로 바꾼다)</td></tr>
+                <tr><td>0:15–0:55</td><td>임베딩 · 세 척도 · 정규화 · e5 접두어 · 모델과 차원</td></tr>
+                <tr><td>0:55–1:30</td><td>위젯 실습 + 관찰 질문 1~3</td></tr>
+                <tr><td>1:30–1:40</td><td>휴식</td></tr>
+                <tr><td>1:40–2:00</td><td>관찰 질문 4~5 · PCA 직관</td></tr>
+                <tr><td>2:00–2:50</td><td>Challenge C1~C4 (C5는 과제)</td></tr>
+                <tr><td>2:50–3:00</td><td>정리 · 6주차 예고</td></tr>
+              </table>
+              <p><strong>수업 전 준비:</strong> 교실 PC에서 학생용 페이지를 한 번 열어 모델을 캐시해 둔다(WASM 기준 약 118MB, 영어 전용 모델 약 23MB). 학교망에서 huggingface.co가 막히면 위젯이 오류를 보여 준다. 이때는 개념·Challenge 먼저 진행한다.</p>
+            </aside>
+          </section>
+
+          <!-- 2 -->
+          <section class="slide" data-title="학습 목표">
+            <h2>오늘 할 수 있게 되는 것</h2>
+            <ol>
+              <li>코사인 · 내적 · 유클리드의 차이와, 정규화하면 순위가 같아지는 이유를 설명한다</li>
+              <li>모델(다국어/영어 전용)과 e5 접두어가 한국어 검색을 어떻게 바꾸는지 근거를 들어 말한다</li>
+              <li>유사도 행렬 · top-k · 2D PCA를 직접 구현한다</li>
+            </ol>
+            <aside class="notes">
+              <p>1번은 공식 암기가 아니라 “왜 벡터스토어는 내적만 계산하는가”에 답할 수 있으면 된다고 말한다.</p>
+              <p>2번이 오늘의 실패 실험(영어 전용 모델)과 연결된다.</p>
+            </aside>
+          </section>
+
+          <!-- 3 -->
+          <section class="slide" data-title="질문으로 시작">
+            <h2>“랩실에서 커피 마셔도 돼?”</h2>
+            <p class="big-quote">규정: “실습실 안에서는 음료를 포함한<br>모든 음식물 섭취가 금지된다.”</p>
+            <p>겹치는 단어가 거의 없다 → 단어 일치로는 찾기 어렵다</p>
+            <p class="muted">반대로 “…지급하지 <b>않는다</b>”는 단어가 거의 같지만 뜻이 반대다</p>
+            <aside class="notes">
+              <p><strong>발문:</strong> “검색 엔진이 이 두 문장이 같은 이야기라는 걸 어떻게 알 수 있을까?” 2~3명에게 묻는다.</p>
+              <p>기대 답: 동의어 사전, 번역, “뜻을 숫자로” 등. 마지막 답을 받아 임베딩으로 넘어간다.</p>
+              <p>8주차 BM25와 연결: 오늘은 BM25가 못 하는 쪽, 8주차에는 임베딩이 못 하는 쪽을 본다.</p>
+            </aside>
+          </section>
+
+          <!-- 4 -->
+          <section class="slide" data-title="임베딩 = 방향">
+            <h2>임베딩: 문장 → 방향</h2>
+            <div class="cols">
+              <div>
+                <ul>
+                  <li>문장 → 고정 길이 실수 벡터 (오늘 모델: 384차원)</li>
+                  <li>뜻이 가까운 쌍은 가까운 방향이 되도록 학습</li>
+                  <li>질문도 <strong>같은 모델</strong>로 벡터화 → 가장 가까운 청크</li>
+                </ul>
+              </div>
+              <div>
+                <pre><code>"청킹은 문장을 자른다"
+  → [0.021, -0.113, 0.087, …]  (384개)
+"랩실에서 먹으면 안 된다"
+  → [-0.054, 0.032, 0.140, …]</code></pre>
+                <p class="muted">숫자 하나하나에 사람이 읽을 뜻은 없다</p>
+              </div>
+            </div>
+            <aside class="notes">
+              <p>벡터 값은 예시(가짜)라고 분명히 말한다. 개별 차원에 “청킹 축” 같은 의미가 있다는 오해를 막는다. Challenge에서 쓰는 4차원 벡터는 설명용으로 축에 이름을 붙인 장난감이라고 미리 알린다.</p>
+              <p>“같은 모델” 강조: 문서와 질문을 다른 모델로 임베딩하면 비교 자체가 무의미하다.</p>
+            </aside>
+          </section>
+
+          <!-- 5 -->
+          <section class="slide" data-title="세 가지 척도">
+            <h2>가까움을 재는 세 가지 방법</h2>
+            <table>
+              <thead><tr><th>척도</th><th>식</th><th>보는 것</th><th>함정</th></tr></thead>
+              <tbody>
+                <tr><td>코사인</td><td><code>a·b / (‖a‖‖b‖)</code></td><td>각도</td><td>길이 무시</td></tr>
+                <tr><td>내적</td><td><code>Σ aᵢbᵢ</code></td><td>각도 × 길이</td><td>긴 벡터가 유리</td></tr>
+                <tr><td>유클리드</td><td><code>‖a − b‖</code></td><td>끝점 거리</td><td>길이 다르면 멀다</td></tr>
+              </tbody>
+            </table>
+            <p><strong>정규화</strong>(‖v‖ = 1) 하면: <code>cos = a·b</code>, <code>‖a − b‖² = 2 − 2cos</code> → 순위가 같다</p>
+            <aside class="notes">
+              <p>칠판에 2 − 2cos를 유도한다: ‖a−b‖² = ‖a‖² + ‖b‖² − 2a·b, 길이 1이면 2 − 2a·b.</p>
+              <p><strong>발문:</strong> “그럼 벡터스토어는 셋 중 무엇을 계산하면 제일 빠를까?” → 내적(나눗셈·제곱근 없음). <code>vectorstore.js</code>가 저장 시 정규화하는 이유다.</p>
+            </aside>
+          </section>
+
+          <!-- 6 -->
+          <section class="slide" data-title="코드로 확인: 길이의 함정">
+            <h2>코드로 확인: 길이의 함정</h2>
+            <pre data-run="deck-norm" data-title="내적 vs 코사인"><code class="language-javascript">import { dot, cosine } from '/assets/js/core/vectorstore.js';
+
+const q = [0.8, 0.2, 0.0, 0.1];       // "청킹이란?"
+const chunk = [0.9, 0.1, 0.0, 0.1];   // 정답 청크
+const long = [3.0, 2.4, 0.3, 0.6];    // 긴 잡탕 문서
+const unit = (v) =&gt; { const l = Math.hypot(...v); return v.map((x) =&gt; x / l); };
+
+console.table([
+  { doc: '정답 청크', dot: dot(q, chunk), cosine: cosine(q, chunk), unitDot: dot(unit(q), unit(chunk)) },
+  { doc: '긴 잡탕 문서', dot: dot(q, long), cosine: cosine(q, long), unitDot: dot(unit(q), unit(long)) },
+]);</code></pre>
+            <aside class="notes">
+              <p>▶ 실행 결과: 정답 청크 dot 0.75 / cos 0.991, 긴 잡탕 문서 dot 2.94 / cos 0.908. 내적만 보면 긴 문서가 1위, 코사인은 정답 청크가 1위. unitDot 열은 cosine 열과 같다.</p>
+              <p>4주차 연결: “문서를 통째로 넣으면 평균 벡터가 된다”와 같은 이야기. 임베딩 모델이 이미 정규화해 주면 이 함정은 사라진다. 직접 만든 벡터나 정규화하지 않는 API를 쓸 때 조심한다.</p>
+            </aside>
+          </section>
+
+          <!-- 7 -->
+          <section class="slide" data-title="e5 접두어">
+            <h2>e5 모델의 약속: query: / passage:</h2>
+            <ul>
+              <li>학습 때 질문에 <code>query: </code>, 문서에 <code>passage: </code>를 붙였다 → 사용할 때도 붙인다</li>
+              <li>문장 ↔ 문장 비교(대칭)는 양쪽 모두 <code>query: </code></li>
+              <li>빠뜨려도 <strong>오류가 안 난다</strong> — 점수만 조용히 나빠진다</li>
+              <li>e5 코사인은 원래 0.7~1.0 근처에 몰린다 → <strong>순위</strong>로 판단</li>
+            </ul>
+            <p class="muted"><code>embed.js</code>는 <code>role</code>에 따라 접두어를 자동으로 붙인다</p>
+            <aside class="notes">
+              <p>골든셋 q06의 정답이 바로 이 내용이다. 학생에게 “q06 질문에 답해 보라”고 한다.</p>
+              <p>점수 분포는 e5 모델 카드 FAQ에 나온 설명(낮은 온도로 대조 학습)이다. “0.8 이상이면 관련”처럼 모델에 따라 바뀌는 절대 기준을 쓰지 않게 한다.</p>
+            </aside>
+          </section>
+
+          <!-- 8 -->
+          <section class="slide" data-title="모델과 차원">
+            <h2>모델 선택과 차원</h2>
+            <div class="cols">
+              <div>
+                <h3>언어</h3>
+                <ul>
+                  <li>영어 전용 모델 + 한국어 → 토큰이 망가짐 → <strong>모든 문장이 비슷</strong></li>
+                  <li>다국어 또는 한국어 추가 학습 모델을 쓴다</li>
+                </ul>
+              </div>
+              <div>
+                <h3>차원</h3>
+                <ul>
+                  <li>384차원 × 4바이트 = 1.5KB / 벡터</li>
+                  <li>100만 청크: 384 → 1.5GB, 1024 → 4.1GB</li>
+                  <li>크다고 한국어를 잘하는 게 아니다</li>
+                </ul>
+              </div>
+            </div>
+            <p class="muted">실무 모델 비교(KURE · BGE-M3 · OpenAI): 이론 페이지 “한국어 임베딩 모델 비교”</p>
+            <aside class="notes">
+              <p>계산: 384×4 = 1,536B, ×10⁶ ≈ 1.54GB. 1024×4×10⁶ ≈ 4.1GB. 6주차 인덱스 이야기의 복선.</p>
+              <p>이론 페이지(theory/embedding-models.html)는 과제로 읽게 한다. 모델 이름과 수치는 바뀌므로 “고르는 기준”을 가져가게 한다.</p>
+            </aside>
+          </section>
+
+          <!-- 9 -->
+          <section class="slide slide--demo" data-title="데모: 유사도 히트맵">
+            <h2>데모 · 유사도 히트맵 + 2D 투영</h2>
+            <div id="deck-w05-widget"></div>
+            <aside class="notes">
+              <p><strong>시연 순서</strong> (결과는 오른쪽 실행 결과 창)</p>
+              <ol>
+                <li>기본 모델 로딩 진행률을 보여 준다. 두 번째부터는 캐시라서 빠르다고 말한다</li>
+                <li>히트맵에서 청킹(S1~S3)·실습실·장학금 블록을 짚는다. 화살표 키로 칸을 옮기면 아래에 두 문장과 값이 나온다</li>
+                <li>함정 1(S4↔S10), 함정 2(S7↔S11)를 누르고 “글자 겹침”과 “코사인”을 비교한다</li>
+                <li>“실패 재현: 영어 전용 모델” → 값 범위·최근접 이웃 일치·2D 무리 변화를 짚는다. 색 범위를 “고정 (0~1)”로 바꿔 전체가 비슷한 색인 것을 보여 준다</li>
+                <li>질의를 “랩실에서 커피 마셔도 돼?”로 바꿔 두 모델의 1위를 비교한다</li>
+              </ol>
+              <p><strong>주의:</strong> 실제 점수는 모델·브라우저(WebGPU/WASM)에 따라 조금씩 다르다. 수업 전에 한 번 돌려 오늘 값을 메모해 둔다. 함정 2(부정문)는 다국어 모델에서도 높게 나올 가능성이 크다. 이것이 정상적인 한계이며 토론 주제다.</p>
+            </aside>
+          </section>
+
+          <!-- 10 -->
+          <section class="slide" data-title="관찰 질문">
+            <h2>관찰 질문</h2>
+            <ol>
+              <li>값 범위는? 색 범위를 0~1 고정으로 바꾸면?</li>
+              <li>함정 1 · 2에서 글자 겹침 vs 코사인, 누가 이겼나?</li>
+              <li>영어 전용 모델: 값 범위 · 이웃 일치 · 2D 무리의 변화</li>
+              <li>“랩실에서 커피 마셔도 돼?” 1위 문장은? (두 모델)</li>
+              <li>2D에서 가까운 두 점, 히트맵 값도 가까운가?</li>
+            </ol>
+            <aside class="notes">
+              <p>1~3은 짝 활동 15분, 4~5는 휴식 뒤 전체 토론.</p>
+              <p>2번에서 끌어낼 결론: 임베딩은 바꿔 말하기(paraphrase)에 강하고 부정·역할 바뀜에 약하다 → 8주차 하이브리드와 리랭킹이 필요한 이유.</p>
+              <p>5번: PCA 설명 비율이 50% 안팎이면 절반의 정보를 버린 그림이다.</p>
+            </aside>
+          </section>
+
+          <!-- 11 -->
+          <section class="slide" data-title="2D 투영: PCA">
+            <h2>384차원을 2D로: PCA + 거듭제곱법</h2>
+            <pre><code>1. 평균을 뺀다 (중심화)
+2. v ← normalize(Xᵀ(X v)) 반복 → PC1  (분산이 가장 큰 방향)
+3. PC1 성분을 빼 가며 같은 반복 → PC2
+4. 점 = (x·PC1, x·PC2)</code></pre>
+            <p>반복할수록 v가 가장 “늘어나는” 방향으로 끌려간다</p>
+            <p class="muted">두 축이 설명하는 분산 비율을 반드시 같이 본다</p>
+            <aside class="notes">
+              <p>직관: 공분산 행렬을 곱할 때마다 가장 큰 고유값 방향 성분이 상대적으로 커진다. 고유값 분해 라이브러리 없이 곱셈만으로 된다는 점이 핵심.</p>
+              <p>공분산 행렬(384×384)을 만들지 않고 Xᵀ(Xv)로 계산하면 N이 작을 때 훨씬 싸다. C5가 이것이다.</p>
+            </aside>
+          </section>
+
+          <!-- 12 -->
+          <section class="slide" data-title="Challenge 안내">
+            <h2>Challenge</h2>
+            <table>
+              <tbody>
+                <tr><td>C1 ★</td><td>코사인 유사도 직접 구현 (영벡터 처리)</td></tr>
+                <tr><td>C2 ★</td><td>정규화하면 내적 = 코사인, ‖a−b‖² = 2 − 2cos</td></tr>
+                <tr><td>C3 ★★</td><td>top-k 검색 + VectorStore와 비교</td></tr>
+                <tr><td>C4 ★★★</td><td>유사도 행렬 · 가장 비슷한 쌍 · 이웃 주제 일치</td></tr>
+                <tr><td>C5 ★★★★</td><td>거듭제곱법 2D PCA (과제)</td></tr>
+              </tbody>
+            </table>
+            <p class="muted">모델을 내려받지 않는다: 손으로 만든 4차원 벡터 사용</p>
+            <aside class="notes">
+              <p>C1~C3는 모두 끝내게 한다. C4까지 한 학생은 “S7의 이웃” 해석을 한 줄로 제출. 정답은 부록 B.</p>
+            </aside>
+          </section>
+
+          <!-- 13 -->
+          <section class="slide" data-title="정리 & 다음 주">
+            <h2>정리</h2>
+            <ul>
+              <li>임베딩 = 뜻을 방향으로. 바꿔 말하기에 강하고 부정에 약하다</li>
+              <li>정규화하면 코사인 = 내적, 순위도 유클리드와 같다</li>
+              <li>모델 선택이 가장 큰 변수. e5는 접두어를 붙인다</li>
+              <li>2D 그림은 모양만, 판단은 원래 차원의 값으로</li>
+            </ul>
+            <h3>다음 주 · 벡터DB &amp; 인덱스</h3>
+            <p class="muted">C3의 “전부와 하나씩 비교”(Flat)가 문서 100만 개에서도 괜찮을까? HNSW와 속도·정확도를 비교한다</p>
+            <aside class="notes">
+              <p>과제: C5 완성 + 이론 페이지 “한국어 임베딩 모델 비교” 읽고 우리 학과 서비스에 쓸 모델 하나를 이유와 함께 고르기(3줄).</p>
+            </aside>
+          </section>
+
+          <!-- Appendix -->
+          <section class="slide" data-title="부록 A · 강의안" data-appendix>
+            <h2>부록 A · 강의안</h2>
+            <table>
+              <thead><tr><th>시간</th><th>활동</th><th>산출물</th></tr></thead>
+              <tbody>
+                <tr><td>15분</td><td>도입 · 4주차 복습 · “랩실 커피” 질문</td><td>—</td></tr>
+                <tr><td>40분</td><td>개념: 임베딩 · 세 척도 · 정규화 · 접두어 · 모델/차원</td><td>2 − 2cos 유도</td></tr>
+                <tr><td>35분</td><td>위젯 실습 · 관찰 질문 1~3</td><td>짝 활동 메모</td></tr>
+                <tr><td>10분</td><td>휴식</td><td>—</td></tr>
+                <tr><td>20분</td><td>관찰 4~5 · PCA 직관</td><td>—</td></tr>
+                <tr><td>50분</td><td>Challenge C1~C4</td><td>C4 해석 한 줄</td></tr>
+                <tr><td>10분</td><td>정리 · 예고 · 과제 안내</td><td>—</td></tr>
+              </tbody>
+            </table>
+          </section>
+
+          <section class="slide" data-title="부록 B · C1 정답" data-appendix>
+            <h2>부록 B · C1 정답</h2>
+            <pre data-run="ans-c1" data-title="C1 정답"><code class="language-javascript">const v = {
+  청킹: [0.9, 0.1, 0.0, 0.1],
+  오버랩: [0.8, 0.2, 0.1, 0.0],
+  장학금: [0.1, 0.0, 0.9, 0.1],
+  영벡터: [0, 0, 0, 0],
+};
+function dot(a, b) {
+  let s = 0;
+  for (let i = 0; i &lt; a.length; i++) s += a[i] * b[i];
+  return s;
+}
+function norm(a) {
+  return Math.sqrt(dot(a, a));
+}
+function cosine(a, b) {
+  const d = norm(a) * norm(b);
+  return d === 0 ? 0 : dot(a, b) / d;
+}
+console.log('청킹·오버랩', cosine(v.청킹, v.오버랩).toFixed(3));
+console.log('청킹·장학금', cosine(v.청킹, v.장학금).toFixed(3));
+console.log('청킹·영벡터', cosine(v.청킹, v.영벡터));</code></pre>
+            <aside class="notes">
+              <p><strong>기대 출력:</strong> 청킹·오버랩 0.978, 청킹·장학금 0.120, 청킹·영벡터 0.</p>
+              <p><strong>왜:</strong> 영벡터는 방향이 없으므로 코사인이 정의되지 않는다. NaN을 그대로 돌려주면 정렬이 깨진다(NaN 비교는 항상 false). 0을 돌려주는 것이 <code>vectorstore.js</code>와 같은 선택이다.</p>
+            </aside>
+          </section>
+
+          <section class="slide" data-title="부록 B · C2 정답" data-appendix>
+            <h2>부록 B · C2 정답</h2>
+            <pre data-run="ans-c2" data-title="C2 정답"><code class="language-javascript">const docs = { 청킹: [0.9, 0.1, 0.0, 0.1], 실습실: [0.1, 0.9, 0.1, 0.1], 긴문서: [3.0, 2.4, 0.3, 0.6] };
+const q = [0.8, 0.2, 0.0, 0.1];
+const dot = (a, b) =&gt; a.reduce((s, x, i) =&gt; s + x * b[i], 0);
+const norm = (a) =&gt; Math.sqrt(dot(a, a));
+const cosine = (a, b) =&gt; dot(a, b) / (norm(a) * norm(b));
+const normalize = (a) =&gt; { const l = norm(a); return a.map((x) =&gt; x / l); };
+const euclid = (a, b) =&gt; Math.sqrt(a.reduce((s, x, i) =&gt; s + (x - b[i]) ** 2, 0));
+
+const qn = normalize(q);
+const rows = Object.entries(docs).map(([id, d]) =&gt; {
+  const dn = normalize(d);
+  return {
+    id,
+    rawDot: dot(q, d), cosine: cosine(q, d),
+    unitDot: dot(qn, dn), euclidUnit: euclid(qn, dn),
+    '2−2cos': 2 - 2 * cosine(q, d), 'euclid²': euclid(qn, dn) ** 2,
+  };
+});
+console.table(rows);
+const top = (k) =&gt; rows.reduce((a, b) =&gt; (b[k] &gt; a[k] ? b : a)).id;
+console.log('내적 1위:', top('rawDot'), '/ 코사인 1위:', top('cosine'));</code></pre>
+            <aside class="notes">
+              <p><strong>기대 출력:</strong> rawDot 청킹 0.75 · 실습실 0.27 · 긴문서 2.94 / cosine 0.991 · 0.355 · 0.908. unitDot = cosine. 2−2cos 열과 euclid² 열이 소수점 15자리까지 같다(0.0179, 1.2907, 0.1850). “내적 1위: 긴문서 / 코사인 1위: 청킹”.</p>
+              <p><strong>왜:</strong> 정규화하면 길이 정보가 사라져 세 척도가 모두 각도만의 함수가 된다. 그래서 순위가 같다.</p>
+            </aside>
+          </section>
+
+          <section class="slide" data-title="부록 B · C3 정답" data-appendix>
+            <h2>부록 B · C3 정답</h2>
+            <pre data-run="ans-c3" data-title="C3 정답"><code class="language-javascript">import { VectorStore } from '/assets/js/core/vectorstore.js';
+const docs = [
+  { id: 'chunk-fixed', vector: [0.9, 0.1, 0.0, 0.1] },
+  { id: 'chunk-overlap', vector: [0.8, 0.2, 0.1, 0.0] },
+  { id: 'lab-food', vector: [0.1, 0.9, 0.1, 0.1] },
+  { id: 'lab-hours', vector: [0.0, 0.8, 0.0, 0.3] },
+  { id: 'sch-grade', vector: [0.1, 0.0, 0.9, 0.1] },
+  { id: 'sch-work', vector: [0.0, 0.2, 0.8, 0.2] },
+  { id: 'lunch', vector: [0.1, 0.1, 0.1, 0.9] },
+];
+const query = [0.2, 0.7, 0.1, 0.4];
+const dot = (a, b) =&gt; a.reduce((s, x, i) =&gt; s + x * b[i], 0);
+const cosine = (a, b) =&gt; dot(a, b) / Math.sqrt(dot(a, a) * dot(b, b));
+
+function topK(q, items, k = 3) {
+  return items
+    .map(({ id, vector }) =&gt; ({ id, score: cosine(q, vector) }))
+    .sort((a, b) =&gt; b.score - a.score)
+    .slice(0, k);
+}
+const mine = topK(query, docs, 3);
+console.table(mine);
+const store = new VectorStore();
+store.addMany(docs);
+const ref = store.search(query, 3);
+console.table(ref.map(({ id, score }) =&gt; ({ id, score })));
+console.log('같은 순서:', mine.every((r, i) =&gt; r.id === ref[i].id));</code></pre>
+            <aside class="notes">
+              <p><strong>기대 출력:</strong> lab-hours 0.951, lab-food 0.913, lunch 0.600. VectorStore도 같은 순서(점수 차이는 Float32 반올림 때문에 1e-8 수준). “같은 순서: true”.</p>
+              <p><strong>토론:</strong> 3위 lunch(0.600)는 관련 없는 문서다. top-k는 항상 k개를 돌려준다. 점수 문턱이나 리랭킹(8주차)이 필요한 이유.</p>
+              <p><code>sort</code>에 비교 함수를 안 주면 문자열 정렬이 된다. 자주 나오는 실수다.</p>
+            </aside>
+          </section>
+
+          <section class="slide" data-title="부록 B · C4 정답" data-appendix>
+            <h2>부록 B · C4 정답</h2>
+            <pre data-run="ans-c4" data-title="C4 정답"><code class="language-javascript">const items = [
+  { id: 'S1', topic: '청킹', v: [0.9, 0.1, 0.0, 0.1] }, { id: 'S2', topic: '청킹', v: [0.8, 0.2, 0.1, 0.0] },
+  { id: 'S3', topic: '실습실', v: [0.1, 0.9, 0.1, 0.1] }, { id: 'S4', topic: '실습실', v: [0.0, 0.8, 0.0, 0.3] },
+  { id: 'S5', topic: '장학금', v: [0.1, 0.0, 0.9, 0.1] }, { id: 'S6', topic: '장학금', v: [0.0, 0.2, 0.8, 0.2] },
+  { id: 'S7', topic: '무관', v: [0.1, 0.1, 0.1, 0.9] },
+];
+const dot = (a, b) =&gt; a.reduce((s, x, i) =&gt; s + x * b[i], 0);
+const cosine = (a, b) =&gt; dot(a, b) / Math.sqrt(dot(a, a) * dot(b, b));
+const n = items.length;
+const sim = items.map((a) =&gt; items.map((b) =&gt; cosine(a.v, b.v)));
+console.table(Object.fromEntries(items.map((a, i) =&gt;
+  [a.id, Object.fromEntries(items.map((b, j) =&gt; [b.id, +sim[i][j].toFixed(2)]))])));
+
+let best = { i: -1, j: -1, s: -Infinity };
+for (let i = 0; i &lt; n; i++) for (let j = i + 1; j &lt; n; j++) if (sim[i][j] &gt; best.s) best = { i, j, s: sim[i][j] };
+console.log(`가장 비슷한 쌍: ${items[best.i].id}–${items[best.j].id} (${best.s.toFixed(3)})`);
+
+let hit = 0, total = 0;
+items.forEach((a, i) =&gt; {
+  let nn = -1;
+  for (let j = 0; j &lt; n; j++) if (j !== i &amp;&amp; (nn &lt; 0 || sim[i][j] &gt; sim[i][nn])) nn = j;
+  const same = items[nn].topic === a.topic;
+  console.log(`${a.id} → ${items[nn].id} (${sim[i][nn].toFixed(2)}) ${same ? '같은 주제' : '다른 주제'}`);
+  if (a.topic !== '무관') { total++; if (same) hit++; }
+});
+console.log(`최근접 이웃 주제 일치: ${hit}/${total}`);</code></pre>
+            <aside class="notes">
+              <p><strong>기대 출력:</strong> 가장 비슷한 쌍 S1–S2 (0.978). 이웃: S1↔S2 0.98, S3↔S4 0.96, S5↔S6 0.96, S7 → S4 (0.45) 다른 주제. 최근접 이웃 주제 일치 6/6.</p>
+              <p><strong>왜 i &lt; j:</strong> 행렬은 대칭이고 대각선은 항상 1이다. 대각선을 빼지 않으면 “가장 비슷한 쌍”이 늘 자기 자신이 된다.</p>
+              <p><strong>S7 해석:</strong> 무관한 문장도 최근접 이웃은 반드시 있다(0.45). 검색은 “관련 없음”을 말하지 않는다.</p>
+            </aside>
+          </section>
+
+          <section class="slide" data-title="부록 B · C5 정답" data-appendix>
+            <h2>부록 B · C5 정답</h2>
+            <pre data-run="ans-c5" data-title="C5 정답"><code class="language-javascript">const X0 = [
+  [0.9, 0.1, 0.0, 0.1], [0.8, 0.2, 0.1, 0.0], [0.1, 0.9, 0.1, 0.1], [0.0, 0.8, 0.0, 0.3],
+  [0.1, 0.0, 0.9, 0.1], [0.0, 0.2, 0.8, 0.2], [0.1, 0.1, 0.1, 0.9],
+];
+const n = X0.length, d = X0[0].length;
+const dot = (a, b) =&gt; a.reduce((s, x, i) =&gt; s + x * b[i], 0);
+const unit = (v) =&gt; { const l = Math.sqrt(dot(v, v)); return v.map((x) =&gt; x / l); };
+
+const mean = Array.from({ length: d }, (_, k) =&gt; X0.reduce((s, r) =&gt; s + r[k], 0) / n);
+const X = X0.map((r) =&gt; r.map((x, k) =&gt; x - mean[k]));
+const total = X.reduce((s, r) =&gt; s + dot(r, r), 0);
+const covMul = (v) =&gt; {
+  const out = new Array(d).fill(0);
+  for (const r of X) { const p = dot(r, v); for (let k = 0; k &lt; d; k++) out[k] += p * r[k]; }
+  return out;
+};
+const orth = (v, comps) =&gt; comps.reduce((w, c) =&gt; { const p = dot(w, c); return w.map((x, k) =&gt; x - p * c[k]); }, v);
+
+function powerIteration(comps, iters = 500) {
+  let v = unit(orth([1, 0.9, 0.8, 0.7], comps));
+  for (let t = 0; t &lt; iters; t++) {
+    const w = unit(orth(covMul(v), comps));
+    const diff = w.reduce((s, x, k) =&gt; s + (x - v[k]) ** 2, 0);
+    v = w;
+    if (diff &lt; 1e-12) break;
+  }
+  return v;
+}
+const pc1 = powerIteration([]);
+const pc2 = powerIteration([pc1]);
+const ev = [pc1, pc2].map((c) =&gt; dot(c, covMul(c)) / total);
+console.log('설명된 분산:', ev.map((e) =&gt; (e * 100).toFixed(1) + '%').join(', '));
+console.log('직교 확인 pc1·pc2 =', dot(pc1, pc2).toExponential(1));
+console.table(X.map((r, i) =&gt; ({ id: `S${i + 1}`, pc1: +dot(r, pc1).toFixed(3), pc2: +dot(r, pc2).toFixed(3) })));</code></pre>
+            <aside class="notes">
+              <p><strong>기대 출력:</strong> 설명된 분산 41.4%, 37.3% (합 78.7%). pc1·pc2 ≈ 1e-16 (0). 좌표 S1 (0.594, 0.421), S3 (0.123, −0.552), S5 (−0.599, 0.397), S7 (−0.115, −0.146). numpy의 고유값 분해로 검산한 값과 부호만 다를 수 있다(고유벡터의 부호는 정해져 있지 않다).</p>
+              <p><strong>왜 직교화:</strong> 직교화하지 않으면 두 번째 반복도 PC1로 수렴한다. 매 반복마다 빼야 수치 오차로 PC1 성분이 다시 자라지 않는다.</p>
+            </aside>
+          </section>
+
+          <section class="slide" data-title="부록 C · 자주 막히는 지점" data-appendix>
+            <h2>부록 C · 학생이 자주 막히는 지점</h2>
+            <table>
+              <thead><tr><th>증상</th><th>원인</th><th>대응</th></tr></thead>
+              <tbody>
+                <tr><td>위젯이 계속 로딩</td><td>학교망 차단 · 첫 다운로드</td><td>진행률 확인, 휴대폰 핫스팟 · 미리 캐시</td></tr>
+                <tr><td>C1 결과가 NaN</td><td>영벡터 0/0</td><td>분모 0 검사</td></tr>
+                <tr><td>C3 순서가 이상</td><td><code>sort()</code> 비교 함수 없음</td><td><code>(a, b) =&gt; b.score − a.score</code></td></tr>
+                <tr><td>C4 최고 쌍이 S1–S1</td><td>대각선 포함</td><td><code>j = i + 1</code>부터</td></tr>
+                <tr><td>C5 PC2 = PC1</td><td>직교화 누락</td><td>매 반복 <code>orth</code></td></tr>
+                <tr><td>“0.85면 비슷한 거죠?”</td><td>절대값 해석</td><td>모델마다 분포가 다름 → 순위로</td></tr>
+              </tbody>
+            </table>
+          </section>
+
+          <section class="slide" data-title="부록 D · 토론 주제" data-appendix>
+            <h2>부록 D · 토론 주제</h2>
+            <ol>
+              <li>“지급한다” vs “지급하지 않는다”가 비슷하게 나오면 RAG 답변에서 어떤 사고가 날 수 있나?</li>
+              <li>차원이 4배인 모델이 항상 더 좋은가? 비용과 품질을 어떻게 비교할까?</li>
+              <li>문서는 OpenAI 모델로, 질문은 e5로 임베딩하면 어떻게 될까?</li>
+              <li>2D 투영에서 한 무리로 보이는데 히트맵에서는 아닌 경우, 무엇을 믿어야 하나?</li>
+            </ol>
+            <aside class="notes">
+              <p>3번 정답: 서로 다른 벡터 공간이라 비교 자체가 무의미하다(차원도 다름). 모델을 바꾸면 전체 재색인이 필요하다 → 6주차 인덱스와 연결.</p>
+            </aside>
+          </section>
+
+          <section class="slide" data-title="부록 E · 평가 루브릭" data-appendix>
+            <h2>부록 E · 평가 루브릭</h2>
+            <table>
+              <thead><tr><th>항목</th><th>우수 (3)</th><th>보통 (2)</th><th>미흡 (1)</th></tr></thead>
+              <tbody>
+                <tr><td>구현 (C1·C3)</td><td>영벡터·정렬 처리, VectorStore와 일치</td><td>동작하나 예외 처리 누락</td><td>동작하지 않음</td></tr>
+                <tr><td>원리 (C2)</td><td>2 − 2cos를 유도하고 코드로 확인</td><td>코드 결과만</td><td>오답</td></tr>
+                <tr><td>분석 (C4·C5)</td><td>행렬·PCA 구현 + S7/분산 비율 해석</td><td>구현만</td><td>일부만</td></tr>
+                <tr><td>관찰·토론</td><td>모델 실패와 부정문 한계를 구분해 설명</td><td>현상만 서술</td><td>참여 없음</td></tr>
+              </tbody>
+            </table>
+          </section>
+
+        </div>
+          </div>
+        </div>
+        <section class="notes-pane" aria-label="교사 노트">
+          <button type="button" class="notes-head"><span>🧑‍🏫 교사 노트</span><span class="spacer"></span><span class="notes-next"></span><span class="notes-toggle">▾ 접기</span></button>
+          <div class="notes-body"></div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <script type="module">
+    import { initDeck } from '../../assets/js/site/slides.js';
+    import { initRunners } from '../../assets/js/site/runner.js';
+    import { mount } from '../../assets/js/widgets/w05-similarity.js';
+    initRunners(document.querySelector('.deck-stage'));
+    initDeck();
+    mount(document.getElementById('deck-w05-widget'), { outputTitle: '유사도 히트맵 (데모 슬라이드)' });
+  </script>
+</body>
+</html>

@@ -1,0 +1,202 @@
+/* w02 프롬프트 A/B 비교 — widget-specific styles (tokens only) */
+
+.w02-ab {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
+  gap: var(--space-3);
+}
+
+.w02-col {
+  display: grid;
+  align-content: start;
+  gap: var(--space-2);
+  min-width: 0;
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-top-width: 4px;
+  border-radius: var(--radius-md);
+  background: var(--color-bg);
+}
+
+.w02-col--A,
+.w02-card--A {
+  border-top-color: var(--color-accent2);
+}
+
+.w02-col--B,
+.w02-card--B {
+  border-top-color: var(--color-accent);
+}
+
+.w02-col__title {
+  margin: 0;
+  font-size: var(--text-sm);
+}
+
+.w02-col .field textarea {
+  min-height: 96px;
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+
+.w02-col .stat-row {
+  margin: 0;
+}
+
+.w02-check {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  font-size: var(--text-xs);
+}
+
+.w02-preview {
+  max-height: 260px;
+  margin: 6px 0 0;
+  padding: 8px 10px;
+  overflow: auto;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-2);
+  color: var(--color-text);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.w02-sources {
+  margin: 0 0 var(--space-3);
+}
+
+.w02-sources ol {
+  display: grid;
+  gap: 4px;
+  margin: 6px 0 0;
+  padding-left: 1.6em;
+  font-size: var(--text-sm);
+}
+
+.w02-inject {
+  padding: 0 2px;
+  border-radius: 3px;
+  background: var(--color-danger-soft);
+  color: var(--color-danger);
+}
+
+.w02-run {
+  margin: 0 0 var(--space-3);
+  padding: var(--space-3);
+  border: 1px dashed var(--color-border-strong);
+  border-radius: var(--radius-md);
+}
+
+.w02-run legend {
+  padding: 0 6px;
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-bold);
+}
+
+.w02-keystate {
+  margin: 8px 0 0;
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
+}
+
+/* output (terminal card or inline) */
+.w02-out .callout {
+  margin: 0 0 8px;
+  padding: 8px 12px;
+  font-size: 13px;
+}
+
+.w02-card {
+  min-width: 0;
+  padding: 8px 10px;
+  border: 1px solid var(--color-border);
+  border-top-width: 4px;
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: 13px;
+}
+
+.w02-card__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.w02-answer {
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-2);
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.w02-rubric {
+  display: grid;
+  gap: 3px;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 12.5px;
+}
+
+.w02-rubric li {
+  margin: 0;
+  padding: 3px 6px;
+  border-radius: var(--radius-sm);
+}
+
+.w02-rubric li span:last-child {
+  color: var(--color-text-muted);
+}
+
+.w02-rubric .is-pass {
+  background: var(--color-success-soft);
+}
+
+.w02-rubric .is-fail {
+  background: var(--color-danger-soft);
+}
+
+.w02-mark {
+  display: inline-block;
+  width: 1.2em;
+  font-weight: var(--weight-bold);
+}
+
+.is-pass .w02-mark {
+  color: var(--color-success);
+}
+
+.is-fail .w02-mark {
+  color: var(--color-danger);
+}
+
+.is-na .w02-mark {
+  color: var(--color-text-muted);
+}
+
+.w02-score {
+  margin-top: 6px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: var(--weight-bold);
+  text-align: right;
+}
+
+[data-w02] [aria-pressed="true"] {
+  border-color: var(--color-accent);
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+}

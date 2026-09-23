@@ -24,7 +24,7 @@
             <p>문서 파싱부터 평가까지, <b>동작하는 RAG를 직접 만든다</b>. 청킹·임베딩·검색은 설치 없이 <b>이 페이지 안에서</b> 돌아가고, 결과는 오른쪽 실행 결과 창에 바로 나온다. 마지막에는 내가 만든 시스템을 Recall@k와 Faithfulness로 측정한다.</p>
             <p>12주 · 주 1회 3시간 · 한국폴리텍대학 분당융합기술교육원 AI응용소프트웨어과</p>
             <div class="hero-actions">
-              <a class="btn" href="weeks/w04/">▶ 4주차 실습 시작</a>
+              <a class="btn" href="weeks/w01/">▶ 처음부터 시작 (1주차)</a>
               <a class="btn outline" href="teacher/">🧑‍🏫 교사용(PPT) 화면으로</a>
             </div>
             <div class="deco" aria-hidden="true">🧩</div>
@@ -43,33 +43,34 @@
 
           <h2 class="part-title">Part 1. LLM과 문서 준비 <small>LLM 기초 · 프롬프트 · 파싱</small></h2>
           <div class="cards">
-            <div class="card disabled"><span class="ci">🧠</span><span class="cn">01주차 · 준비 중</span><span class="ct">LLM 기초 &amp; RAG 필요성</span><span class="cs">토큰 카운터, 환각 체험 · LLM 키 선택</span></div>
-            <div class="card disabled"><span class="ci">✍️</span><span class="cn">02주차 · 준비 중</span><span class="ct">프롬프트 엔지니어링</span><span class="cs">프롬프트 A/B 비교 · LLM 키 필요</span></div>
-            <div class="card disabled"><span class="ci">📄</span><span class="cn">03주차 · 준비 중</span><span class="ct">문서 로딩 &amp; 파싱</span><span class="cs">PDF 텍스트 추출 뷰어</span></div>
+            <a class="card" href="weeks/w01/"><span class="ci">🧠</span><span class="cn">01주차 · ▶ 체험 · LLM 키 선택</span><span class="ct">LLM 기초 &amp; RAG 필요성</span><span class="cs">토큰 카운터 · 환각 체험 — 같은 뜻이라도 한국어가 토큰을 몇 배 쓰고, 근거 없는 답은 검증할 수 없다</span><span class="cp"><i data-week-progress="1"></i></span></a>
+            <a class="card" href="weeks/w02/"><span class="ci">✍️</span><span class="cn">02주차 · ▶ 체험 · LLM 키 필요</span><span class="ct">프롬프트 엔지니어링</span><span class="cs">프롬프트 A/B 비교 — 거절 지시 하나로 환각이 사라지는 순간</span><span class="cp"><i data-week-progress="2"></i></span></a>
+            <a class="card" href="weeks/w03/"><span class="ci">📄</span><span class="cn">03주차 · ▶ 체험</span><span class="ct">문서 로딩 &amp; 파싱</span><span class="cs">파싱 정제 뷰어 — OCR 오류·깨진 표·머리글을 단계별로 고친다</span><span class="cp"><i data-week-progress="3"></i></span></a>
           </div>
 
           <h2 class="part-title">Part 2. 검색 파이프라인 <small>청킹 · 임베딩 · 벡터스토어</small></h2>
           <div class="cards">
             <a class="card" href="weeks/w04/"><span class="ci">✂️</span><span class="cn">04주차 · 핵심 · ▶ 체험</span><span class="ct">청킹 전략</span><span class="cs">청킹 플레이그라운드 — 근거 문장이 청크 경계에서 잘리는 순간을 본다</span><span class="cp"><i data-week-progress="4"></i></span></a>
-            <div class="card disabled"><span class="ci">🧭</span><span class="cn">05주차 · 핵심 · 준비 중</span><span class="ct">임베딩 &amp; 유사도</span><span class="cs">유사도 히트맵 + 2D 투영</span></div>
-            <div class="card disabled"><span class="ci">🗄️</span><span class="cn">06주차 · 준비 중</span><span class="ct">벡터DB &amp; 인덱스</span><span class="cs">Flat vs HNSW 속도 비교</span></div>
+            <a class="card" href="weeks/w05/"><span class="ci">🧭</span><span class="cn">05주차 · 핵심 · ▶ 체험</span><span class="ct">임베딩 &amp; 유사도</span><span class="cs">유사도 히트맵 + 2D 투영 — 영어 전용 모델에서 주제가 섞이는 모습</span><span class="cp"><i data-week-progress="5"></i></span></a>
+            <a class="card" href="weeks/w06/"><span class="ci">🗄️</span><span class="cn">06주차 · ▶ 체험</span><span class="ct">벡터DB &amp; 인덱스</span><span class="cs">Flat vs HNSW — 빠른 대신 가장 가까운 이웃을 놓치는 조건</span><span class="cp"><i data-week-progress="6"></i></span></a>
           </div>
 
           <h2 class="part-title">Part 3. RAG 완성과 고도화 <small>최소 RAG · 하이브리드 검색 · 평가</small></h2>
           <div class="cards">
-            <div class="card disabled"><span class="ci">🔗</span><span class="cn">07주차 · 준비 중</span><span class="ct">최소 RAG 완성</span><span class="cs">전체 파이프라인 실행 · LLM 키 필요</span></div>
-            <div class="card disabled"><span class="ci">⚖️</span><span class="cn">08주차 · 핵심 · 준비 중</span><span class="ct">하이브리드 검색 + 리랭킹</span><span class="cs">BM25 vs 벡터 vs 하이브리드</span></div>
-            <div class="card disabled"><span class="ci">📊</span><span class="cn">09주차 · 핵심 · 준비 중</span><span class="ct">평가 데이터셋 &amp; 측정</span><span class="cs">점수판(Recall@k, nDCG)</span></div>
+            <a class="card" href="weeks/w07/"><span class="ci">🔗</span><span class="cn">07주차 · ▶ 체험 · LLM 키 필요</span><span class="ct">최소 RAG 완성</span><span class="cs">전체 파이프라인 — 단계별 산출물과 시간, 검색 실패가 답을 망치는 과정</span><span class="cp"><i data-week-progress="7"></i></span></a>
+            <a class="card" href="weeks/w08/"><span class="ci">⚖️</span><span class="cn">08주차 · 핵심 · ▶ 체험</span><span class="ct">하이브리드 검색 + 리랭킹</span><span class="cs">BM25 vs 벡터 vs 하이브리드 — 서로의 실패를 RRF로 메운다</span><span class="cp"><i data-week-progress="8"></i></span></a>
+            <a class="card" href="weeks/w09/"><span class="ci">📊</span><span class="cn">09주차 · 핵심 · ▶ 체험 · LLM 키 선택</span><span class="ct">평가 데이터셋 &amp; 측정</span><span class="cs">점수판 — Recall@k · MRR · nDCG로 설정을 숫자로 비교한다</span><span class="cp"><i data-week-progress="9"></i></span></a>
           </div>
 
           <h2 class="part-title">Part 4. 서비스와 프로젝트 <small>리팩터링 · 웹 UI · 발표</small></h2>
           <div class="cards">
-            <div class="card disabled"><span class="ci">🧰</span><span class="cn">10주차 · 준비 중</span><span class="ct">프레임워크 리팩터링</span><span class="cs">코드 비교 뷰어</span></div>
-            <div class="card disabled"><span class="ci">💬</span><span class="cn">11주차 · 준비 중</span><span class="ct">웹 UI + 인용 표기</span><span class="cs">인용 하이라이트 데모 · LLM 키 필요</span></div>
-            <div class="card disabled"><span class="ci">🏁</span><span class="cn">12주차 · 준비 중</span><span class="ct">팀 프로젝트 발표</span><span class="cs">팀별 결과 업로드</span></div>
+            <a class="card" href="weeks/w10/"><span class="ci">🧰</span><span class="cn">10주차 · ▶ 체험</span><span class="ct">프레임워크 리팩터링</span><span class="cs">코드 비교 뷰어 — LangChain·LlamaIndex의 숨은 기본값</span><span class="cp"><i data-week-progress="10"></i></span></a>
+            <a class="card" href="weeks/w11/"><span class="ci">💬</span><span class="cn">11주차 · ▶ 체험 · LLM 키 필요</span><span class="ct">웹 UI + 인용 표기</span><span class="cs">인용 하이라이트 — 틀린 인용과 인용 없는 주장을 잡아낸다</span><span class="cp"><i data-week-progress="11"></i></span></a>
+            <a class="card" href="weeks/w12/"><span class="ci">🏁</span><span class="cn">12주차 · ▶ 체험</span><span class="ct">팀 프로젝트 발표</span><span class="cs">팀별 결과 업로드 — 결과 JSON으로 팀 점수판을 만든다</span><span class="cp"><i data-week-progress="12"></i></span></a>
           </div>
 
           <h2>시작하기 전에</h2>
+          <p>이론 보충: <a href="theory/embedding-models.html">📚 한국어 임베딩 모델 비교</a> (KURE · BGE-M3 · e5 · OpenAI)</p>
           <ol class="steps">
             <li><b>최신 크롬·엣지를 쓴다.</b> 5주차부터 임베딩 모델(약 120MB)을 처음 한 번 내려받고, 이후에는 브라우저 캐시에서 바로 불러온다.</li>
             <li><b>화면 구성:</b> 왼쪽 강의 목록 · 가운데 강의 내용 · 오른쪽 실행 결과. 경계선을 끌어 너비를 바꿀 수 있다.</li>

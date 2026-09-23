@@ -1,0 +1,382 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>1주차 LLM 기초 &amp; RAG 필요성 · RAG Lab</title>
+  <meta name="description" content="LLM 기초와 RAG 필요성: 토큰을 직접 세어 한국어의 비용과 컨텍스트 창을 확인하고, 문맥 없는 LLM의 환각과 근거를 붙인 답을 나란히 비교한다.">
+  <script>try{var t=JSON.parse(localStorage.getItem('raglab:theme'));if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+  <link rel="stylesheet" crossorigin="anonymous" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&display=swap">
+  <link rel="stylesheet" href="../../assets/css/tokens.css">
+  <link rel="stylesheet" href="../../assets/css/base.css">
+  <link rel="stylesheet" href="../../assets/css/components.css">
+  <link rel="stylesheet" href="../../assets/css/w01.css">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%232450c4'/%3E%3Ccircle cx='14' cy='14' r='6' fill='none' stroke='white' stroke-width='3'/%3E%3Cpath d='M19 19l6 6' stroke='white' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E">
+  <script type="module" src="../../assets/js/site/site.js"></script>
+</head>
+<body>
+  <div class="layout" data-layout data-role="student" data-week="1" data-crumb="PART 1 · LLM과 문서 준비 › <b>1주차 · LLM 기초 &amp; RAG 필요성</b>">
+    <main class="pane center" id="main">
+      <div class="content" tabindex="-1">
+        <article class="doc">
+      <span class="chapter-badge">🧠 1주차 · LLM 기초 &amp; RAG 필요성</span>
+      <h1>LLM은 우리 학과를 모른다</h1>
+      <p class="lead">대규모 언어 모델(LLM, Large Language Model)은 유창하게 답하지만, 배운 적 없는 내용도 자신 있게 지어낸다. 이번 주는 LLM이 글을 읽는 단위인 토큰을 직접 세어 보고, 근거 없이 물을 때와 근거를 붙여 물을 때의 차이를 눈으로 확인한다.</p>
+      <div class="meta-row">
+        <span class="chip">⏱ 180분</span>
+        <span class="chip accent">▶ 체험: 토큰 카운터 · 환각 체험</span>
+        <span class="chip">🧪 Challenge 5개</span>
+        <span class="chip">🔑 LLM API 키 선택</span>
+      </div>
+      <div class="flow" aria-label="RAG 파이프라인에서 이번 주의 위치">
+        <div>문서 파싱</div><div>청킹</div><div>임베딩</div><div>벡터스토어</div><div>검색</div><div><b>생성</b></div><div>평가</div>
+      </div>
+
+      <section id="goals">
+        <h2><span class="section-num">1</span>학습 목표</h2>
+        <div class="goals">
+        <b>이번 주가 끝나면</b>
+        <ul>
+          <li>LLM이 텍스트를 토큰 단위로 처리한다는 것을 설명하고, 한국어와 영어의 토큰 수 차이를 비용과 컨텍스트 창 사용률로 환산할 수 있다.</li>
+          <li>환각이 왜 생기는지, 근거 없는 답을 왜 검증할 수 없는지 설명할 수 있다.</li>
+          <li>질문과 근거 문서로 근거 기반 프롬프트를 만들고, 답이 골든 정답을 포함하는지 판정하는 코드를 작성할 수 있다.</li>
+        </ul>
+        </div>
+      </section>
+
+      <section id="why">
+        <h2><span class="section-num">2</span>왜 필요한가</h2>
+        <p>범용 LLM에게 이렇게 물어본다. “실습실에서 GPU 서버를 한 사람이 연속으로 쓸 수 있는 최대 시간은?” 흔히 돌아오는 답은 이런 모양이다.</p>
+        <div class="callout callout--danger">
+          <span class="callout__title">그럴듯하지만 틀린 답</span>
+          <p>“대학 실습실의 GPU 서버는 공정한 배분을 위해 보통 1회 4시간 정도로 사용 시간을 제한한다.”</p>
+        </div>
+        <p>우리 학과 <em>실습실 이용 규정</em>에는 “한 사람이 연속으로 사용할 수 있는 시간은 최대 12시간이다.”라고 적혀 있다. LLM은 이 문서를 학습한 적이 없다. 그래서 “대학 실습실이라면 보통 이렇다”는 패턴으로 빈칸을 채운다. 이것을 환각(hallucination)이라 한다. 더 큰 문제는 답이 우연히 맞더라도 <strong>어디서 나온 숫자인지 알 수 없어 검증할 방법이 없다</strong>는 점이다.</p>
+        <p>그럼 학과 문서를 전부 프롬프트에 붙여 넣으면 될까? 우리 문서셋 12개만 해도 GPT-2 토크나이저로 세면 8,848토큰이다. 컨텍스트 창이 8,192토큰인 모델에는 들어가지도 않는다. 실제 학과 문서는 수천 개이고, 넣는 만큼 매번 비용을 낸다.</p>
+        <p>결론은 하나다. <strong>질문과 관련된 부분만 찾아서 넣어야 한다.</strong> 이것이 이 과목 전체의 주제인 검색증강생성(RAG, Retrieval-Augmented Generation)이다.</p>
+      </section>
+
+      <section id="concept">
+        <h2><span class="section-num">3</span>개념</h2>
+
+        <h3>LLM은 다음 토큰을 예측한다</h3>
+        <figure class="figure">
+          <svg viewBox="0 0 640 200" role="img" aria-labelledby="next-fig-title" style="width: 100%">
+            <title id="next-fig-title">입력 토큰 열을 받은 LLM이 다음 토큰 후보의 확률을 계산하는 모습</title>
+            <style>
+              .w01f-lbl { font: 600 13px var(--font-sans); fill: var(--color-text); }
+              .w01f-tk { fill: var(--color-accent-soft); stroke: var(--color-accent); }
+              .w01f-box { fill: var(--color-surface-2); stroke: var(--color-border-strong); }
+              .w01f-bar { fill: var(--color-accent2); }
+              .w01f-bar-ok { fill: var(--color-success); }
+              .w01f-note { font: 12px var(--font-sans); fill: var(--color-text-muted); }
+              .w01f-arr { stroke: var(--color-text-muted); stroke-width: 2; fill: none; marker-end: url(#w01-arrow); }
+            </style>
+            <defs><marker id="w01-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="var(--color-text-muted)"/></marker></defs>
+            <rect class="w01f-tk" x="0" y="40" width="58" height="30" rx="6"/><text class="w01f-lbl" x="10" y="60">실습실</text>
+            <rect class="w01f-tk" x="62" y="40" width="46" height="30" rx="6"/><text class="w01f-lbl" x="72" y="60">GPU</text>
+            <rect class="w01f-tk" x="112" y="40" width="46" height="30" rx="6"/><text class="w01f-lbl" x="120" y="60">최대</text>
+            <rect class="w01f-tk" x="162" y="40" width="34" height="30" rx="6"/><text class="w01f-lbl" x="172" y="60">…</text>
+            <text class="w01f-note" x="0" y="96">입력: 토큰 열</text>
+            <path class="w01f-arr" d="M204 55 H250"/>
+            <rect class="w01f-box" x="256" y="25" width="120" height="60" rx="10"/><text class="w01f-lbl" x="296" y="60">LLM</text>
+            <path class="w01f-arr" d="M382 55 H420"/>
+            <text class="w01f-lbl" x="430" y="30">다음 토큰 후보</text>
+            <text class="w01f-lbl" x="430" y="56">4시간</text><rect class="w01f-bar" x="490" y="44" width="110" height="14" rx="3"/>
+            <text class="w01f-lbl" x="430" y="80">8시간</text><rect class="w01f-bar" x="490" y="68" width="78" height="14" rx="3"/>
+            <text class="w01f-lbl" x="430" y="104">12시간</text><rect class="w01f-bar-ok" x="490" y="92" width="52" height="14" rx="3"/>
+            <text class="w01f-note" x="430" y="128">확률은 설명용 예시</text>
+            <text class="w01f-note" x="0" y="160">학습 데이터에 “대학 실습실 일반”은 많고 “우리 학과 규정”은 없다.</text>
+            <text class="w01f-note" x="0" y="180">그래서 가장 그럴듯한 후보(4시간)가 뽑히고, 정답(12시간)은 확률이 낮다.</text>
+          </svg>
+          <figcaption>LLM은 “사실을 찾아보는” 기계가 아니라 “다음에 올 토큰의 확률을 계산하는” 기계다. 답을 모를 때도 무언가는 반드시 출력한다.</figcaption>
+        </figure>
+        <p>LLM은 학습 시점까지 본 텍스트에서 “어떤 토큰 다음에 어떤 토큰이 오는가”를 배운 모델이다. 학습이 끝난 뒤의 정보, 공개되지 않은 조직 내부 문서는 모델 안에 없다. 모르는 것 자체는 정상이다. 문제는 모를 때도 문법적으로 완벽하고 자신 있는 문장을 만든다는 점이다.</p>
+
+        <h3>토큰과 토크나이저</h3>
+        <p>LLM은 글자를 그대로 읽지 않는다. 토크나이저(tokenizer)가 텍스트를 토큰(token)이라는 조각으로 자르고, 각 조각을 번호로 바꾼 것이 입력이 된다. GPT 계열이 쓰는 바이트 단위 BPE(Byte Pair Encoding)는 텍스트를 UTF-8 바이트로 바꾼 뒤, 학습 데이터에서 자주 붙어 나온 바이트 조합을 하나의 토큰으로 합쳐 어휘를 만든다.</p>
+        <p>한글 음절 하나는 UTF-8로 3바이트다. 영어 위주로 학습한 GPT-2 어휘에는 한글 바이트 조합이 거의 합쳐져 있지 않아서 음절 하나가 토큰 2~3개로 쪼개진다. 다국어 데이터로 어휘를 만든 GPT-4o 토크나이저는 “서버”, “시간” 같은 단어를 토큰 하나로 가진다. 같은 문장을 실제로 세면 다음과 같다.</p>
+        <table>
+          <thead><tr><th>문장 (같은 뜻)</th><th>문자</th><th>GPT-2</th><th>GPT-4o</th></tr></thead>
+          <tbody>
+            <tr><td>GPU 규정 · 한국어</td><td>84</td><td>161</td><td>43</td></tr>
+            <tr><td>GPU 규정 · 영어</td><td>167</td><td>35</td><td>36</td></tr>
+            <tr><td>코퍼스 12문서 전체 · 한국어</td><td>4,613</td><td>8,848</td><td>2,660</td></tr>
+          </tbody>
+        </table>
+        <p>GPT-2에서 한국어는 같은 뜻의 영어보다 토큰을 약 <strong>4.6배</strong> 쓴다. GPT-4o에서는 약 1.2배로 줄어든다. 문자 수만 보면 한국어가 영어의 절반인데도 그렇다.</p>
+
+        <h3>컨텍스트 창과 비용</h3>
+        <p>컨텍스트 창(context window)은 모델이 한 번에 받을 수 있는 최대 토큰 수다. 시스템 지시, 붙여 넣은 문서, 질문, 그리고 모델이 생성할 답까지 모두 이 안에 들어가야 한다. API 요금도 토큰 수로 매긴다. 그래서 토큰 수는 곧 “얼마나 넣을 수 있는가”이자 “얼마를 내는가”다.</p>
+        <pre><code class="language-text">창 사용률 = 입력 토큰 / 창 크기          예) 8,848 / 8,192 = 108% → 넘친다
+입력 비용 = 입력 토큰 × (100만 토큰당 단가) / 1,000,000</code></pre>
+
+        <h3>환각을 줄이는 방법: 근거를 넣어 준다</h3>
+        <p>모델이 모르는 사실은 입력으로 넣어 주면 된다. 프롬프트에 근거 문서를 붙이고 “이 문서만 보고 답하라, 없으면 모른다고 하라”고 지시하면, 모델은 확률 대신 눈앞의 문장을 옮긴다. 답에 근거 번호를 달게 하면 사람이 원문과 대조해 검증할 수 있다.</p>
+        <figure class="figure">
+          <svg viewBox="0 0 640 150" role="img" aria-labelledby="rag-fig-title" style="width: 100%">
+            <title id="rag-fig-title">질문이 검색을 거쳐 근거와 함께 LLM에 들어가고 인용이 달린 답이 나오는 RAG 흐름</title>
+            <style>
+              .w01f-lbl2 { font: 600 13px var(--font-sans); fill: var(--color-text); }
+              .w01f-st { fill: var(--color-surface-2); stroke: var(--color-border-strong); }
+              .w01f-st-hi { fill: var(--color-accent2-soft); stroke: var(--color-accent2); }
+              .w01f-note2 { font: 12px var(--font-sans); fill: var(--color-text-muted); }
+              .w01f-arr2 { stroke: var(--color-text-muted); stroke-width: 2; fill: none; marker-end: url(#w01-arrow2); }
+            </style>
+            <defs><marker id="w01-arrow2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="var(--color-text-muted)"/></marker></defs>
+            <rect class="w01f-st" x="0" y="30" width="80" height="44" rx="8"/><text class="w01f-lbl2" x="24" y="57">질문</text>
+            <path class="w01f-arr2" d="M84 52 H110"/>
+            <rect class="w01f-st" x="114" y="30" width="96" height="44" rx="8"/><text class="w01f-lbl2" x="146" y="57">검색</text>
+            <text class="w01f-note2" x="114" y="94">문서셋에서 관련</text><text class="w01f-note2" x="114" y="110">청크 몇 개만</text>
+            <path class="w01f-arr2" d="M214 52 H240"/>
+            <rect class="w01f-st-hi" x="244" y="30" width="150" height="44" rx="8"/><text class="w01f-lbl2" x="256" y="57">프롬프트 = 근거 + 질문</text>
+            <path class="w01f-arr2" d="M398 52 H424"/>
+            <rect class="w01f-st" x="428" y="30" width="80" height="44" rx="8"/><text class="w01f-lbl2" x="452" y="57">LLM</text>
+            <path class="w01f-arr2" d="M512 52 H538"/>
+            <rect class="w01f-st" x="542" y="30" width="98" height="44" rx="8"/><text class="w01f-lbl2" x="552" y="57">답 + 인용 [1]</text>
+            <text class="w01f-note2" x="244" y="94">이번 주 실습: 근거를 사람이 직접 붙인다</text>
+            <text class="w01f-note2" x="244" y="110">7주차: 검색이 자동으로 붙인다</text>
+          </svg>
+          <figcaption>RAG의 뼈대. 이번 주 환각 체험 위젯의 B는 “검색” 자리를 사람이 대신한 것이다. 4~8주차에 이 검색을 직접 만든다.</figcaption>
+        </figure>
+        <table>
+          <thead><tr><th>방법</th><th>새 정보 반영</th><th>근거 제시</th><th>비용</th></tr></thead>
+          <tbody>
+            <tr><td>그냥 묻기</td><td>불가</td><td>불가</td><td>가장 싸다</td></tr>
+            <tr><td>파인튜닝(fine-tuning)</td><td>재학습해야 반영</td><td>어렵다</td><td>학습 비용이 크다</td></tr>
+            <tr><td>문서 전체를 붙이기</td><td>즉시</td><td>가능</td><td>매 질문마다 전체 토큰, 창을 넘으면 불가</td></tr>
+            <tr><td>RAG</td><td>문서만 추가하면 즉시</td><td>가능</td><td>관련 부분의 토큰만</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="lab">
+        <h2><span class="section-num">4</span>실습</h2>
+        <p>위젯 두 개로 이번 주 개념을 직접 확인한다. 결과는 오른쪽 <b>실행 결과</b> 창에 실시간으로 표시된다(휴대폰에서는 위젯 바로 아래).</p>
+
+        <h3>4-1. 토큰 카운터</h3>
+        <p>브라우저 안에서 실제 GPT-4o 토크나이저와 GPT-2 토크나이저를 내려받아 토큰을 센다(최초 1회 약 12MB, 이후 캐시). 문자 수는 바로 나오고 토큰 수는 토크나이저가 준비되면 채워진다. 점선 상자는 여러 토큰이 합쳐져야 글자 하나가 되는 곳이다.</p>
+        <div id="w01-tokens"></div>
+        <h4>관찰 질문</h4>
+        <ol>
+          <li>처음 문장(GPU 규정)에서 GPT-2와 GPT-4o의 “한국어 토큰 / 영어 토큰” 배수는 각각 얼마인가? 토큰 조각을 GPT-2로 놓고 점선 상자 안의 숫자를 확인한다.</li>
+          <li>영어 칸에 “GPU”, “12”처럼 한국어 문장에도 들어 있는 단어가 있다. 이 부분은 두 토크나이저에서 토큰 수가 비슷한가?</li>
+          <li><strong>코퍼스 전체 12문서</strong> 프리셋을 누른다. 컨텍스트 창을 1,024 → 8,192 → 128,000으로 바꾸며, 어느 토크나이저가 어느 창에서 넘치는지 기록한다.</li>
+          <li>한국어 칸에 자기 이름과 학번을 쓰고 토큰 수를 센다. 이름처럼 흔하지 않은 단어는 어떻게 잘리는가?</li>
+        </ol>
+
+        <h3>4-2. 환각 체험</h3>
+        <p>골든셋(<code>assets/data/golden/golden.json</code>)에서 답이 우리 학과 문서에만 있는 질문 세 개를 골랐다. A는 질문만, B는 같은 질문에 근거 문서를 붙여 보낸다. API 키가 없으면 <b>예시 응답 · 수업용 작성 예시</b>가 표시되고, 키를 넣으면 같은 두 프롬프트를 실제 LLM에 보낸다. 키는 이 탭의 <code>sessionStorage</code>에만 저장되고 탭을 닫으면 사라진다.</p>
+        <div id="w01-hallucination"></div>
+        <h4>관찰 질문</h4>
+        <ol>
+          <li>세 질문 모두에서 A의 숫자는 무엇이고 골든 정답과 얼마나 다른가? A의 말투는 틀린 만큼 조심스러운가?</li>
+          <li>A 카드의 “보낸 프롬프트”와 B 카드의 “보낸 프롬프트”를 펼쳐 글자 수를 비교한다. 정답을 얻은 대가로 입력이 몇 배 늘었나?</li>
+          <li>(키가 있다면) 실제 LLM의 A 답은 “모른다”고 하는가, 숫자를 지어내는가? “모른다”는 답은 환각보다 나은가, 그래도 부족한가?</li>
+          <li>B가 맞았다는 것을 우리는 어떻게 확인했나? 골든셋이 없다면 무엇으로 확인할 수 있을까?</li>
+        </ol>
+      </section>
+
+      <section id="challenge">
+        <h2><span class="section-num">5</span>Challenge</h2>
+        <p>난이도 순서다. 코드 상자는 직접 고칠 수 있고, <strong>▶ 실행</strong>(또는 Ctrl+Enter)을 누르면 결과가 오른쪽 <b>실행 결과</b> 창에 나온다(휴대폰에서는 코드 바로 아래). 코드는 페이지와 분리된 워커에서 돌아가므로 10초가 넘으면 자동으로 멈춘다. 모든 Challenge는 LLM 호출 없이 돌아간다. <code>/assets/…</code> 경로는 사이트 루트 기준이다.</p>
+
+        <div class="practice">
+          <div class="practice-head"><b>C1. 토큰 수 어림하기</b><span class="level" aria-label="난이도 1">★</span></div>
+          <div class="practice-body">
+          <p>토크나이저 없이 GPT-2 토큰 수를 어림하는 함수를 만든다. 실제 토큰 수가 주어져 있으니 계수를 바꿔 가며 네 문장 모두 오차 ±10% 이내로 맞춘다. 한글 음절 하나가 몇 바이트인지 떠올리면 계수가 보인다.</p>
+          <pre data-run="c1" data-title="C1 토큰 수 어림"><code class="language-javascript">// 실제 토큰 수는 Transformers.js 토크나이저로 미리 센 값이다
+const samples = [
+  { name: 'GPU 규정(한)', text: 'GPU 서버에 장시간 학습 작업을 실행할 때는 공용 캘린더에 사용 시간을 등록해야 하며, 한 사람이 연속으로 사용할 수 있는 시간은 최대 12시간이다.', gpt2: 161, gpt4o: 43 },
+  { name: 'GPU 규정(영)', text: 'When running a long training job on the GPU server, you must register the usage time on the shared calendar, and one person may use it continuously for up to 12 hours.', gpt2: 35, gpt4o: 36 },
+  { name: '성적 비율(한)', text: '성적 평가는 주차별 실습 과제 30%, 중간 점검 20%, 팀 프로젝트 40%, 수업 참여 10%로 구성된다.', gpt2: 103, gpt4o: 36 },
+  { name: '성적 비율(영)', text: 'The grade consists of weekly lab assignments 30%, a midterm check 20%, the team project 40%, and class participation 10%.', gpt2: 24, gpt4o: 29 },
+];
+
+function estimateTokens(text) {
+  // TODO: 한글 음절 수(/[가-힣]/g)와 나머지 공백 아닌 문자 수(/[^\s가-힣]/g)를 센다
+  // TODO: 영어·숫자·기호는 약 4문자당 1토큰으로 본다
+  // TODO: 한글 음절 하나는 GPT-2에서 몇 토큰일까? 위 실제 값을 보고 계수를 정한다
+  return 0;
+}
+
+console.table(samples.map((s) =&gt; {
+  const est = estimateTokens(s.text);
+  return { name: s.name, chars: [...s.text].length, est, gpt2: s.gpt2, errPct: Math.round(((est - s.gpt2) / s.gpt2) * 100) };
+}));
+// 목표: 네 문장 모두 오차 ±10% 이내
+// TODO: GPT-2와 GPT-4o 각각 "한국어 토큰 / 영어 토큰" 배수를 출력한다</code></pre>
+          </div>
+        </div>
+
+        <div class="practice">
+          <div class="practice-head"><b>C2. 컨텍스트 창과 비용 계산</b><span class="level" aria-label="난이도 1">★</span></div>
+          <div class="practice-body">
+          <p>코퍼스 전체를 매번 붙여 넣는 방식과 RAG로 관련 청크 3개만 넣는 방식을 비교한다. 단가는 계산 연습용 가상 값이다. 먼저 손으로 어림한 뒤 코드로 검산한다.</p>
+          <pre data-run="c2" data-title="C2 창과 비용"><code class="language-javascript">const corpusTokens = { gpt2: 8848, gpt4o: 2660 }; // 코퍼스 12문서 전체 (실측)
+const windows = [1024, 8192, 128000];
+const PRICE_PER_1M = 0.4;   // 가상 단가: 입력 100만 토큰당 0.4달러
+const queries = 30 * 20;    // 학생 30명 × 질문 20개
+const questionTokens = 20;
+const ragTokens = 370;      // 질문 20 + 검색된 청크 3개 350 (가정)
+
+// TODO 1: 창 크기별로 코퍼스 전체가 차지하는 비율(%)을 gpt2, gpt4o 각각 console.table로 출력
+// TODO 2: 매 질문마다 코퍼스 전체(gpt4o) + 질문을 넣을 때 총 입력 토큰과 비용(달러)
+// TODO 3: RAG로 ragTokens만 넣을 때 총 입력 토큰과 비용, 몇 배 적게 쓰는지
+// TODO 4: 문서가 5,000개로 늘면(문서당 평균 토큰 동일) 128K 창의 몇 %인가?
+console.log('계산을 채운다');</code></pre>
+          </div>
+        </div>
+
+        <div class="practice">
+          <div class="practice-head"><b>C3. 근거 기반 프롬프트 만들기</b><span class="level" aria-label="난이도 2">★★</span></div>
+          <div class="practice-body">
+          <p>질문과 근거 문서 목록을 받아 프롬프트 문자열을 만드는 <code>groundedPrompt</code>를 작성한다. 아래 다섯 가지 검사가 모두 <code>true</code>가 되어야 한다. 이 함수는 7주차 최소 RAG에서 그대로 다시 쓴다.</p>
+          <pre data-run="c3" data-title="C3 근거 기반 프롬프트"><code class="language-javascript">const corpus = await (await fetch('/assets/data/corpus/corpus.json')).json();
+const golden = await (await fetch('/assets/data/golden/golden.json')).json();
+const docById = Object.fromEntries(corpus.documents.map((d) =&gt; [d.id, d]));
+
+function groundedPrompt(question, evidences) {
+  // TODO: 규칙 3줄 — ① 근거 문서만 사용 ② 근거에 없으면 "문서에서 찾을 수 없다" ③ 근거 번호 [1] 표기
+  // TODO: 근거를 "[1] (문서 제목)\n본문" 형식으로 번호를 붙여 잇는다. 근거가 0개일 때도 처리한다
+  // TODO: 맨 끝에 질문을 둔다
+  return '';
+}
+
+const item = golden.items.find((it) =&gt; it.id === 'q01');
+const evidences = item.evidence.map((e) =&gt; ({ title: docById[e.doc].title, text: docById[e.doc].text }));
+const prompt = groundedPrompt(item.question, evidences);
+console.log(prompt);
+console.table({
+  질문포함: prompt.includes(item.question),
+  근거문장포함: prompt.includes(item.evidence[0].quote),
+  번호표기: prompt.includes('[1]'),
+  질문이마지막: prompt.trimEnd().endsWith(item.question),
+  근거없음처리: groundedPrompt('와이파이 비밀번호는?', []).includes('찾을 수 없다'),
+});</code></pre>
+          </div>
+        </div>
+
+        <div class="practice">
+          <div class="practice-head"><b>C4. 답에 골든 사실이 들어 있는가</b><span class="level" aria-label="난이도 3">★★★</span></div>
+          <div class="practice-body">
+          <p>환각 체험 위젯의 ✓/✗ 판정을 직접 구현한다. 골든 정답에서 핵심 사실(숫자와 단위)을 뽑고, 공백과 표기 차이(“12 시간”, “40 퍼센트”)를 정규화한 뒤 포함 여부를 판정한다. 기대 결과는 <code>ok</code> 열이 위에서부터 false, true, false, true, false, true, false, false다. 마지막 “열두 시간”이 false가 되는 것은 이 방법의 한계다.</p>
+          <pre data-run="c4" data-title="C4 골든 사실 판정"><code class="language-javascript">const golden = await (await fetch('/assets/data/golden/golden.json')).json();
+const byId = Object.fromEntries(golden.items.map((it) =&gt; [it.id, it]));
+
+// 숫자 + 단위를 찾는 정규식 (제공)
+const CLAIM_RE = /\d+(?:\.\d+)?\s*(?:%|퍼센트|시간|교시|학점|호|명|주|회)?/g;
+
+function normalize(s) {
+  // TODO: NFKC 정규화, 소문자, '퍼센트' → '%', 모든 공백 제거
+  return String(s);
+}
+
+function goldenFacts(answer) {
+  // TODO: 정답에서 숫자+단위를 뽑아 normalize (예: "최대 12시간이다." → ["12시간"])
+  // TODO: 숫자가 없으면 정답 문장 전체를 normalize해서 쓴다
+  return [];
+}
+
+function containsGoldenFact(text, goldenAnswer) {
+  // TODO: normalize(text)에 모든 핵심 사실이 들어 있으면 true
+  // TODO: 함정 — "112시간"은 "12시간"을 포함하지만 정답이 아니다
+  return false;
+}
+
+const answers = [
+  { q: 'q01', text: '보통 1회 4시간 정도로 제한한다.' },
+  { q: 'q01', text: '최대 12 시간이다 [1].' },
+  { q: 'q01', text: '112시간까지 가능하다.' },
+  { q: 'q02', text: '팀 프로젝트는 40 퍼센트다.' },
+  { q: 'q02', text: '30% 안팎이다.' },
+  { q: 'q03', text: '출석률 80% 이상과 최종 발표 통과다.' },
+  { q: 'q03', text: '출석률 90% 이상이다.' },
+  { q: 'q01', text: '열두 시간이다.' },
+];
+console.table(answers.map((a) =&gt; ({ q: a.q, answer: a.text, facts: goldenFacts(byId[a.q].answer).join(','), ok: containsGoldenFact(a.text, byId[a.q].answer) })));</code></pre>
+          </div>
+        </div>
+
+        <div class="practice">
+          <div class="practice-head"><b>C5. 가짜 LLM으로 “검증 가능성” 실험하기</b><span class="level" aria-label="난이도 4">★★★★</span></div>
+          <div class="practice-body">
+          <p>실제 LLM 대신 동작이 뻔히 보이는 가짜 LLM(<code>mockLLM</code>)으로 실험한다. 문맥이 없으면 그럴듯한 시간을 무작위로 지어내고, 근거가 있으면 가장 비슷한 문장을 인용한다. 두 모드를 20번씩 돌려 정답률과 <em>검증 가능률</em>(인용이 코퍼스 원문에 그대로 있고 그 안에 정답이 있는 비율)을 비교한다. 문맥 없는 답이 가끔 맞더라도 검증 가능률이 왜 0인지 설명한다.</p>
+          <pre data-run="c5" data-title="C5 검증 가능성 실험"><code class="language-javascript">const corpus = await (await fetch('/assets/data/corpus/corpus.json')).json();
+const golden = await (await fetch('/assets/data/golden/golden.json')).json();
+const item = golden.items.find((it) =&gt; it.id === 'q01');
+const evidenceDoc = corpus.documents.find((d) =&gt; d.id === item.evidence[0].doc);
+
+// ---- 제공: 재현 가능한 난수와 가짜 LLM ----
+function mulberry32(seed) {
+  return () =&gt; {
+    seed = (seed + 0x6d2b79f5) | 0;
+    let t = Math.imul(seed ^ (seed &gt;&gt;&gt; 15), 1 | seed);
+    t = (t + Math.imul(t ^ (t &gt;&gt;&gt; 7), 61 | t)) ^ t;
+    return ((t ^ (t &gt;&gt;&gt; 14)) &gt;&gt;&gt; 0) / 4294967296;
+  };
+}
+const rand = mulberry32(42);
+const bigrams = (s) =&gt; new Set([...s.replace(/\s+/g, '')].map((c, i, a) =&gt; c + (a[i + 1] ?? '')));
+
+// 근거가 있으면 질문과 가장 비슷한 문장을 인용하고, 없으면 그럴듯한 값을 지어낸다
+function mockLLM(question, context = null) {
+  if (context) {
+    const q = bigrams(question);
+    const sentences = context.split(/(?&lt;=다\.)\s*/);
+    const best = sentences
+      .map((s) =&gt; ({ s, score: [...bigrams(s)].filter((b) =&gt; q.has(b)).length }))
+      .sort((a, b) =&gt; b.score - a.score)[0].s.trim();
+    return { answer: best, cite: best };
+  }
+  const guesses = ['4시간', '6시간', '8시간', '12시간', '24시간'];
+  return { answer: `보통 최대 ${guesses[Math.floor(rand() * guesses.length)]}이다.`, cite: null };
+}
+const hasFact = (text) =&gt; /(?&lt;!\d)12\s*시간/.test(text);
+// ---- 여기부터 작성 ----
+
+function verify(result) {
+  // TODO: 인용(cite)이 있고, 그 인용이 코퍼스 원문에 그대로 있고, 인용 안에 정답 사실이 있으면 true
+  return false;
+}
+
+// TODO: '문맥 없음'과 '근거 포함' 두 모드로 각각 20번 mockLLM을 호출한다
+// TODO: 모드별 정답률(hasFact(answer)), 검증 가능률(verify), 서로 다른 답의 개수를 console.table로 출력
+console.log(mockLLM(item.question), mockLLM(item.question, evidenceDoc.text));</code></pre>
+          </div>
+        </div>
+      </section>
+
+      <section id="wrap">
+        <h2><span class="section-num">6</span>정리 &amp; 다음 주 예고</h2>
+        <ul>
+          <li>LLM은 다음 토큰의 확률을 계산하는 모델이다. 학습하지 않은 사실을 물으면 모른다고 하기보다 그럴듯한 값을 만든다(환각).</li>
+          <li>LLM은 글자가 아니라 토큰을 읽는다. 영어 중심 토크나이저에서 한국어는 같은 뜻의 영어보다 토큰을 4배 넘게 쓰고, 그만큼 창을 빨리 채우고 비용이 든다.</li>
+          <li>근거 문서를 프롬프트에 넣으면 같은 모델도 정확히 답하고, 답을 원문과 대조해 검증할 수 있다.</li>
+          <li>문서를 통째로 넣는 방법은 창과 비용의 벽에 막힌다. 관련 부분만 찾아 넣는 것, 이것이 RAG다.</li>
+        </ul>
+        <p><strong>다음 주(2주차 프롬프트 엔지니어링)</strong>에는 이번 주 C3에서 만든 근거 기반 프롬프트를 다듬는다. 지시문, 역할, 출력 형식, 예시를 바꾼 두 프롬프트를 A/B로 비교하며, 같은 근거로도 프롬프트에 따라 답의 정확도와 형식이 어떻게 달라지는지 본다. 2주차는 LLM API 키가 필요하다.</p>
+      </section>
+
+      <div class="section-end">
+        <label class="done-toggle">
+          <input type="checkbox" data-done-toggle="1"> ✅ 1주차 학습 완료로 표시
+        </label>
+      </div>
+      <nav class="week-nav" data-week-nav="1" aria-label="주차 이동"></nav>
+        </article>
+      </div>
+    </main>
+  </div>
+
+  <script type="module">
+    import { mount as mountTokens } from '../../assets/js/widgets/w01-tokens.js';
+    import { mount as mountHallucination } from '../../assets/js/widgets/w01-hallucination.js';
+    import { initRunners } from '../../assets/js/site/runner.js';
+    mountTokens(document.getElementById('w01-tokens'));
+    mountHallucination(document.getElementById('w01-hallucination'));
+    initRunners(document.getElementById('challenge'));
+  </script>
+</body>
+</html>

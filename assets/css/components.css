@@ -1711,6 +1711,28 @@ a.card:hover {
   .doc {
     padding: 20px 16px 60px;
   }
+  /* wide tables and code scroll inside their own box instead of widening the page */
+  .doc table,
+  .widget table {
+    display: block;
+    max-width: 100%;
+    overflow-x: auto;
+  }
+  .doc pre,
+  .doc figure,
+  .doc .widget,
+  .doc .practice,
+  .doc .code-block {
+    max-width: 100%;
+    min-width: 0;
+  }
+  .doc pre {
+    overflow-x: auto;
+  }
+  /* grid/flex children default to min-width:auto and refuse to shrink */
+  .doc :where(div, section, article, details, li, figure, form, label) {
+    min-width: 0;
+  }
   .hero {
     padding: 22px 20px;
   }

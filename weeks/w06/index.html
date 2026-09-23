@@ -1,0 +1,517 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>6주차 벡터DB &amp; 인덱스 · RAG Lab</title>
+  <meta name="description" content="벡터DB와 인덱스: Flat 검색과 HNSW 근사 검색의 속도·정확도를 직접 측정하고, 벡터스토어 제품과 메타데이터 필터를 고르는 기준을 익힌다.">
+  <script>try{var t=JSON.parse(localStorage.getItem('raglab:theme'));if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+  <link rel="stylesheet" crossorigin="anonymous" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&display=swap">
+  <link rel="stylesheet" href="../../assets/css/tokens.css">
+  <link rel="stylesheet" href="../../assets/css/base.css">
+  <link rel="stylesheet" href="../../assets/css/components.css">
+  <link rel="stylesheet" href="../../assets/css/w06.css">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%232450c4'/%3E%3Ccircle cx='14' cy='14' r='6' fill='none' stroke='white' stroke-width='3'/%3E%3Cpath d='M19 19l6 6' stroke='white' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E">
+  <script type="module" src="../../assets/js/site/site.js"></script>
+</head>
+<body>
+  <div class="layout" data-layout data-role="student" data-week="6" data-crumb="PART 2 · 검색 파이프라인 › <b>6주차 · 벡터DB &amp; 인덱스</b>">
+    <main class="pane center" id="main">
+      <div class="content" tabindex="-1">
+        <article class="doc">
+      <span class="chapter-badge">🗄️ 6주차 · 벡터DB &amp; 인덱스</span>
+      <h1>수만 개 벡터에서 가장 가까운 것을 빨리 찾기</h1>
+      <p class="lead">5주차에 청크를 벡터로 바꿨다. 이제 그 벡터를 어디에 어떻게 넣어 두어야 질문이 들어왔을 때 가장 가까운 청크를 빨리, 그리고 빠짐없이 꺼낼 수 있는지 측정한다.</p>
+      <div class="meta-row">
+        <span class="chip">⏱ 180분</span>
+        <span class="chip accent">▶ 체험: Flat vs HNSW 속도 비교</span>
+        <span class="chip">🧪 Challenge 5개</span>
+        <span class="chip ok">🔑 LLM API 키 필요 없음</span>
+      </div>
+      <div class="flow" aria-label="RAG 파이프라인에서 이번 주의 위치">
+        <div>문서 파싱</div><div>청킹</div><div>임베딩</div><div><b>벡터스토어</b></div><div>검색</div><div>생성</div><div>평가</div>
+      </div>
+
+      <section id="goals">
+        <h2><span class="section-num">1</span>학습 목표</h2>
+        <div class="goals">
+        <b>이번 주가 끝나면</b>
+        <ul>
+          <li>벡터스토어가 벡터·원문·메타데이터를 함께 저장하는 이유와 Flat 검색의 비용을 설명할 수 있다.</li>
+          <li>HNSW의 계층 그래프 탐색 원리를 설명하고, M·efSearch가 속도와 Recall@10에 주는 영향을 측정할 수 있다.</li>
+          <li>문서 규모와 필터 요구에 맞춰 인덱스와 벡터DB 제품을 고를 수 있다.</li>
+        </ul>
+        </div>
+      </section>
+
+      <section id="why">
+        <h2><span class="section-num">2</span>왜 필요한가</h2>
+        <p>가장 단순한 검색은 질의 벡터를 저장된 <em>모든</em> 벡터와 하나씩 비교해 점수가 높은 순서로 자르는 것이다. 우리 문서셋은 12개 문서, 청크로 잘라도 수십 개라서 이 방법으로 충분하다. 문제는 규모가 커질 때다.</p>
+        <div class="callout callout--danger">
+          <span class="callout__title">전부 비교하면 문서 수에 비례해 느려진다</span>
+          <p>청크 100만 개, 384차원 임베딩이라면 질의 한 번에 곱셈·덧셈이 100만 × 384 = <b>3억 8,400만 번</b>이다. 이번 주 Challenge C2의 JavaScript 코드로 재면 128차원·1만 개에 약 2ms가 걸리므로, 같은 비율로 늘리면 질의 한 번에 0.6초 안팎이다. 동시 사용자가 10명이면 서버는 이것만 하다가 멈춘다.</p>
+        </div>
+        <p>두 번째 문제는 “벡터만 저장하면 쓸 데가 없다”는 것이다. 가장 가까운 벡터가 4,821번이라는 것을 알아도, 그 번호에 해당하는 원문이 없으면 LLM에 넘길 컨텍스트를 만들 수 없고, 출처(문서 제목, 쪽)가 없으면 인용을 달 수 없다. “2026학년도 안내 문서에서만 찾아라” 같은 조건도 걸 수 없다.</p>
+        <p>그래서 벡터스토어는 두 가지를 한다. 벡터와 함께 원문과 메타데이터를 보관하고, <strong>인덱스</strong>로 전부 비교하지 않고도 가까운 벡터를 찾는다. 공통 문서셋의 「벡터 데이터베이스와 인덱스」 문서(골든셋 q09)에 적힌 대로, 이 속도에는 대가가 있다. 가끔 가장 가까운 이웃을 놓친다. 이번 주는 그 대가를 숫자로 잰다.</p>
+      </section>
+
+      <section id="concept">
+        <h2><span class="section-num">3</span>개념</h2>
+
+        <h3>벡터스토어의 한 행</h3>
+        <figure class="figure">
+          <svg class="w06-fig" viewBox="0 0 640 170" role="img" aria-labelledby="row-fig-title" style="width: 100%">
+            <title id="row-fig-title">벡터스토어의 한 행은 id, 벡터, 원문, 메타데이터로 이루어진다</title>
+            <text class="lbl" x="8" y="18">id</text>
+            <text class="lbl" x="118" y="18">벡터 (384차원)</text>
+            <text class="lbl" x="300" y="18">원문 (청크 텍스트)</text>
+            <text class="lbl" x="484" y="18">메타데이터</text>
+            <rect class="cell" x="4" y="28" width="108" height="40" rx="4"/>
+            <rect class="cell cell--vec" x="114" y="28" width="182" height="40" rx="4"/>
+            <rect class="cell cell--text" x="298" y="28" width="182" height="40" rx="4"/>
+            <rect class="cell cell--meta" x="482" y="28" width="154" height="40" rx="4"/>
+            <text class="mono" x="10" y="52">vectordb#2</text>
+            <text class="mono" x="120" y="52">[0.021, −0.113, …]</text>
+            <text class="mono" x="304" y="52">HNSW는 벡터들을 여러…</text>
+            <text class="mono" x="488" y="52">type: theory</text>
+            <rect class="cell" x="4" y="72" width="108" height="40" rx="4"/>
+            <rect class="cell cell--vec" x="114" y="72" width="182" height="40" rx="4"/>
+            <rect class="cell cell--text" x="298" y="72" width="182" height="40" rx="4"/>
+            <rect class="cell cell--meta" x="482" y="72" width="154" height="40" rx="4"/>
+            <text class="mono" x="10" y="96">dept#4</text>
+            <text class="mono" x="120" y="96">[−0.045, 0.010, …]</text>
+            <text class="mono" x="304" y="96">수료 요건은 출석률 80%…</text>
+            <text class="mono" x="488" y="96">type: guide</text>
+            <text class="note" x="118" y="134">↑ 검색(거리 계산)에 쓴다</text>
+            <text class="note" x="302" y="134">↑ 답변·인용에 쓴다</text>
+            <text class="note" x="486" y="134">↑ 조건 필터에 쓴다</text>
+            <text class="note" x="8" y="160">인덱스는 벡터 열만 본다. 나머지 열은 id로 찾아 붙인다.</text>
+          </svg>
+          <figcaption>core/vectorstore.js의 <code>add(id, vector, meta)</code>도 이 구조다. 원문은 청크 id로 되찾는다.</figcaption>
+        </figure>
+
+        <h3>Flat 인덱스: 정확하지만 O(N)</h3>
+        <p>Flat 인덱스는 인덱스라기보다 “그냥 배열”이다. 벡터를 단위 길이로 정규화해 두면 코사인 유사도는 내적과 같으므로(5주차), 질의마다 N개 벡터와 내적을 구하고 상위 k개를 남긴다. 결과는 <strong>항상 정확</strong>하다. 비용은 질의 한 번에 N × d번의 곱셈이고, N이 두 배가 되면 시간도 두 배가 된다.</p>
+        <table>
+          <thead><tr><th>규모</th><th>질의당 곱셈 수 (d=384)</th><th>판단</th></tr></thead>
+          <tbody>
+            <tr><td>우리 문서셋 청크 수십 개</td><td>수만 번</td><td>Flat으로 충분하다</td></tr>
+            <tr><td>1만 개</td><td>384만 번</td><td>Flat으로 수 ms, 대부분 충분하다</td></tr>
+            <tr><td>100만 개</td><td>3억 8,400만 번</td><td>근사 인덱스가 필요하다</td></tr>
+          </tbody>
+        </table>
+
+        <h3>근사 최근접 이웃(ANN)과 Recall@k</h3>
+        <p>근사 최근접 이웃(Approximate Nearest Neighbor, ANN) 검색은 “정답 top-k를 거의 다 찾되 훨씬 적게 비교한다”를 목표로 한다. 얼마나 “거의”인지는 Flat의 정확한 결과를 정답으로 놓고 재는데, 이것이 <strong>Recall@k</strong>다.</p>
+        <pre><code class="language-text">Recall@k = |ANN이 돌려준 top-k ∩ Flat의 정확한 top-k| / k
+예) 정답 10개 중 9개를 찾았다 → Recall@10 = 0.9</code></pre>
+        <p>9주차에는 같은 이름의 지표를 “골든셋 정답 문서를 찾았는가”로 쓴다. 이번 주의 Recall@k는 그보다 앞 단계, 즉 “인덱스가 정확한 검색 결과를 얼마나 재현하는가”다. 인덱스가 놓친 청크는 뒤 단계에서 되살릴 수 없다.</p>
+
+        <h3>HNSW: 층이 있는 그래프를 따라 내려간다</h3>
+        <figure class="figure">
+          <svg class="w06-fig" viewBox="0 0 640 330" role="img" aria-labelledby="hnsw-fig-title" style="width: 100%">
+            <title id="hnsw-fig-title">HNSW 탐색: 위층에서 대략 위치를 찾고 아래층으로 내려가며 질의에 가장 가까운 노드에 도착한다</title>
+            <rect class="layer" x="96" y="26" width="540" height="62" rx="10"/>
+            <rect class="layer" x="96" y="108" width="540" height="72" rx="10"/>
+            <rect class="layer" x="96" y="200" width="540" height="88" rx="10"/>
+            <text class="lbl" x="4" y="60">L2 (드묾)</text>
+            <text class="lbl" x="4" y="148">L1</text>
+            <text class="lbl" x="4" y="240">L0</text>
+            <text class="note" x="4" y="258">모든 벡터</text>
+            <!-- L0 edges -->
+            <line class="edge" x1="130" y1="250" x2="180" y2="226"/><line class="edge" x1="180" y1="226" x2="225" y2="266"/>
+            <line class="edge" x1="225" y1="266" x2="275" y2="236"/><line class="edge" x1="275" y1="236" x2="325" y2="264"/>
+            <line class="edge" x1="325" y1="264" x2="370" y2="224"/><line class="edge" x1="370" y1="224" x2="420" y2="256"/>
+            <line class="edge" x1="420" y1="256" x2="465" y2="230"/><line class="edge" x1="465" y1="230" x2="510" y2="268"/>
+            <line class="edge" x1="510" y1="268" x2="555" y2="236"/><line class="edge" x1="555" y1="236" x2="605" y2="258"/>
+            <line class="edge" x1="180" y1="226" x2="275" y2="236"/><line class="edge" x1="325" y1="264" x2="420" y2="256"/>
+            <line class="edge" x1="465" y1="230" x2="555" y2="236"/><line class="edge" x1="225" y1="266" x2="325" y2="264"/>
+            <!-- L1 edges -->
+            <line class="edge" x1="180" y1="136" x2="275" y2="152"/><line class="edge" x1="275" y1="152" x2="370" y2="132"/>
+            <line class="edge" x1="370" y1="132" x2="465" y2="152"/><line class="edge" x1="465" y1="152" x2="605" y2="142"/>
+            <line class="edge" x1="180" y1="136" x2="370" y2="132"/>
+            <!-- L2 edge -->
+            <line class="edge" x1="180" y1="56" x2="465" y2="56"/>
+            <!-- drops -->
+            <line class="drop" x1="465" y1="62" x2="465" y2="146"/>
+            <line class="drop" x1="605" y1="148" x2="605" y2="252"/>
+            <!-- search path -->
+            <polyline class="path" points="180,56 465,56"/>
+            <polyline class="path" points="465,152 605,142"/>
+            <polyline class="path" points="605,258 555,236"/>
+            <!-- L0 nodes -->
+            <circle class="node" cx="130" cy="250" r="7"/><circle class="node" cx="180" cy="226" r="7"/><circle class="node" cx="225" cy="266" r="7"/>
+            <circle class="node" cx="275" cy="236" r="7"/><circle class="node" cx="325" cy="264" r="7"/><circle class="node" cx="370" cy="224" r="7"/>
+            <circle class="node" cx="420" cy="256" r="7"/><circle class="node" cx="465" cy="230" r="7"/><circle class="node" cx="510" cy="268" r="7"/>
+            <circle class="node node--goal" cx="555" cy="236" r="8"/><circle class="node node--hot" cx="605" cy="258" r="7"/>
+            <!-- L1 nodes -->
+            <circle class="node" cx="180" cy="136" r="7"/><circle class="node" cx="275" cy="152" r="7"/><circle class="node" cx="370" cy="132" r="7"/>
+            <circle class="node node--hot" cx="465" cy="152" r="7"/><circle class="node node--hot" cx="605" cy="142" r="7"/>
+            <!-- L2 nodes -->
+            <circle class="node node--hot" cx="180" cy="56" r="8"/><circle class="node node--hot" cx="465" cy="56" r="7"/>
+            <text class="note" x="150" y="42">진입점</text>
+            <!-- query -->
+            <circle class="node--q" cx="578" cy="214" r="5"/>
+            <text class="note" x="524" y="210">질의</text>
+            <text class="note" x="4" y="312">① 위층에서 질의 쪽으로 이동 → ② 점선으로 내려가 다시 이동 → ③ L0에서 최근접(초록) 도착</text>
+          </svg>
+          <figcaption>계층형 탐색 가능 소세계 그래프(Hierarchical Navigable Small World, HNSW). 위층은 고속도로, L0는 골목길이다. 각 층에서 “이웃 중 질의에 더 가까운 곳”으로만 이동한다.</figcaption>
+        </figure>
+        <p>HNSW는 벡터 하나를 노드 하나로 보고, 가까운 벡터끼리 간선으로 잇는다. 모든 노드는 맨 아래층 L0에 있고, 무작위로 뽑힌 일부만 위층에도 올라간다(한 층 올라갈 때마다 대략 1/M로 줄어든다). 검색은 맨 위층 진입점에서 시작해 “이웃 중 질의에 더 가까운 노드”로 옮겨 가다 더 가까워지지 않으면 한 층 내려간다. L0에서는 후보를 efSearch개까지 들고 넓게 살펴본 뒤 상위 k개를 돌려준다.</p>
+        <p>노드마다 이웃이 수십 개뿐이므로 질의 한 번에 거리 계산이 N번이 아니라 수백 번이면 끝난다. 대신 그래프가 가리키는 방향만 보므로, 진짜 최근접 이웃이 탐색 경로 밖에 있으면 놓친다.</p>
+        <table>
+          <thead><tr><th>파라미터</th><th>뜻</th><th>키우면</th><th>너무 작으면</th></tr></thead>
+          <tbody>
+            <tr><td><code>M</code></td><td>노드당 이웃 수 (L0는 2M)</td><td>Recall↑, 메모리·구축 시간↑</td><td>그래프가 성겨 탐색이 막힌다</td></tr>
+            <tr><td><code>efConstruction</code></td><td>구축할 때 이웃 후보를 찾는 탐색 폭</td><td>그래프 품질↑, 구축 시간↑</td><td>엉뚱한 이웃이 연결된다</td></tr>
+            <tr><td><code>efSearch</code></td><td>검색할 때 들고 다니는 후보 수</td><td>Recall↑, 질의 시간↑</td><td>첫 번째 막다른 곳에서 멈춘다</td></tr>
+          </tbody>
+        </table>
+        <p>efSearch는 구축이 끝난 뒤에도 질의마다 바꿀 수 있다. 그래서 실무에서는 M과 efConstruction을 넉넉히 잡아 한 번 구축하고, efSearch로 속도와 Recall을 조절한다.</p>
+
+        <h3>IVF와 PQ: 다른 두 가지 근사</h3>
+        <table>
+          <thead><tr><th>방법</th><th>아이디어</th><th>조절 값</th><th>잃는 것</th></tr></thead>
+          <tbody>
+            <tr><td>IVF (Inverted File)</td><td>k-평균으로 벡터를 nlist개 묶음으로 나누고, 질의와 가까운 nprobe개 묶음만 뒤진다</td><td><code>nlist</code>, <code>nprobe</code></td><td>묶음 경계 근처의 이웃</td></tr>
+            <tr><td>PQ (Product Quantization)</td><td>벡터를 m조각으로 나눠 각 조각을 대표값 256개 중 하나의 번호(1바이트)로 저장한다. 384차원 float32 1,536바이트 → m=48이면 48바이트</td><td><code>m</code>, 비트 수</td><td>거리 계산이 근사가 된다</td></tr>
+          </tbody>
+        </table>
+        <p>HNSW는 속도가, PQ는 메모리가 문제일 때 쓴다. 수억 개 규모에서는 IVF와 PQ를 합친 인덱스(FAISS의 IVFPQ)를 많이 쓴다.</p>
+
+        <h3>메타데이터 필터</h3>
+        <p>“guide 문서에서만 찾아라” 같은 조건을 거는 방법은 두 가지다.</p>
+        <ul>
+          <li><strong>후필터(post-filter)</strong>: 먼저 top-k를 검색하고 조건에 안 맞는 것을 버린다. 빠르지만 top-k가 전부 조건 밖이면 결과가 0개가 된다.</li>
+          <li><strong>선필터(pre-filter)</strong>: 조건에 맞는 항목만 대상으로 검색한다. 항상 k개를 채우지만, 근사 인덱스와 섞으면 구현이 어렵다. 조건에 맞는 노드가 드문드문하면 그래프 탐색이 끊긴다.</li>
+        </ul>
+        <div class="callout">
+          <span class="callout__title">k개를 요청했는데 1개가 나온다</span>
+          <p>Challenge C5에서 “평가 지표” 질의에 <code>type = guide</code> 조건을 후필터로 걸면 top-3 중 조건을 통과하는 것이 1개뿐이다. 필터가 자주 쓰이는 서비스라면 탐색 중에 필터를 적용하는 제품을 고르거나, 후필터라면 k를 넉넉히 키워 검색한다.</p>
+        </div>
+
+        <h3>실제 제품은 어떻게 고르나</h3>
+        <table>
+          <thead><tr><th>제품</th><th>형태</th><th>인덱스</th><th>어울리는 상황</th></tr></thead>
+          <tbody>
+            <tr><td>FAISS</td><td>라이브러리 (C++/Python), 서버 없음</td><td>Flat, IVF, PQ, HNSW, GPU</td><td>대규모 연구·배치. 원문과 메타데이터 저장은 직접 만든다</td></tr>
+            <tr><td>Chroma</td><td>내장형 또는 가벼운 서버</td><td>HNSW</td><td>프로토타입, 개인·수업 프로젝트</td></tr>
+            <tr><td>pgvector</td><td>PostgreSQL 확장</td><td>정확 검색, HNSW, IVFFlat</td><td>이미 PostgreSQL을 쓰는 서비스. 필터는 SQL <code>WHERE</code>로</td></tr>
+            <tr><td>Qdrant</td><td>전용 서버 (Rust)</td><td>HNSW + 양자화</td><td>필터 조건이 많은 운영 서비스</td></tr>
+            <tr><td>Milvus, 관리형(Pinecone 등)</td><td>분산 서버 / 클라우드 서비스</td><td>여러 가지 (서비스가 관리)</td><td>수억 개 이상, 또는 운영 인력이 적을 때</td></tr>
+          </tbody>
+        </table>
+        <p>고르는 순서는 대략 이렇다. ① 벡터가 몇 개인가(수만 개 이하면 Flat도 충분하다) ② 메타데이터 필터가 얼마나 중요한가 ③ 이미 쓰는 데이터베이스가 있는가 ④ 내장형·서버·관리형 중 누가 운영하는가 ⑤ 문서가 자주 추가·삭제되는가. 제품 이름보다 이 다섯 질문에 대한 답이 먼저다.</p>
+      </section>
+
+      <section id="lab">
+        <h2><span class="section-num">4</span>실습</h2>
+        <p>아래 위젯은 시드를 고정한 무작위 단위 벡터 N개와 질의 100개를 만들고, 같은 질의를 Flat(전부 비교)과 HNSW(위젯 안에 순수 JavaScript로 구현)로 검색한다. HNSW의 결과를 Flat의 정확한 top-10과 비교해 Recall@10을 구한다. 벡터는 기본값으로 “주제 군집 20개” 주변에 모이게 만드는데, 실제 문서 임베딩이 주제별로 뭉치는 것을 흉내 낸 것이다. 결과는 오른쪽 <b>실행 결과</b> 창에 나온다.</p>
+        <ul>
+          <li>설정을 바꾸면 자동으로 다시 측정한다. efSearch만 바꾸면 그래프를 다시 만들지 않으므로 바로 나온다. N이 크면 구축에 수 초가 걸리고, 진행률 막대 옆 <b>■ 취소</b>로 멈출 수 있다.</li>
+          <li><b>본전 질의 수</b>는 “구축에 쓴 시간을 질의마다 아낀 시간으로 갚으려면 질의가 몇 번 필요한가”다. Flat은 구축 비용이 없다.</li>
+          <li>efSearch가 k(10)보다 작으면 이 위젯은 탐색하며 거리를 잰 노드 중 가까운 10개를 돌려준다. FAISS와 hnswlib은 이런 경우 efSearch를 k로 올려 버린다.</li>
+          <li>시간은 브라우저와 컴퓨터마다 다르고 측정할 때마다 조금씩 흔들린다. Recall과 “질의당 거리 계산” 수는 같은 설정이면 항상 같다.</li>
+        </ul>
+      </section>
+
+      <div id="w06-widget"></div>
+
+      <section aria-labelledby="observe-title">
+        <h3 id="observe-title">관찰 질문</h3>
+        <ol>
+          <li>처음 설정(N 3,000, M 12, efSearch 32)에서 속도 향상과 Recall@10은 얼마인가? “질의당 거리 계산” 비율(3,000 → 약 200)과 속도 향상 배율이 같지 않은 이유는 무엇인가?</li>
+          <li>efSearch를 1까지 한 칸씩 내린다. Recall 곡선에서 0.9를 처음 넘는 efSearch는 얼마인가? 그때 속도는 얼마나 빨라졌나?</li>
+          <li><strong>실패: M 2</strong>를 누른다. 질의는 매우 빠른데 왜 쓸 수 없나? M을 4, 8, 16으로 올리며 구축 시간과 Recall이 어떻게 변하는지 적는다.</li>
+          <li><strong>실패: N 1천 · 32차원</strong>을 누른다. HNSW가 Flat보다 느리거나 비슷한 이유는? 본전 질의 수를 보고, 우리 문서셋(청크 수십 개)에는 어떤 인덱스가 맞는지 판단한다.</li>
+          <li><strong>실패: 무작위 분포</strong>를 누른다. 같은 파라미터인데 Recall이 크게 떨어지는 이유를 “가까운 이웃의 이웃도 가깝다”는 그래프의 전제로 설명한다.</li>
+          <li><strong>큰 N: 2만 개</strong>를 누른다. N이 커질 때 속도 향상은 어떻게 되고, 같은 efSearch의 Recall은 어떻게 되나?</li>
+        </ol>
+      </section>
+
+      <section id="challenge">
+        <h2><span class="section-num">5</span>Challenge</h2>
+        <p>난이도 순서다. 코드 상자는 직접 고칠 수 있고, <strong>▶ 실행</strong>(또는 Ctrl+Enter)을 누르면 결과가 오른쪽 <b>실행 결과</b> 창에 나온다(휴대폰에서는 코드 바로 아래). 코드는 페이지와 분리된 워커에서 돌아가므로 무한 루프가 생겨도 10초 뒤 자동으로 멈춘다. <code>/assets/…</code> 경로는 사이트 루트 기준이다. 임베딩 모델 대신 시드 고정 난수 벡터와 장난감 임베딩을 쓴다.</p>
+
+        <div class="practice">
+          <div class="practice-head"><b>C1. 타입 배열로 Flat top-k 만들기</b><span class="level" aria-label="난이도 1">★</span></div>
+          <div class="practice-body">
+          <p>벡터 2,000개(64차원)를 <code>Float32Array</code> 하나에 이어 붙여 저장했다. 전부 정렬하지 않고, 크기 k짜리 정렬된 배열에 끼워 넣는 방식으로 top-k를 구하는 <code>topK</code>를 완성한다. 전체 정렬은 N log N이지만 이 방법은 N × k 이하다.</p>
+          <pre data-run="c1" data-title="C1 Flat top-k"><code class="language-javascript">// 시드가 고정된 난수 → 누가 실행해도 같은 벡터
+function rng(seed) {
+  let a = seed &gt;&gt;&gt; 0;
+  return () =&gt; {
+    a = (a + 0x6d2b79f5) &gt;&gt;&gt; 0;
+    let t = Math.imul(a ^ (a &gt;&gt;&gt; 15), a | 1);
+    t ^= t + Math.imul(t ^ (t &gt;&gt;&gt; 7), t | 61);
+    return ((t ^ (t &gt;&gt;&gt; 14)) &gt;&gt;&gt; 0) / 4294967296;
+  };
+}
+function randomUnit(n, dim, seed) {
+  const r = rng(seed);
+  const out = new Float32Array(n * dim); // n개 벡터를 한 줄로 이어 붙임: i번 벡터 = out[i*dim … i*dim+dim-1]
+  for (let i = 0; i &lt; n; i++) {
+    let s = 0;
+    for (let j = 0; j &lt; dim; j++) { const x = r() * 2 - 1; out[i * dim + j] = x; s += x * x; }
+    for (let j = 0; j &lt; dim; j++) out[i * dim + j] /= Math.sqrt(s);
+  }
+  return out;
+}
+
+const N = 2000, DIM = 64;
+const data = randomUnit(N, DIM, 1);
+const query = randomUnit(1, DIM, 2);
+
+function topK(data, dim, q, k) {
+  const n = data.length / dim;
+  const ids = new Int32Array(k).fill(-1);
+  const scores = new Float32Array(k).fill(-Infinity); // 내림차순 유지
+  for (let i = 0; i &lt; n; i++) {
+    // TODO 1: i번 벡터와 q의 내적 s를 계산한다 (단위 벡터이므로 내적 = 코사인 유사도)
+    // TODO 2: s가 현재 k등(scores[k-1])보다 크면, 정렬이 유지되도록 끼워 넣는다
+  }
+  return { ids: Array.from(ids), scores: Array.from(scores, (x) =&gt; +x.toFixed(4)) };
+}
+
+const mine = topK(data, DIM, query, 5);
+console.log('topK :', mine.ids.join(', '), '| 점수', mine.scores.join(', '));
+// 기대: 1791, 1577, 1153, 1798, 196 (전부 정렬해서 자른 결과와 같아야 한다)</code></pre>
+          </div>
+        </div>
+
+        <div class="practice">
+          <div class="practice-head"><b>C2. N에 따른 검색 시간 재기</b><span class="level" aria-label="난이도 1">★</span></div>
+          <div class="practice-body">
+          <p>N을 1,000부터 32,000까지 두 배씩 늘리며 Flat 검색의 질의당 평균 시간을 잰다. “1만 개당 ms”가 거의 일정하면 시간이 N에 정비례한다는 뜻이다. 표를 보고 100만 개일 때를 외삽한다.</p>
+          <pre data-run="c2" data-title="C2 N에 따른 시간"><code class="language-javascript">function rng(seed) {
+  let a = seed &gt;&gt;&gt; 0;
+  return () =&gt; {
+    a = (a + 0x6d2b79f5) &gt;&gt;&gt; 0;
+    let t = Math.imul(a ^ (a &gt;&gt;&gt; 15), a | 1);
+    t ^= t + Math.imul(t ^ (t &gt;&gt;&gt; 7), t | 61);
+    return ((t ^ (t &gt;&gt;&gt; 14)) &gt;&gt;&gt; 0) / 4294967296;
+  };
+}
+const r = rng(7);
+const DIM = 128, K = 10, QUERIES = 20;
+const MAX_N = 32000;
+const data = Float32Array.from({ length: MAX_N * DIM }, () =&gt; r() * 2 - 1);
+const queries = Float32Array.from({ length: QUERIES * DIM }, () =&gt; r() * 2 - 1);
+
+// 앞에서부터 n개 벡터만 대상으로 하는 Flat top-k (완성된 코드)
+function topK(n, qo) {
+  const ids = new Int32Array(K).fill(-1);
+  const sc = new Float32Array(K).fill(-Infinity);
+  for (let i = 0; i &lt; n; i++) {
+    let s = 0;
+    for (let j = 0; j &lt; DIM; j++) s += data[i * DIM + j] * queries[qo + j];
+    if (s &lt;= sc[K - 1]) continue;
+    let p = K - 1;
+    while (p &gt; 0 &amp;&amp; sc[p - 1] &lt; s) { sc[p] = sc[p - 1]; ids[p] = ids[p - 1]; p--; }
+    sc[p] = s; ids[p] = i;
+  }
+  return ids;
+}
+
+const rows = [];
+for (const n of [1000, 2000, 4000, 8000, 16000, 32000]) {
+  // TODO 1: performance.now()로 질의 QUERIES개(q번 질의의 시작 위치 = q * DIM)를 검색하는 시간을 잰다
+  // TODO 2: 질의 1개 평균 ms와, 1만 개당 ms를 rows에 넣는다
+  rows.push({ N: n, 'ms/질의': null, 'ms/1만 개': null });
+}
+console.table(rows);
+// TODO 3: 표를 보고 100만 개일 때 질의 1개에 몇 ms가 걸릴지 외삽한다
+// 힌트: 첫 측정이 이상하게 느리면 JIT 워밍업(측정 전에 한 번 돌리기)을 넣는다</code></pre>
+          </div>
+        </div>
+
+        <div class="practice">
+          <div class="practice-head"><b>C3. 두 결과 목록의 Recall@k</b><span class="level" aria-label="난이도 2">★★</span></div>
+          <div class="practice-body">
+          <p><code>recallAtK(approx, exact, k)</code>를 작성하고 <code>core/metrics.js</code>의 값과 맞는지 확인한다. 그다음 “데이터를 무작위로 일부만 보는” 가장 순진한 근사 검색의 Recall을 잰다. 위젯의 HNSW가 기본 설정에서 전체의 7% 정도만 보고도 Recall 0.99 이상을 내는 것과 비교한다.</p>
+          <pre data-run="c3" data-title="C3 Recall@k"><code class="language-javascript">import { recallAtK as coreRecall } from '/assets/js/core/metrics.js';
+
+function recallAtK(approx, exact, k) {
+  // TODO: exact의 앞 k개를 정답 집합으로 보고, approx의 앞 k개 중 몇 개가 들어 있는지 / k
+  return 0;
+}
+
+// 1) 손으로 먼저 계산해 본다
+const exact = [7, 3, 9, 1, 4, 8, 2, 6, 0, 5];
+const approx = [7, 3, 1, 9, 12, 4, 30, 8, 2, 44];
+console.log('recall@10 =', recallAtK(approx, exact, 10), '| core:', coreRecall(approx, exact.slice(0, 10), 10));
+console.log('recall@5  =', recallAtK(approx, exact, 5));
+
+// 2) 순진한 근사 검색: 데이터의 일부만 보고 top-10을 고른다
+function rng(seed) {
+  let a = seed &gt;&gt;&gt; 0;
+  return () =&gt; {
+    a = (a + 0x6d2b79f5) &gt;&gt;&gt; 0;
+    let t = Math.imul(a ^ (a &gt;&gt;&gt; 15), a | 1);
+    t ^= t + Math.imul(t ^ (t &gt;&gt;&gt; 7), t | 61);
+    return ((t ^ (t &gt;&gt;&gt; 14)) &gt;&gt;&gt; 0) / 4294967296;
+  };
+}
+const r = rng(3);
+const N = 5000, DIM = 32, K = 10;
+const data = Float32Array.from({ length: N * DIM }, () =&gt; r() * 2 - 1);
+const dot = (i, q) =&gt; { let s = 0; for (let j = 0; j &lt; DIM; j++) s += data[i * DIM + j] * q[j]; return s; };
+const search = (q, ids) =&gt; ids.map((i) =&gt; [i, dot(i, q)]).sort((a, b) =&gt; b[1] - a[1]).slice(0, K).map(([i]) =&gt; i);
+const all = Array.from({ length: N }, (_, i) =&gt; i);
+
+const rows = [];
+for (const frac of [0.1, 0.3, 0.5, 0.9, 1]) {
+  const part = all.filter(() =&gt; r() &lt; frac); // 무작위로 frac 비율만 남긴 부분집합
+  // TODO: 무작위 질의 50개에 대해 recallAtK(search(q, part), search(q, all), K)의 평균을 구한다
+  rows.push({ '살펴본 비율': frac, 'recall@10': null });
+}
+console.table(rows);</code></pre>
+          </div>
+        </div>
+
+        <div class="practice">
+          <div class="practice-head"><b>C4. 작은 그래프에서 탐욕 탐색과 빔 탐색</b><span class="level" aria-label="난이도 3">★★★</span></div>
+          <div class="practice-body">
+          <p>HNSW의 한 층을 흉내 낸 10개 노드 그래프다. A에서 출발해 질의 ★(6, 5)에 가장 가까운 노드를 찾는다. 탐욕 탐색이 어디서 멈추는지, 후보를 ef개 들고 다니는 빔 탐색은 몇 개부터 정답 H에 닿는지 확인한다.</p>
+          <figure class="figure">
+            <svg class="w06-fig" viewBox="0 0 310 270" role="img" aria-labelledby="c4-fig-title" style="width: 100%; max-width: 360px">
+              <title id="c4-fig-title">노드 A부터 J까지의 2차원 그래프와 질의 위치</title>
+              <line class="edge" x1="24" y1="244" x2="88" y2="180"/><line class="edge" x1="24" y1="244" x2="184" y2="212"/>
+              <line class="edge" x1="88" y1="180" x2="184" y2="212"/><line class="edge" x1="88" y1="180" x2="120" y2="116"/>
+              <line class="edge" x1="88" y1="180" x2="56" y2="84"/><line class="edge" x1="184" y1="212" x2="248" y2="244"/>
+              <line class="edge" x1="120" y1="116" x2="120" y2="20"/><line class="edge" x1="56" y1="84" x2="120" y2="20"/>
+              <line class="edge" x1="120" y1="20" x2="184" y2="52"/><line class="edge" x1="184" y1="52" x2="248" y2="84"/>
+              <line class="edge" x1="248" y1="84" x2="280" y2="180"/><line class="edge" x1="280" y1="180" x2="248" y2="244"/>
+              <circle class="node node--hot" cx="24" cy="244" r="11"/><circle class="node" cx="88" cy="180" r="11"/>
+              <circle class="node" cx="184" cy="212" r="11"/><circle class="node" cx="120" cy="116" r="11"/>
+              <circle class="node" cx="56" cy="84" r="11"/><circle class="node" cx="120" cy="20" r="11"/>
+              <circle class="node" cx="184" cy="52" r="11"/><circle class="node node--goal" cx="248" cy="84" r="11"/>
+              <circle class="node" cx="280" cy="180" r="11"/><circle class="node" cx="248" cy="244" r="11"/>
+              <text class="lbl" x="19" y="249">A</text><text class="lbl" x="83" y="185">B</text><text class="lbl" x="179" y="217">C</text>
+              <text class="lbl" x="115" y="121">D</text><text class="lbl" x="51" y="89">E</text><text class="lbl" x="116" y="25">F</text>
+              <text class="lbl" x="179" y="57">G</text><text class="lbl" x="243" y="89">H</text><text class="lbl" x="277" y="185">I</text>
+              <text class="lbl" x="244" y="249">J</text>
+              <circle class="node--q" cx="216" cy="84" r="5"/><text class="note" x="192" y="112">★ 질의</text>
+            </svg>
+            <figcaption>파란 테두리 A가 출발점, 초록 H가 정답(가장 가까운 노드)이다. 선이 있는 노드끼리만 이동할 수 있다.</figcaption>
+          </figure>
+          <pre data-run="c4" data-title="C4 그래프 탐색"><code class="language-javascript">// HNSW 한 층을 흉내 낸 작은 2차원 그래프. 노드 → [x, y]
+const points = {
+  A: [0, 0], B: [2, 2], C: [5, 1], D: [3, 4], E: [1, 5],
+  F: [3, 7], G: [5, 6], H: [7, 5], I: [8, 2], J: [7, 0],
+};
+const graph = {
+  A: ['B', 'C'], B: ['A', 'C', 'D', 'E'], C: ['A', 'B', 'J'], D: ['B', 'F'],
+  E: ['B', 'F'], F: ['D', 'E', 'G'], G: ['F', 'H'], H: ['G', 'I'], I: ['H', 'J'], J: ['C', 'I'],
+};
+const query = [6, 5];
+const dist = (id) =&gt; Math.hypot(points[id][0] - query[0], points[id][1] - query[1]);
+
+// 1) 탐욕 탐색: 이웃 중 가장 가까운 곳으로, 더 가까워지지 않으면 멈춘다
+function greedySearch(start) {
+  let cur = start;
+  const path = [cur];
+  // TODO: graph[cur]에서 dist가 가장 작은 이웃을 찾고, cur보다 가까우면 이동(path에 추가), 아니면 멈춘다
+  return { found: cur, path };
+}
+
+// 2) 빔 탐색: 지금까지 본 노드 중 가까운 ef개를 들고, 아직 펼치지 않은 가장 가까운 노드를 펼친다
+function beamSearch(start, ef) {
+  const visited = new Set([start]);
+  let results = [start];
+  const expanded = new Set();
+  let evaluated = 1;
+  // TODO: results에서 아직 expanded가 아닌 첫 노드를 펼쳐 이웃을 results에 추가하고,
+  //       거리순 정렬 후 앞의 ef개만 남긴다. 펼칠 노드가 없으면 끝.
+  return { found: results[0], evaluated };
+}
+
+const truth = Object.keys(points).sort((a, b) =&gt; dist(a) - dist(b))[0];
+console.log('정답(전체 비교):', truth, dist(truth).toFixed(2));
+const g = greedySearch('A');
+console.log('탐욕 탐색:', g.path.join(' → '), '| 도착', g.found, dist(g.found).toFixed(2));
+for (const ef of [1, 2, 3]) {
+  const b = beamSearch('A', ef);
+  console.log(`beam ef=${ef}: ${b.found} (${dist(b.found).toFixed(2)}), 거리 계산 ${b.evaluated}회`);
+}</code></pre>
+          </div>
+        </div>
+
+        <div class="practice">
+          <div class="practice-head"><b>C5. 메타데이터 필터 + 검색</b><span class="level" aria-label="난이도 4">★★★★</span></div>
+          <div class="practice-body">
+          <p>공통 문서셋 12개를 장난감 임베딩(글자 bigram 해시)으로 벡터화해 <code>core/vectorstore.js</code>에 메타데이터와 함께 넣었다. <code>type</code>이 <code>guide</code>인 문서만 찾는 후필터와 선필터를 각각 구현하고, 같은 k=3을 요청했을 때 결과 개수가 왜 다른지 설명한다.</p>
+          <pre data-run="c5" data-title="C5 메타데이터 필터"><code class="language-javascript">import { VectorStore } from '/assets/js/core/vectorstore.js';
+
+const corpus = await (await fetch('/assets/data/corpus/corpus.json')).json();
+
+// 장난감 임베딩(모델 없음): 글자 2개씩(bigram)을 256칸에 해시해서 센다
+function toyEmbed(text, dim = 256) {
+  const v = new Float32Array(dim);
+  const s = text.replace(/\s+/g, ' ');
+  for (let i = 0; i &lt; s.length - 1; i++) {
+    let h = 2166136261;
+    for (const ch of s.slice(i, i + 2)) h = Math.imul(h ^ ch.codePointAt(0), 16777619);
+    v[(h &gt;&gt;&gt; 0) % dim] += 1;
+  }
+  return v;
+}
+
+const store = new VectorStore();
+for (const d of corpus.documents) {
+  // 벡터 + 원문 id + 메타데이터를 함께 저장한다
+  store.add(d.id, toyEmbed(d.title + ' ' + d.text), { title: d.title, type: d.type });
+}
+
+function postFilter(q, k, filter) {
+  // TODO: 먼저 store.search(q, k)로 top-k를 찾고, 그다음 filter(r.meta)로 거른다
+  return [];
+}
+
+function preFilter(q, k, filter) {
+  // TODO: filter를 통과하는 항목만 대상으로 점수를 매겨 top-k를 고른다
+  //       힌트: store.search(q, store.size)는 전 항목을 점수순으로 돌려준다
+  return [];
+}
+
+const q = toyEmbed('검색 결과를 평가하는 지표 Recall과 임베딩, 벡터 인덱스');
+const onlyGuide = (m) =&gt; m.type === 'guide';
+const show = (rs) =&gt; rs.map((r) =&gt; `${r.id}(${r.score.toFixed(2)})`).join(', ');
+console.log('필터 없음 top-3 :', show(store.search(q, 3)));
+console.log('post-filter     :', show(postFilter(q, 3, onlyGuide)));
+console.log('pre-filter      :', show(preFilter(q, 3, onlyGuide)));</code></pre>
+          </div>
+        </div>
+      </section>
+
+      <section id="wrap">
+        <h2><span class="section-num">6</span>정리 &amp; 다음 주 예고</h2>
+        <ul>
+          <li>벡터스토어는 벡터·원문·메타데이터를 함께 저장한다. 벡터는 찾는 데, 원문은 답하고 인용하는 데, 메타데이터는 거르는 데 쓴다.</li>
+          <li>Flat은 항상 정확하지만 질의 시간이 N에 비례한다. 수만 개 이하라면 Flat이 가장 단순하고 확실한 선택이다.</li>
+          <li>HNSW는 계층 그래프를 따라 내려가며 수백 번의 거리 계산으로 이웃을 찾는다. M·efSearch가 작으면 진짜 이웃을 놓치고, N이 작으면 빠르지도 않다.</li>
+          <li>인덱스는 Recall@k(정확한 top-k를 얼마나 재현하는가)와 속도를 함께 재서 고른다. 필터가 필요하면 후필터가 결과를 비울 수 있다는 점을 확인한다.</li>
+        </ul>
+        <p><strong>다음 주(7주차 최소 RAG 완성)</strong>에는 지금까지 만든 부품(파싱 → 청킹 → 임베딩 → 벡터스토어)을 이어 붙이고, 검색한 청크를 LLM에 넘겨 실제로 답변을 생성한다. 7주차 실습에는 LLM API 키가 필요하다.</p>
+      </section>
+
+      <div class="section-end">
+        <label class="done-toggle">
+          <input type="checkbox" data-done-toggle="6"> ✅ 6주차 학습 완료로 표시
+        </label>
+      </div>
+      <nav class="week-nav" data-week-nav="6" aria-label="주차 이동"></nav>
+        </article>
+      </div>
+    </main>
+  </div>
+
+  <script type="module">
+    import { mount } from '../../assets/js/widgets/w06-index-bench.js';
+    import { initRunners } from '../../assets/js/site/runner.js';
+    mount(document.getElementById('w06-widget'));
+    initRunners(document.getElementById('challenge'));
+  </script>
+</body>
+</html>

@@ -1,0 +1,403 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>7주차 최소 RAG 완성 · RAG Lab</title>
+  <meta name="description" content="최소 RAG 완성: 문서 로드부터 생성까지 전체 파이프라인을 한 번에 돌리고, 단계별 산출물과 시간을 보며 틀린 답의 원인을 검색부터 추적한다.">
+  <script>try{var t=JSON.parse(localStorage.getItem('raglab:theme'));if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+  <link rel="stylesheet" crossorigin="anonymous" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&display=swap">
+  <link rel="stylesheet" href="../../assets/css/tokens.css">
+  <link rel="stylesheet" href="../../assets/css/base.css">
+  <link rel="stylesheet" href="../../assets/css/components.css">
+  <link rel="stylesheet" href="../../assets/css/w07.css">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%232450c4'/%3E%3Ccircle cx='14' cy='14' r='6' fill='none' stroke='white' stroke-width='3'/%3E%3Cpath d='M19 19l6 6' stroke='white' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E">
+  <script type="module" src="../../assets/js/site/site.js"></script>
+</head>
+<body>
+  <div class="layout" data-layout data-role="student" data-week="7" data-crumb="PART 3 · RAG 완성과 고도화 › <b>7주차 · 최소 RAG 완성</b>">
+    <main class="pane center" id="main">
+      <div class="content" tabindex="-1">
+        <article class="doc">
+      <span class="chapter-badge">🔗 7주차 · 최소 RAG 완성</span>
+      <h1>처음부터 끝까지 한 줄로 잇기</h1>
+      <p class="lead">4~6주차에 따로 만든 청킹, 임베딩, 벡터스토어를 한 파이프라인으로 연결하고 마지막에 LLM을 붙인다. 답이 틀렸을 때 어느 단계가 범인인지 찾는 순서까지 익힌다.</p>
+      <div class="meta-row">
+        <span class="chip">⏱ 180분</span>
+        <span class="chip accent">▶ 체험: 전체 파이프라인 실행</span>
+        <span class="chip">🧪 Challenge 5개</span>
+        <span class="chip warn">🔑 LLM API 키 필요 (없어도 검색까지 실습 가능)</span>
+      </div>
+      <div class="flow" aria-label="RAG 파이프라인에서 이번 주의 위치">
+        <div>문서 파싱</div><div>청킹</div><div>임베딩</div><div>벡터스토어</div><div>검색</div><div><b>생성</b></div><div>평가</div>
+      </div>
+
+      <section id="goals">
+        <h2><span class="section-num">1</span>학습 목표</h2>
+        <div class="goals">
+        <b>이번 주가 끝나면</b>
+        <ul>
+          <li>색인 단계와 질의 단계를 구분하고, 각 단계가 만드는 산출물의 모양을 설명할 수 있다.</li>
+          <li>문서 로드부터 생성까지 이어지는 <code>answer(question)</code> 함수를 작성할 수 있다.</li>
+          <li>틀린 답의 원인을 검색 → 프롬프트 → 생성 순서로 추적하고, 골든셋으로 hit를 확인할 수 있다.</li>
+        </ul>
+        </div>
+      </section>
+
+      <section id="why">
+        <h2><span class="section-num">2</span>왜 필요한가</h2>
+        <p>1주차에 LLM 혼자 “성적 우수 장학금 지급액은?”에 답하게 하면 그럴듯한 숫자를 지어낸다는 것을 봤다. 검색증강생성(RAG)은 관련 문서를 먼저 찾아 LLM 입력에 넣어 이 문제를 줄인다. 4~6주차에 그 부품을 하나씩 만들었다. 이제 조립만 하면 된다.</p>
+        <p>그런데 조립해서 돌려 보면 이런 일이 생긴다.</p>
+        <div class="callout callout--danger">
+          <span class="callout__title">“문서에서 찾을 수 없다” — 그런데 답은 문서셋 안에 있다</span>
+          <p>“RAG 수업은 무슨 요일 몇 교시이고 어느 강의실인가?”라고 물으면 파이프라인은 “제공된 근거 문서에서 요일·교시·강의실은 찾을 수 없다”고 답한다. 정답(화요일 1-3교시, 305호)은 <em>2학기 시간표</em> 문서에 분명히 있다.</p>
+        </div>
+        <p>질문과 답만 보면 원인을 알 수 없다. 모델이 멍청한가? 프롬프트가 나쁜가? 문서가 검색되지 않았나? 문서 자체가 깨졌나? 파이프라인을 <strong>한 덩어리로 돌리면</strong> 이 질문에 답할 방법이 없다. 그래서 이번 주는 파이프라인을 만들면서 동시에 <strong>각 단계의 산출물을 꺼내 보는 법</strong>을 익힌다. 결론부터 말하면 이 사례의 범인은 LLM이 아니라 검색이다.</p>
+      </section>
+
+      <section id="concept">
+        <h2><span class="section-num">3</span>개념</h2>
+
+        <h3>두 단계: 색인과 질의</h3>
+        <figure class="figure">
+          <svg viewBox="0 0 640 250" role="img" aria-labelledby="w07-fig-title" style="width: 100%">
+            <title id="w07-fig-title">색인 단계(문서, 청킹, 임베딩, 벡터스토어)와 질의 단계(질문, 임베딩, 검색, 프롬프트, LLM, 답변)의 흐름</title>
+            <style>
+              .w7-lane { font: 700 12px var(--font-sans); fill: var(--color-accent2); }
+              .w7-box { fill: var(--color-surface-2); stroke: var(--color-border-strong); }
+              .w7-key { fill: var(--color-accent-soft); stroke: var(--color-accent); }
+              .w7-t { font: 600 13px var(--font-sans); fill: var(--color-text); text-anchor: middle; }
+              .w7-a { stroke: var(--color-text-muted); stroke-width: 1.6; fill: none; marker-end: url(#w7-arrow); }
+              .w7-d { stroke: var(--color-text-muted); stroke-width: 1.4; stroke-dasharray: 4 4; fill: none; }
+              .w7-n { font: 11.5px var(--font-sans); fill: var(--color-text-muted); }
+              .w7-head { fill: var(--color-text-muted); }
+            </style>
+            <defs>
+              <marker id="w7-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path class="w7-head" d="M0 0L10 5L0 10z"/>
+              </marker>
+            </defs>
+
+            <text class="w7-lane" x="20" y="22">색인 단계 · 문서가 바뀔 때 한 번</text>
+            <rect class="w7-box" x="20" y="36" width="90" height="36" rx="6"/><text class="w7-t" x="65" y="59">① 문서</text>
+            <rect class="w7-box" x="140" y="36" width="90" height="36" rx="6"/><text class="w7-t" x="185" y="59">② 청킹</text>
+            <rect class="w7-box" x="260" y="36" width="90" height="36" rx="6"/><text class="w7-t" x="305" y="59">③ 임베딩</text>
+            <rect class="w7-key" x="380" y="36" width="110" height="36" rx="6"/><text class="w7-t" x="435" y="59">벡터스토어</text>
+            <path class="w7-a" d="M110 54H138"/><path class="w7-a" d="M230 54H258"/><path class="w7-a" d="M350 54H378"/>
+
+            <path class="w7-a" d="M435 72V112H250V166"/>
+            <text class="w7-n" x="446" y="100">청크 벡터 + 원문 + 메타</text>
+            <path class="w7-d" d="M305 72L140 166"/>
+            <text class="w7-n" x="150" y="112">같은 임베딩 모델</text>
+
+            <text class="w7-lane" x="20" y="158">질의 단계 · 질문마다</text>
+            <rect class="w7-box" x="20" y="168" width="70" height="36" rx="6"/><text class="w7-t" x="55" y="191">질문</text>
+            <rect class="w7-box" x="105" y="168" width="80" height="36" rx="6"/><text class="w7-t" x="145" y="191">임베딩</text>
+            <rect class="w7-key" x="200" y="168" width="100" height="36" rx="6"/><text class="w7-t" x="250" y="191">④ 검색 top-k</text>
+            <rect class="w7-box" x="315" y="168" width="90" height="36" rx="6"/><text class="w7-t" x="360" y="191">⑤ 프롬프트</text>
+            <rect class="w7-box" x="420" y="168" width="80" height="36" rx="6"/><text class="w7-t" x="460" y="191">⑥ LLM</text>
+            <rect class="w7-box" x="515" y="168" width="105" height="36" rx="6"/><text class="w7-t" x="567" y="191">답변 + 인용</text>
+            <path class="w7-a" d="M90 186H103"/><path class="w7-a" d="M185 186H198"/><path class="w7-a" d="M300 186H313"/><path class="w7-a" d="M405 186H418"/><path class="w7-a" d="M500 186H513"/>
+            <text class="w7-n" x="200" y="226">여기서 근거가 빠지면 ⑤·⑥은 복구하지 못한다</text>
+            <text class="w7-n" x="420" y="226">LLM이 보는 것은 ⑤가 전부</text>
+          </svg>
+          <figcaption>위 줄은 미리 한 번 해 두는 일, 아래 줄은 질문이 올 때마다 하는 일이다. 두 줄은 벡터스토어와 “같은 임베딩 모델”로만 연결된다.</figcaption>
+        </figure>
+        <p><strong>색인(indexing) 단계</strong>는 문서를 검색할 수 있는 형태로 바꿔 저장하는 일이다. 문서가 바뀌지 않으면 다시 할 필요가 없다. <strong>질의(query) 단계</strong>는 질문이 들어올 때마다 검색하고 답을 만드는 일이다. 색인은 느려도 괜찮지만 질의는 빨라야 한다. 위젯에서 ③ 임베딩이 수백 ms~수 초 걸리는 동안 ④ 검색은 수 ms로 끝나는 것을 직접 확인한다.</p>
+        <p>두 단계를 잇는 약속이 하나 있다. 질문과 청크를 <strong>같은 임베딩 모델</strong>로 벡터화해야 한다. 모델이 다르면 두 벡터는 서로 다른 공간에 있어 코사인 유사도가 의미를 잃는다. e5 계열이라면 청크에는 <code>passage: </code>, 질문에는 <code>query: </code> 접두어를 붙이는 것까지 약속에 포함된다(5주차).</p>
+
+        <h3>각 단계의 산출물 모양</h3>
+        <p>디버깅은 산출물을 꺼내 보는 일이다. 무엇이 나와야 정상인지 먼저 알아 둔다. 숫자는 이번 주 기본 설정(재귀 분할 200자, 오버랩 0, multilingual-e5-small, top-3) 기준이다.</p>
+        <table>
+          <thead><tr><th>단계</th><th>입력</th><th>산출물</th><th>코드</th></tr></thead>
+          <tbody>
+            <tr><td>① 문서 로드</td><td>corpus.json</td><td><code>{ id, title, type, text }</code> × 12</td><td><code>fetch</code></td></tr>
+            <tr><td>② 청킹</td><td>문서 원문</td><td><code>{ id: 'doc#i', doc, start, end, text }</code> × 37</td><td><code>chunk()</code></td></tr>
+            <tr><td>③ 임베딩·저장</td><td>청크 텍스트</td><td>384차원 벡터 × 37 → <code>{ id, vector, meta }</code></td><td><code>embedBatch()</code>, <code>store.add()</code></td></tr>
+            <tr><td>④ 검색</td><td>질문 벡터</td><td><code>[{ id, score, meta }]</code> k개, 점수 내림차순</td><td><code>store.search(q, k)</code></td></tr>
+            <tr><td>⑤ 프롬프트</td><td>질문 + 청크 k개</td><td><code>{ system, messages }</code>, 근거에 [1] [2] 번호</td><td><code>ragPrompt()</code></td></tr>
+            <tr><td>⑥ 생성</td><td>프롬프트</td><td><code>{ text, usage }</code></td><td><code>generate()</code></td></tr>
+          </tbody>
+        </table>
+        <p>④의 점수는 코사인 유사도다. 벡터스토어가 벡터를 미리 길이 1로 정규화해 두므로 질문 벡터 <code>q</code>와 청크 벡터 <code>c</code>의 점수는 내적 <code>q · c = Σ qᵢcᵢ</code> 하나로 계산된다. 이 점수로 정렬해 앞에서 k개를 자르는 것이 검색의 전부다.</p>
+
+        <h3>디버깅 순서: 검색부터 확인한다</h3>
+        <p>답이 틀리면 LLM부터 의심하기 쉽다. 하지만 LLM은 ⑤의 프롬프트만 본다. 프롬프트에 근거가 없으면 어떤 모델도 맞힐 수 없다. 그래서 순서를 거꾸로 올라가지 않고, <strong>가운데인 ④에서 시작</strong>해 양쪽으로 좁힌다.</p>
+        <ol>
+          <li><strong>④ 근거 청크가 top-k 안에 있는가(hit)?</strong> 골든셋의 근거 문장을 온전히 담은 청크가 검색 결과에 있는지 본다.</li>
+          <li>없으면 <strong>몇 위인가?</strong> k 바로 밖이면 k나 검색 방식(8주차)의 문제다. 어느 청크에도 근거가 온전히 없으면 ② 청킹이 잘랐거나(4주차) ① 문서가 깨진 것이다(3주차).</li>
+          <li>있으면 <strong>⑤ 프롬프트</strong>를 읽는다. 근거가 들어갔나? 사람이 읽어도 답이 나오는 글인가?</li>
+          <li>그래도 틀리면 그때 <strong>⑥ 생성</strong>을 본다. 시스템 지시, 모델, 온도(temperature)를 바꿔 본다.</li>
+        </ol>
+        <table>
+          <thead><tr><th>증상</th><th>먼저 볼 곳</th><th>이번 주 예</th></tr></thead>
+          <tbody>
+            <tr><td>“찾을 수 없다”인데 답이 문서셋에 있다</td><td>④ 순위</td><td>q10: 근거 청크가 6위라 top-3 밖</td></tr>
+            <tr><td>엉뚱한 청크가 1위</td><td>④ 결과 목록, ① 문서 품질</td><td>q03: 저작권 문구 청크가 1위</td></tr>
+            <tr><td>검색은 됐는데 답이 틀렸다</td><td>⑤ 프롬프트 속 근거 원문</td><td>q11: OCR 오류 “5O%”가 그대로 전달</td></tr>
+            <tr><td>근거에 없는 말을 덧붙인다</td><td>⑥ 시스템 지시, 온도</td><td>9주차 Faithfulness로 측정</td></tr>
+          </tbody>
+        </table>
+
+        <h3>최소 구현 코드</h3>
+        <p>core 모듈을 쓰면 파이프라인 전체가 20줄 남짓이다. 아래 코드는 임베딩 모델과 API 키가 필요해 ▶ 실행 상자로 두지 않았다. 실습 위젯이 바로 이 흐름을 돌린다.</p>
+        <pre><code class="language-javascript">import { chunk } from '/assets/js/core/chunker.js';
+import { loadModel, embed, embedBatch } from '/assets/js/core/embed.js';
+import { VectorStore } from '/assets/js/core/vectorstore.js';
+import { generate, ragPrompt } from '/assets/js/core/llm.js';
+
+// ── 색인 단계: 문서가 바뀔 때 한 번 ──
+const { documents } = await (await fetch('/assets/data/corpus/corpus.json')).json();
+const chunks = documents.flatMap((d) =>
+  chunk(d.text, { strategy: 'recursive', size: 200 })
+    .map((c) => ({ ...c, id: `${d.id}#${c.index}`, doc: d.id })));
+await loadModel('Xenova/multilingual-e5-small');
+const vectors = await embedBatch(chunks.map((c) => c.text), { role: 'passage' });
+const store = new VectorStore();
+chunks.forEach((c, i) => store.add(c.id, vectors[i], c));
+
+// ── 질의 단계: 질문마다 ──
+async function answer(question, k = 3) {
+  const q = await embed(question, { role: 'query' });
+  const hits = store.search(q, k);                          // ④
+  const prompt = ragPrompt(question, hits.map((h) => h.meta)); // ⑤
+  const { text } = await generate({ provider: 'anthropic', ...prompt }); // ⑥
+  return { text, sources: hits.map((h) => h.id) };
+}</code></pre>
+        <p>반환값에 <code>sources</code>를 함께 돌려주는 것이 중요하다. 답만 돌려주면 나중에 “왜 이 답이 나왔나”를 추적할 수 없다. 11주차에는 이 id로 원문 위치를 찾아 인용을 하이라이트한다.</p>
+      </section>
+
+      <section id="lab">
+        <h2><span class="section-num">4</span>실습</h2>
+        <p>아래 위젯은 문서셋 전체로 위 코드를 실제로 돌린다. 모델을 내려받는 동안에도 ①·② 단계 결과가 먼저 보이고, 모델이 준비되면 ③~⑥이 자동으로 이어진다. 단계마다 걸린 시간과 산출물이 오른쪽 <b>실행 결과</b> 창(휴대폰에서는 위젯 아래)에 표시된다. 맨 위의 12칸은 골든셋 12문항 각각의 근거 청크가 몇 위로 검색됐는지 보여 준다.</p>
+        <div class="callout callout--more">
+          <span class="callout__title">API 키가 없어도 된다</span>
+          <p>①~⑤는 키 없이 전부 실제로 실행된다. ⑥은 키가 없으면 <b>“예시 응답 · 수업용 작성 예시”</b> 표시와 함께 수업용으로 작성한 예시 응답을 보여 준다(근거 검색 성공·실패 두 경우). 키를 넣으면 ⑤의 프롬프트 그대로 실제 LLM을 호출한다. 키는 이 탭의 sessionStorage에만 저장되고 탭을 닫으면 사라진다.</p>
+        </div>
+      </section>
+
+      <div id="w07-widget"></div>
+
+      <section aria-labelledby="observe-title">
+        <h3 id="observe-title">관찰 질문</h3>
+        <ol>
+          <li>처음 화면(q01)에서 단계별 시간을 읽는다. 색인 단계(①~③)와 질의 단계(④·⑤) 중 어느 쪽이 오래 걸리나? 질문만 바꾸면 어떤 단계가 다시 실행되고 ③의 시간은 어떻게 표시되나?</li>
+          <li><strong>✗ top-k=1: q03</strong>을 누른다. 1위로 올라온 청크는 무엇이고, 왜 수료 요건 질문과 가깝다고 계산됐을까? top-k를 2로 올리면 hit가 되는가? 그 대가로 ⑤ 프롬프트는 몇 자 늘었나?</li>
+          <li><strong>✗ 표 깨짐: q10</strong>을 누른다. 근거 청크는 몇 위인가? top-3 안에 들어온 <em>2학기 시간표</em> 청크에는 무엇이 들어 있나? 청크 크기를 300으로 바꾸면 어떻게 되고, 그 이유는 무엇인가?</li>
+          <li><strong>✗ OCR 오류: q11</strong>을 누른다. ④는 hit인데 ⑥의 답은 왜 틀렸나? 이 문제는 ①~⑥ 중 어느 단계를 고쳐야 해결되나?</li>
+          <li>임베딩 모델을 <strong>all-MiniLM-L6-v2</strong>로 바꾸고 12칸의 hit@3을 본다. ⑤의 프롬프트 형식은 똑같은데 무엇이 달라졌나? 이것이 “검색부터 확인하라”는 말과 어떻게 연결되나?</li>
+          <li>(키가 있으면) <strong>직접 입력</strong>으로 문서셋에 없는 질문(예: “학생 식당 메뉴는?”)을 한다. LLM은 “문서에서 찾을 수 없다”고 답하나, 아니면 지어내나?</li>
+        </ol>
+      </section>
+
+      <section id="challenge">
+        <h2><span class="section-num">5</span>Challenge</h2>
+        <p>난이도 순서다. 코드 상자는 직접 고칠 수 있고, <strong>▶ 실행</strong>(또는 Ctrl+Enter)을 누르면 결과가 오른쪽 <b>실행 결과</b> 창에 나온다(휴대폰에서는 코드 바로 아래). 코드는 워커에서 돌아가고 10초 뒤 자동으로 멈춘다. 워커에서는 임베딩 모델을 내려받거나 LLM을 호출하지 않는다. 대신 <strong>BM25 키워드 검색</strong>(<code>core/bm25.js</code>)을 벡터 검색의 대역으로, 근거 문장 하나를 그대로 옮기는 <strong>가짜 LLM</strong>(<code>mockGenerate</code>)을 생성의 대역으로 쓴다. 파이프라인의 모양은 똑같다.</p>
+
+        <div class="practice">
+          <div class="practice-head"><b>C1. 번호 붙은 출처로 프롬프트 만들기</b><span class="level" aria-label="난이도 1">★</span></div>
+          <div class="practice-body">
+          <p>검색된 청크를 <code>[1] (문서 제목) 본문</code> 형식으로 번호를 붙여 프롬프트를 만드는 <code>formatPrompt</code>를 작성한다. 지시문(근거만 사용, 없으면 “문서에서 찾을 수 없다”, 근거 번호 표기)도 넣는다. 결과를 <code>core/llm.js</code>의 <code>ragPrompt</code>와 비교하고, 둘 사이의 빈 줄 차이가 어디서 오는지 찾는다.</p>
+          <pre data-run="c1" data-title="C1 번호 붙은 프롬프트"><code class="language-javascript">import { ragPrompt } from '/assets/js/core/llm.js';
+
+function formatPrompt(question, contexts) {
+  // TODO: contexts를 "[1] (문서 제목) 청크 텍스트" 형식으로 이어 붙인다 (텍스트는 trim, 사이는 빈 줄)
+  const sources = '';
+  // TODO: 지시문 두 줄 + "근거 문서:" + sources + "질문: ..." 순서로 하나의 문자열을 만든다
+  return `근거 문서:\n${sources}\n\n질문: ${question}`;
+}
+
+const contexts = [
+  { title: '실습실 이용 규정', text: '한 사람이 연속으로 사용할 수 있는 시간은 최대 12시간이다.\n' },
+  { title: '학과 소개', text: '각 실습실에는 GPU가 장착된 PC 30대가 있다.' },
+];
+const q = 'GPU 서버를 연속으로 쓸 수 있는 최대 시간은?';
+console.log(formatPrompt(q, contexts));
+console.log('--- core/llm.js ragPrompt 비교 ---');
+console.log(ragPrompt(q, contexts).messages[0].content);</code></pre>
+          </div>
+        </div>
+
+        <div class="practice">
+          <div class="practice-head"><b>C2. answer(question) 파이프라인 함수</b><span class="level" aria-label="난이도 2">★★</span></div>
+          <div class="practice-body">
+          <p>색인 단계(청킹 → BM25 색인)는 한 번만, 질의 단계(검색 → 프롬프트 → 생성)는 질문마다 실행되도록 <code>answer(question, k)</code>를 완성한다. 반환값에는 답과 함께 근거 청크 id(<code>sources</code>)를 넣는다. 세 질문 중 어느 답이 틀렸는지, 그 이유가 무엇인지 적는다.</p>
+          <pre data-run="c2" data-title="C2 answer() 파이프라인"><code class="language-javascript">import { chunk } from '/assets/js/core/chunker.js';
+import { BM25, tokenize } from '/assets/js/core/bm25.js';
+import { ragPrompt } from '/assets/js/core/llm.js';
+
+// 가짜 LLM: 근거 문장 중 질문과 겹치는 토큰이 가장 많은 문장을 그대로 옮긴다
+function mockGenerate({ messages }) {
+  const [ctx, q] = messages[0].content.replace('근거 문서:\n', '').split('\n\n질문: ');
+  const qt = new Set(tokenize(q));
+  let best = { score: 0, text: '' };
+  for (const src of ctx.split(/\n\n(?=\[\d+\] )/)) {
+    const [, n, body = ''] = src.match(/^\[(\d+)\] ([\s\S]*)$/) ?? [];
+    for (const sent of body.split(/(?&lt;=[.!?])\s+|\n+/)) {
+      const score = [...new Set(tokenize(sent))].filter((t) => qt.has(t)).length;
+      if (score > best.score) best = { score, text: `${sent.trim()} [${n}]` };
+    }
+  }
+  return { text: best.score >= 3 ? best.text : '문서에서 찾을 수 없다.' };
+}
+
+const corpus = await (await fetch('/assets/data/corpus/corpus.json')).json();
+
+// 색인 단계: 한 번만
+// TODO: 모든 문서를 재귀 분할 200자로 청킹해 { id: `${doc.id}#${c.index}`, doc, text }로 만든다
+const chunks = [];
+const retriever = new BM25().add(chunks); // 임베딩 대신 BM25를 대역으로 쓴다
+
+// 질의 단계: 질문마다
+function answer(question, k = 3) {
+  // TODO: ① retriever.search로 top-k ② ragPrompt로 프롬프트 ③ mockGenerate로 생성
+  return { answer: '', sources: [] };
+}
+
+for (const q of ['실습실에서 GPU 서버를 한 사람이 연속으로 쓸 수 있는 최대 시간은?',
+  '성적 우수 장학금 지급액은?', 'RAG 수업은 무슨 요일 몇 교시이고 어느 강의실인가?']) {
+  console.log(q, answer(q));
+}</code></pre>
+          </div>
+        </div>
+
+        <div class="practice">
+          <div class="practice-head"><b>C3. 중간 산출물 로그 남기기</b><span class="level" aria-label="난이도 2">★★</span></div>
+          <div class="practice-body">
+          <p>각 단계를 <code>step(이름, 함수, 요약함수)</code>로 감싸서 걸린 시간과 산출물 요약을 <code>log</code>에 쌓는다. 끝에 <code>console.table(log)</code>로 한눈에 본다. q10(RAG 수업 요일)을 넣었을 때 로그의 어느 줄에서 이미 실패가 보이는지 찾는다.</p>
+          <pre data-run="c3" data-title="C3 단계별 로그"><code class="language-javascript">import { chunk } from '/assets/js/core/chunker.js';
+import { BM25, tokenize } from '/assets/js/core/bm25.js';
+import { ragPrompt } from '/assets/js/core/llm.js';
+
+// 가짜 LLM (C2와 같다)
+function mockGenerate({ messages }) {
+  const [ctx, q] = messages[0].content.replace('근거 문서:\n', '').split('\n\n질문: ');
+  const qt = new Set(tokenize(q));
+  let best = { score: 0, text: '' };
+  for (const src of ctx.split(/\n\n(?=\[\d+\] )/)) {
+    const [, n, body = ''] = src.match(/^\[(\d+)\] ([\s\S]*)$/) ?? [];
+    for (const sent of body.split(/(?&lt;=[.!?])\s+|\n+/)) {
+      const score = [...new Set(tokenize(sent))].filter((t) => qt.has(t)).length;
+      if (score > best.score) best = { score, text: `${sent.trim()} [${n}]` };
+    }
+  }
+  return { text: best.score >= 3 ? best.text : '문서에서 찾을 수 없다.' };
+}
+
+const log = [];
+async function step(stage, fn, summarize) {
+  // TODO: fn 실행 전후로 performance.now()를 재서 { stage, ms, artifact: summarize(out) }를 log에 push
+  const out = await fn();
+  return out;
+}
+
+const question = 'RAG 수업은 무슨 요일 몇 교시이고 어느 강의실인가?';
+const docs = await step('① 문서 로드',
+  async () => (await (await fetch('/assets/data/corpus/corpus.json')).json()).documents,
+  (d) => `문서 ${d.length}개`);
+const chunks = await step('② 청킹',
+  () => docs.flatMap((d) => chunk(d.text, { strategy: 'recursive', size: 200 })
+    .map((c) => ({ id: `${d.id}#${c.index}`, doc: d.id, text: c.text.trim() }))),
+  (c) => `청크 ${c.length}개`);
+// TODO: ③ 색인(BM25) ④ 검색 top-3 ⑤ 프롬프트 ⑥ 생성(mock)도 step()으로 감싼다
+//       ④의 요약에는 청크 id와 점수를 남긴다. 틀린 답의 원인은 대개 여기서 보인다
+
+console.table(log);</code></pre>
+          </div>
+        </div>
+
+        <div class="practice">
+          <div class="practice-head"><b>C4. 골든셋 근거로 hit 판정하기</b><span class="level" aria-label="난이도 3">★★★</span></div>
+          <div class="practice-body">
+          <p>검색 결과 top-k 안에 골든셋 근거 문장(<code>evidence.quote</code>)을 온전히 담은 청크가 있으면 hit다. 문서 id도 같아야 한다. <code>checkHit</code>를 완성해 12문항의 hit 여부와 순위를 표로 출력하고, miss인 문항을 적는다. 위젯의 벡터 검색에서 miss였던 문항과 같은가?</p>
+          <pre data-run="c4" data-title="C4 hit 판정"><code class="language-javascript">import { chunk } from '/assets/js/core/chunker.js';
+import { BM25 } from '/assets/js/core/bm25.js';
+
+const corpus = await (await fetch('/assets/data/corpus/corpus.json')).json();
+const golden = await (await fetch('/assets/data/golden/golden.json')).json();
+const chunks = corpus.documents.flatMap((d) =>
+  chunk(d.text, { strategy: 'recursive', size: 200 })
+    .map((c) => ({ id: `${d.id}#${c.index}`, doc: d.id, text: c.text })));
+const retriever = new BM25().add(chunks);
+
+// results: retriever.search()의 결과 [{ id, score, text, meta: { doc } }]
+function checkHit(results, evidence) {
+  // TODO: meta.doc이 evidence.doc과 같고 text가 evidence.quote를 온전히 포함하는 첫 결과를 찾는다
+  // TODO: { hit: 찾았는가, rank: 1부터 센 순위(없으면 0) }를 돌려준다
+  return { hit: false, rank: 0 };
+}
+
+const rows = golden.items.map((item) => {
+  const results = retriever.search(item.question, 3);
+  const { hit, rank } = checkHit(results, item.evidence[0]);
+  return { id: item.id, hit, rank, top1: results[0]?.id ?? '-' };
+});
+console.table(rows);
+// TODO: hit@3 = (hit 개수)/12 와 miss 문항 id를 출력한다</code></pre>
+          </div>
+        </div>
+
+        <div class="practice">
+          <div class="practice-head"><b>C5. 12문항 hit@k와 청크 크기 비교</b><span class="level" aria-label="난이도 4">★★★★</span></div>
+          <div class="practice-body">
+          <p><code>core/metrics.js</code>의 <code>hitAtK</code>, <code>reciprocalRank</code>로 BM25 검색의 hit@1, hit@3, hit@5, MRR을 12문항 평균으로 계산한다. 청크 크기 100, 200, 300을 비교하는 표를 출력하고, 크기 100에서 q09가 절대 hit가 될 수 없는 이유를 설명한다. 이 표가 9주차 평가 점수판의 축소판이다.</p>
+          <pre data-run="c5" data-title="C5 hit@k 비교"><code class="language-javascript">import { chunk } from '/assets/js/core/chunker.js';
+import { BM25 } from '/assets/js/core/bm25.js';
+import { hitAtK, reciprocalRank } from '/assets/js/core/metrics.js';
+
+const corpus = await (await fetch('/assets/data/corpus/corpus.json')).json();
+const golden = await (await fetch('/assets/data/golden/golden.json')).json();
+
+function evaluateBM25(size) {
+  const chunks = corpus.documents.flatMap((d) =>
+    chunk(d.text, { strategy: 'recursive', size })
+      .map((c) => ({ id: `${d.id}#${c.index}`, doc: d.id, text: c.text })));
+  const retriever = new BM25().add(chunks);
+  const runs = golden.items.map((item) => {
+    const ev = item.evidence[0];
+    // TODO: relevant = 근거 문장을 온전히 담은 청크 id 배열
+    const relevant = [];
+    // TODO: retrieved = 전체 순위의 청크 id 배열 (retriever.search(질문, chunks.length))
+    const retrieved = [];
+    return { id: item.id, retrieved, relevant };
+  });
+  // TODO: hit@1, hit@3, hit@5, MRR을 runs 평균으로 계산해 함께 돌려준다
+  return { size, chunks: chunks.length };
+}
+
+console.table([100, 200, 300].map(evaluateBM25));</code></pre>
+          </div>
+        </div>
+      </section>
+
+      <section id="wrap">
+        <h2><span class="section-num">6</span>정리 &amp; 다음 주 예고</h2>
+        <ul>
+          <li>RAG는 <strong>색인 단계</strong>(문서 → 청킹 → 임베딩 → 벡터스토어, 한 번)와 <strong>질의 단계</strong>(질문 임베딩 → 검색 → 프롬프트 → 생성, 매번)로 나뉜다. 두 단계는 같은 임베딩 모델로 연결된다.</li>
+          <li>각 단계의 산출물 모양을 알고, 파이프라인 함수는 답과 함께 근거 id를 돌려준다.</li>
+          <li>LLM은 프롬프트에 든 것만 본다. 답이 틀리면 <strong>검색부터</strong> 확인한다: hit인가 → 몇 위인가 → 프롬프트 속 근거가 읽을 만한가 → 그다음이 생성이다.</li>
+          <li>검색이 성공해도 깨진 문서(q11의 “5O%”)는 틀린 답을 만든다. 파싱 품질은 마지막 단계까지 따라온다.</li>
+        </ul>
+        <p><strong>다음 주(8주차 하이브리드 검색 + 리랭킹)</strong>에는 이번 주의 검색 단계를 강화한다. 이번 주 결과를 보면 벡터 검색은 q03에서 저작권 문구 청크를 1위로 올렸고, BM25는 q09를 4위로 놓쳤다. 두 방식이 <em>서로 다른 문항에서</em> 실패한다는 뜻이다. 두 결과를 RRF로 합치는 하이브리드 검색과, 후보를 다시 정렬하는 리랭킹으로 이 빈틈을 메운다.</p>
+      </section>
+
+      <div class="section-end">
+        <label class="done-toggle">
+          <input type="checkbox" data-done-toggle="7"> ✅ 7주차 학습 완료로 표시
+        </label>
+      </div>
+      <nav class="week-nav" data-week-nav="7" aria-label="주차 이동"></nav>
+        </article>
+      </div>
+    </main>
+  </div>
+
+  <script type="module">
+    import { mount } from '../../assets/js/widgets/w07-pipeline.js';
+    import { initRunners } from '../../assets/js/site/runner.js';
+    mount(document.getElementById('w07-widget'));
+    initRunners(document.getElementById('challenge'));
+  </script>
+</body>
+</html>

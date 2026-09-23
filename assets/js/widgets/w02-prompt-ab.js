@@ -196,7 +196,7 @@ template.innerHTML = `
           </label>
           <label class="field">
             <span class="field__label">온도(temperature) <output data-out="temp"></output></span>
-            <input type="range" data-in="temp" min="0" max="1.5" step="0.1">
+            <input type="range" data-in="temp" min="0" max="1" step="0.1">
           </label>
         </div>
         <div class="btn-row">
@@ -352,7 +352,7 @@ export async function mount(el, options = {}) {
     const has = hasKey(s.provider);
     $('[data-slot=keystate]').textContent = has
       ? `${PROVIDERS[s.provider].label} 키가 이 탭에 저장되어 있다. ▶ A·B 실행으로 두 프롬프트를 실제로 돌린다.`
-      : '키가 없으면 미리 준비한 예시 응답(저장된 결과)을 보여 준다. 키는 sessionStorage에만 두고 탭을 닫으면 사라진다.';
+      : '키가 없으면 미리 준비한 수업용으로 작성한 예시 응답을 보여 준다. 키는 sessionStorage에만 두고 탭을 닫으면 사라진다.';
     $('[data-act=run]').disabled = s.running;
     $('[data-act=run]').textContent = s.running ? '실행 중…' : '▶ A·B 실행';
   }
@@ -404,7 +404,7 @@ export async function mount(el, options = {}) {
       banner = `<div class="callout ${stale ? 'callout--more' : 'callout--ok'}"><span class="callout__title">실시간 응답 · ${escapeHtml(live.model)} · 온도 ${live.temp}</span>
         ${stale ? '실행한 뒤 설정을 바꿨다. 아래 결과는 이전 설정 기준이다. ▶ 다시 실행하면 갱신된다.' : '같은 질문·같은 근거로 두 프롬프트를 실행한 결과다. 온도를 올려 여러 번 실행하면 A가 더 쉽게 흔들린다.'}</div>`;
     } else {
-      banner = `<div class="callout ${def ? 'callout--danger' : 'callout--more'}"><span class="callout__title">예시 응답 · 저장된 결과</span>
+      banner = `<div class="callout ${def ? 'callout--danger' : 'callout--more'}"><span class="callout__title">예시 응답 · 수업용 작성 예시</span>
         ${def
           ? escapeHtml(preset.lesson)
           : '질문이나 템플릿을 바꿨다. 아래 저장된 응답은 <b>기본 설정</b> 기준이라 지금 프롬프트와 맞지 않는다. 바뀐 프롬프트의 결과는 API 키를 넣고 ▶ 실행해 확인한다. 위의 최종 프롬프트·길이는 이미 갱신되었다.'}
@@ -415,7 +415,7 @@ export async function mount(el, options = {}) {
     $('[data-slot=cards]').innerHTML = ['A', 'B']
       .map((v) => {
         const r = live ? live[v] : { text: preset.saved[v] };
-        const tag = live ? '<span class="chip accent">실시간 응답</span>' : '<span class="chip warn">예시 응답 · 저장된 결과</span>';
+        const tag = live ? '<span class="chip accent">실시간 응답</span>' : '<span class="chip warn">예시 응답 · 수업용 작성 예시</span>';
         let body;
         let rows = '';
         if (r?.pending) {

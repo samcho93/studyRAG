@@ -1,0 +1,409 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>9주차 평가 데이터셋 &amp; 측정 · RAG Lab</title>
+  <meta name="description" content="평가 데이터셋과 측정: 골든셋을 만들고 Recall@k, MRR, nDCG로 청킹·검색 설정을 채점하며, Faithfulness와 LLM-as-judge의 한계를 확인한다.">
+  <script>try{var t=JSON.parse(localStorage.getItem('raglab:theme'));if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+  <link rel="stylesheet" crossorigin="anonymous" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&display=swap">
+  <link rel="stylesheet" href="../../assets/css/tokens.css">
+  <link rel="stylesheet" href="../../assets/css/base.css">
+  <link rel="stylesheet" href="../../assets/css/components.css">
+  <link rel="stylesheet" href="../../assets/css/w09.css">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%232450c4'/%3E%3Ccircle cx='14' cy='14' r='6' fill='none' stroke='white' stroke-width='3'/%3E%3Cpath d='M19 19l6 6' stroke='white' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E">
+  <script type="module" src="../../assets/js/site/site.js"></script>
+</head>
+<body>
+  <div class="layout" data-layout data-role="student" data-week="9" data-crumb="PART 3 · RAG 완성과 고도화 › <b>9주차 · 평가 데이터셋 &amp; 측정</b>">
+    <main class="pane center" id="main">
+      <div class="content" tabindex="-1">
+        <article class="doc">
+      <span class="chapter-badge">📊 9주차 · 평가 데이터셋 &amp; 측정</span>
+      <h1>좋아진 것 같다는 느낌을 숫자로 바꾼다</h1>
+      <p class="lead">청크 크기, 검색 방식, k를 바꿀 때마다 “이번 게 더 나은가?”를 물어 왔다. 이번 주에는 질문·정답·근거를 묶은 골든셋으로 그 질문에 숫자로 답하고, 그 숫자를 어디까지 믿어도 되는지도 따져 본다.</p>
+      <div class="meta-row">
+        <span class="chip">⏱ 180분</span>
+        <span class="chip accent">▶ 체험: 점수판(Recall@k, nDCG)</span>
+        <span class="chip">🧪 Challenge 5개</span>
+        <span class="chip">🔑 LLM API 키 선택</span>
+      </div>
+      <div class="flow" aria-label="RAG 파이프라인에서 이번 주의 위치">
+        <div>문서 파싱</div><div>청킹</div><div>임베딩</div><div>벡터스토어</div><div>검색</div><div>생성</div><div><b>평가</b></div>
+      </div>
+
+      <section id="goals">
+        <h2><span class="section-num">1</span>학습 목표</h2>
+        <div class="goals">
+        <b>이번 주가 끝나면</b>
+        <ul>
+          <li>검색 평가와 생성 평가를 구분하고, 질문·정답·근거로 이루어진 골든셋 항목을 만들 수 있다.</li>
+          <li>Recall@k, Precision@k, MRR, nDCG@k를 손으로 계산하고 코드로 검산할 수 있다.</li>
+          <li>골든셋으로 청킹·검색 설정을 비교하고, 12문항 점수의 잡음과 과적합 위험을 설명할 수 있다.</li>
+        </ul>
+        </div>
+      </section>
+
+      <section id="why">
+        <h2><span class="section-num">2</span>왜 필요한가</h2>
+        <p>8주차까지 우리는 설정을 바꾸고 질문 한두 개를 던져 결과를 눈으로 확인했다. 이 방식이 얼마나 위험한지 실제 숫자로 본다.</p>
+        <p>재귀 분할 200자 + BM25로 검색하면 “RAG 수업은 무슨 요일 몇 교시이고 어느 강의실인가?”(q10)의 근거 청크가 <strong>12위</strong>로 밀려 상위 3개에 들지 않는다. 이 질문 하나만 보고 설정을 고정 길이 100자로 바꾸면 q10의 근거는 <strong>1위</strong>로 올라온다. 고쳤다고 생각하기 쉽다.</p>
+        <div class="callout callout--danger">
+          <span class="callout__title">한 문항을 고치는 동안 여섯 문항이 망가졌다</span>
+          <p>같은 변경을 골든셋 12문항 전체로 채점하면 상위 3개 안에 근거가 들어온 비율(Hit@3)이 <b>0.833 → 0.500</b>으로 떨어진다. 100자 경계에서 근거 문장 다섯 개가 잘렸고(q01·q04·q05·q08·q11), q09는 근거 청크에서 “HNSW”라는 단어가 떨어져 나가 아예 검색되지 않는다.</p>
+        </div>
+        <p>눈으로 본 한 문항은 좋아졌고 보지 않은 여섯 문항은 조용히 망가졌다. 평가 데이터셋이 없으면 이런 퇴보를 알아챌 방법이 없다. 그래서 RAG 개발은 “같은 골든셋으로 매번 다시 채점한다”는 습관에서 시작한다.</p>
+      </section>
+
+      <section id="concept">
+        <h2><span class="section-num">3</span>개념</h2>
+
+        <h3>검색 평가와 생성 평가</h3>
+        <figure class="figure">
+          <svg viewBox="0 0 660 250" role="img" aria-labelledby="eval-fig-title" style="width: 100%">
+            <title id="eval-fig-title">검색 평가는 상위 k개 청크를 골든셋 근거와 비교하고, 생성 평가는 답변을 검색된 근거와 비교한다</title>
+            <style>
+              .w9f-lane { font: 700 13px var(--font-sans); fill: var(--color-text); }
+              .w9f-box { fill: var(--color-surface-2); stroke: var(--color-border-strong); }
+              .w9f-gold { fill: var(--color-accent2-soft); stroke: var(--color-accent2); }
+              .w9f-met { fill: var(--color-accent-soft); stroke: var(--color-accent); }
+              .w9f-t { font: 12.5px var(--font-sans); fill: var(--color-text); }
+              .w9f-m { font: 11.5px var(--font-sans); fill: var(--color-text-muted); }
+              .w9f-arr { stroke: var(--color-text-muted); stroke-width: 1.6; fill: none; marker-end: url(#w09-arrow); }
+              .w9f-dash { stroke-dasharray: 5 4; }
+            </style>
+            <defs>
+              <marker id="w09-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M0 0L10 5L0 10z" style="fill: var(--color-text-muted)"/>
+              </marker>
+            </defs>
+            <text class="w9f-lane" x="0" y="18">① 검색 평가 — 근거를 찾아왔나?</text>
+            <rect class="w9f-box" x="0" y="30" width="110" height="48" rx="8"/><text class="w9f-t" x="55" y="58" text-anchor="middle">질문</text>
+            <rect class="w9f-box" x="150" y="30" width="130" height="48" rx="8"/><text class="w9f-t" x="215" y="52" text-anchor="middle">검색기</text><text class="w9f-m" x="215" y="68" text-anchor="middle">상위 k개 청크</text>
+            <rect class="w9f-gold" x="320" y="30" width="150" height="48" rx="8"/><text class="w9f-t" x="395" y="52" text-anchor="middle">골든셋 근거와 비교</text><text class="w9f-m" x="395" y="68" text-anchor="middle">정답 청크가 몇 위?</text>
+            <rect class="w9f-met" x="510" y="30" width="150" height="48" rx="8"/><text class="w9f-t" x="585" y="52" text-anchor="middle">Recall@k · MRR</text><text class="w9f-t" x="585" y="68" text-anchor="middle">nDCG@k</text>
+            <path class="w9f-arr" d="M110 54H148"/><path class="w9f-arr" d="M280 54H318"/><path class="w9f-arr" d="M470 54H508"/>
+
+            <text class="w9f-lane" x="0" y="138">② 생성 평가 — 근거대로 답했나?</text>
+            <rect class="w9f-box" x="0" y="150" width="150" height="48" rx="8"/><text class="w9f-t" x="75" y="172" text-anchor="middle">질문 + 검색된 청크</text><text class="w9f-m" x="75" y="188" text-anchor="middle">(컨텍스트)</text>
+            <rect class="w9f-box" x="190" y="150" width="100" height="48" rx="8"/><text class="w9f-t" x="240" y="178" text-anchor="middle">LLM 답변</text>
+            <rect class="w9f-gold" x="330" y="150" width="140" height="48" rx="8"/><text class="w9f-t" x="400" y="172" text-anchor="middle">판정자(사람·LLM)</text><text class="w9f-m" x="400" y="188" text-anchor="middle">주장마다 근거 확인</text>
+            <rect class="w9f-met" x="510" y="150" width="150" height="48" rx="8"/><text class="w9f-t" x="585" y="172" text-anchor="middle">Faithfulness</text><text class="w9f-t" x="585" y="188" text-anchor="middle">Answer relevance</text>
+            <path class="w9f-arr" d="M150 174H188"/><path class="w9f-arr" d="M290 174H328"/><path class="w9f-arr" d="M470 174H508"/>
+            <path class="w9f-arr w9f-dash" d="M215 78V112H75V148"/>
+            <text class="w9f-m" x="225" y="104">검색 결과가 그대로 생성의 입력이 된다</text>
+            <text class="w9f-m" x="0" y="236">검색이 근거를 놓치면(①이 0점) 생성은 아무리 잘해도 근거 없는 답이 된다. 그래서 ①을 먼저 측정한다.</text>
+          </svg>
+          <figcaption>RAG는 두 단계로 나눠 평가한다. 위는 LLM 없이 계산할 수 있고, 아래는 답변을 읽고 판정해야 한다.</figcaption>
+        </figure>
+
+        <table>
+          <thead><tr><th></th><th>검색 평가</th><th>생성 평가</th></tr></thead>
+          <tbody>
+            <tr><td>묻는 것</td><td>필요한 근거가 상위 k개 안에 들어왔나</td><td>답변이 근거에 충실하고 질문에 맞나</td></tr>
+            <tr><td>필요한 정답</td><td>질문별 근거(문서·문장)</td><td>근거 + 기대 답변(선택)</td></tr>
+            <tr><td>대표 지표</td><td>Recall@k, Precision@k, Hit@k, MRR, nDCG@k</td><td>Faithfulness, Answer relevance, 정답 일치</td></tr>
+            <tr><td>계산 방법</td><td>순위 목록과 정답 집합의 비교 — 결정적이고 빠르다</td><td>사람 또는 LLM이 읽고 판정 — 느리고 흔들린다</td></tr>
+          </tbody>
+        </table>
+
+        <h3>골든셋 만드는 법</h3>
+        <p>골든셋(golden set)은 “이 질문에는 이 근거가 검색되어야 하고, 답은 이것이다”를 적어 둔 평가용 데이터다. 이 과정의 골든셋 <code>assets/data/golden/golden.json</code>의 한 항목은 다음과 같다.</p>
+        <pre><code class="language-json">{
+  "id": "q01",
+  "question": "실습실에서 GPU 서버를 한 사람이 연속으로 쓸 수 있는 최대 시간은?",
+  "answer": "최대 12시간이다.",
+  "evidence": [{ "doc": "facility-rules",
+                 "quote": "한 사람이 연속으로 사용할 수 있는 시간은 최대 12시간이다." }]
+}</code></pre>
+        <ul>
+          <li><strong>근거는 문서 id가 아니라 원문 구간(quote)까지 적는다.</strong> 그래야 “문서는 맞췄지만 답이 없는 청크”를 걸러 낼 수 있다. quote는 원문에 글자 그대로 있어야 하고, 이것은 코드로 검사한다.</li>
+          <li><strong>질문은 사용자처럼 쓴다.</strong> 원문 문장을 그대로 베낀 질문은 BM25에 유리한 시험 문제가 된다. 우리 골든셋도 “12시간”, “RRF” 같은 단어를 공유하므로 BM25 점수가 후하게 나온다는 점을 기억한다.</li>
+          <li><strong>쉬운 문항만 모으지 않는다.</strong> 표·스캔·중복 문서처럼 망가진 문서(q10~q12), 숫자 답, 여러 문단에 걸친 답을 섞는다. 전부 맞히는 골든셋은 아무것도 구별하지 못한다.</li>
+          <li><strong>근거가 여러 개면 모두 적는다.</strong> 그래야 Recall@k가 “필요한 근거를 몇 개나 모았나”를 제대로 잰다. 우리 골든셋은 문항마다 근거가 1개라 Recall@k와 Hit@k가 같게 나온다.</li>
+        </ul>
+
+        <h3>무엇을 정답으로 칠까: 청크 단위와 문서 단위</h3>
+        <p>검색 결과는 청크다. 청크가 “정답”인지 판정하는 기준이 두 가지 있다.</p>
+        <table>
+          <thead><tr><th>기준</th><th>정답 조건</th><th>특징</th></tr></thead>
+          <tbody>
+            <tr><td>문서 단위</td><td>근거 문서에서 나온 청크면 정답</td><td>계산이 쉽다. 답이 없는 청크도 정답으로 쳐서 점수가 부풀려진다</td></tr>
+            <tr><td>청크 단위(근거 단위)</td><td>근거 문장을 온전히 담은 청크만 정답</td><td>엄격하다. 근거가 청크 경계에서 잘리면 어떤 청크도 정답이 아니다</td></tr>
+          </tbody>
+        </table>
+        <p>고정 100자 + BM25를 문서 단위로 채점하면 Hit@3이 <b>1.000</b>, 청크 단위로 채점하면 <b>0.500</b>이다. 같은 검색 결과인데 정답의 정의만 바꿔서 두 배 차이가 난다. 점수를 보고할 때는 반드시 정답 기준을 함께 적는다.</p>
+
+        <h3>지표를 손으로 계산하기</h3>
+        <p>질문 하나에 대해 검색기가 청크 5개를 순서대로 돌려주었고, 정답 청크는 A와 C 두 개라고 하자.</p>
+        <table class="w09-calc">
+          <thead><tr><th>순위 i</th><th>청크</th><th>정답?</th><th>1 / log₂(i+1)</th><th>기여(DCG)</th></tr></thead>
+          <tbody>
+            <tr><td>1</td><td>B</td><td>✗</td><td>1.000</td><td>0</td></tr>
+            <tr class="is-rel"><td>2</td><td>A</td><td>✓</td><td>0.631</td><td>0.631</td></tr>
+            <tr><td>3</td><td>D</td><td>✗</td><td>0.500</td><td>0</td></tr>
+            <tr class="is-rel"><td>4</td><td>C</td><td>✓</td><td>0.431</td><td>0.431</td></tr>
+            <tr><td>5</td><td>E</td><td>✗</td><td>0.387</td><td>0</td></tr>
+          </tbody>
+        </table>
+        <table>
+          <thead><tr><th>지표</th><th>뜻</th><th>계산 (k=3)</th><th>계산 (k=5)</th></tr></thead>
+          <tbody>
+            <tr><td>Precision@k</td><td>상위 k개 중 정답 비율</td><td>1/3 = 0.333</td><td>2/5 = 0.400</td></tr>
+            <tr><td>Recall@k</td><td>정답 전체 중 상위 k개 안에 든 비율</td><td>1/2 = 0.500</td><td>2/2 = 1.000</td></tr>
+            <tr><td>Hit@k</td><td>상위 k개에 정답이 하나라도 있나</td><td>1</td><td>1</td></tr>
+            <tr><td>RR (MRR)</td><td>첫 정답 순위의 역수. 질문들에 대해 평균하면 MRR</td><td colspan="2">1/2 = 0.500 (k와 무관)</td></tr>
+            <tr><td>nDCG@k</td><td>정답이 위에 있을수록 큰 점수, 이상적 순서 대비 비율</td><td>0.631 / 1.631 = 0.387</td><td>1.062 / 1.631 = 0.651</td></tr>
+          </tbody>
+        </table>
+        <p>직관을 먼저 잡고 식을 본다. Recall은 “빠뜨리지 않았나”, Precision은 “쓸데없는 것을 섞지 않았나”, MRR은 “첫 정답이 얼마나 위에 있나”를 본다. nDCG는 순위마다 할인율 <code>1/log₂(i+1)</code>을 곱해 더하므로 같은 정답이라도 1위에 있으면 1점, 4위에 있으면 0.431점만 받는다. 이 합(DCG)을 정답을 맨 위에 몰아 둔 이상적인 순서의 합(IDCG)으로 나누면 0~1 사이의 nDCG가 된다.</p>
+        <pre><code class="language-text">DCG@k  = Σ(i=1..k) rel_i / log₂(i+1)
+IDCG@k = 정답을 1위부터 채웠을 때의 DCG@k      예) 정답 2개 → 1 + 0.631 = 1.631
+nDCG@k = DCG@k / IDCG@k</code></pre>
+        <p>RAG에서는 k를 LLM에 넣을 청크 수로 맞춘다. 3개를 넣을 거라면 Recall@3이 가장 직접적인 지표다. 4위에 있는 근거는 LLM이 보지 못한다.</p>
+
+        <h3>생성 평가: Faithfulness와 Answer relevance</h3>
+        <ul>
+          <li><strong>Faithfulness(근거 충실도)</strong> — 답변을 주장 단위로 나누고, 각 주장이 검색된 근거로 뒷받침되는 비율이다. 근거에 없는 내용을 말했다면 우연히 사실이더라도 점수가 낮다.</li>
+          <li><strong>Answer relevance(답변 관련성)</strong> — 답변이 질문에 실제로 답하는가. “실습실은 오후 9시까지 개방된다”는 근거에 충실하지만 q01의 답으로는 관련성이 낮다.</li>
+        </ul>
+        <p>이 판정을 사람이 하면 느리고 비싸서 LLM에게 맡기는 방법, 곧 LLM-as-judge를 많이 쓴다. 편리하지만 판정자도 모델이라는 점을 잊으면 안 된다.</p>
+        <div class="callout">
+          <span class="callout__title">LLM-as-judge를 쓸 때 주의할 점</span>
+          <ul>
+            <li><b>흔들린다</b>: 같은 입력에도 판정이 바뀐다. temperature 0, 고정된 프롬프트, 여러 번 실행한 결과로 판단한다.</li>
+            <li><b>편향이 있다</b>: 긴 답변, 자기 회사 모델의 문체, 먼저 제시된 답을 선호하는 경향이 알려져 있다.</li>
+            <li><b>형식을 어긴다</b>: JSON을 요청해도 설명을 덧붙인다. 파싱 실패를 처리하고, 점수 산술은 코드로 다시 계산한다.</li>
+            <li><b>사람과 맞춰 본다</b>: 판정 결과 일부를 사람이 직접 채점해 일치율을 확인한 뒤에 믿는다.</li>
+          </ul>
+        </div>
+
+        <h3>숫자를 믿기 전에: 잡음과 과적합</h3>
+        <p><strong>12문항은 적다.</strong> 문항 하나가 점수를 1/12 ≈ 0.083만큼 움직인다. Hit@3 = 10/12 = 0.833의 95% 신뢰구간(윌슨 구간)은 대략 0.55~0.95다. 설정 A가 0.833, 설정 B가 0.917이면 “B가 낫다”가 아니라 “1문항 차이, 아직 모른다”가 정확한 해석이다. 실무에서는 최소 수십~수백 문항을 모은다.</p>
+        <p><strong>골든셋에 맞춰 튜닝하면 과적합(overfitting)이 된다.</strong> 12문항 점수가 오를 때까지 설정을 수십 번 바꾸면, 그 설정은 “이 12문항”에 맞춰진 것이지 실제 사용자 질문에 좋은 것이 아니다. 골든셋을 튜닝용(dev)과 최종 확인용(test)으로 나누고, test는 마지막에 한 번만 본다. 그리고 만점이 나오면 기뻐하기 전에 골든셋이 너무 쉬운지 의심한다. 이번 주 위젯의 “큰 청크: 고정 400” 설정이 그 예다.</p>
+      </section>
+
+      <section id="lab">
+        <h2><span class="section-num">4</span>실습</h2>
+        <p>아래 점수판은 문서셋 12개를 실제 <code>chunker.js</code>로 자르고, 골든셋 12문항을 BM25·벡터·하이브리드(RRF)로 검색한 뒤 <code>metrics.js</code>로 채점한다. 설정을 바꾸면 즉시 다시 채점되고, 결과(요약 점수, 저장한 설정 비교 표, 문항별 결과)는 오른쪽 <b>실행 결과</b> 창에 표시된다. BM25 점수는 바로 나오고, 벡터·하이브리드는 임베딩 모델(최초 1회 다운로드)이 준비되면 채워진다.</p>
+        <p>문항별 결과에서 ✓는 상위 k개 안에 근거가 있음, ✗는 근거가 k 밖이거나 검색되지 않음, ✂는 근거 문장을 온전히 담은 청크가 아예 없음(청킹 단계의 실패)을 뜻한다. 항목을 펼치면 상위 k개 청크와 근거 위치를 볼 수 있다. 맨 아래 “생성 평가 맛보기”에서는 API 키 없이 휴리스틱으로, 키가 있으면 LLM 판정자로 Faithfulness를 잰다.</p>
+      </section>
+
+      <div id="w09-widget"></div>
+
+      <section aria-labelledby="observe-title">
+        <h3 id="observe-title">관찰 질문</h3>
+        <ol>
+          <li>처음 설정(재귀 200 · BM25 · k=3)에서 실패하는 두 문항은 무엇이고, 근거는 각각 몇 위에 있나? k를 몇까지 올려야 둘 다 성공하나? 그때 LLM에 넣어야 하는 청크 수는?</li>
+          <li>“실패 재현: 고정 100 · 오버랩 0”을 누르고 저장한다. ✂ 표시가 붙은 문항은 몇 개인가? 오버랩을 20으로 올려 다시 저장하고 두 행을 비교한다.</li>
+          <li>“같은 설정을 문서 단위로 채점”을 누른다. 검색 결과는 그대로인데 점수가 얼마나 바뀌나? 어느 쪽 숫자를 보고서에 써야 하나?</li>
+          <li>“큰 청크: 고정 400”은 만점이 나온다. 우리 문서가 대부분 400~550자라는 점을 떠올리면, 이 만점은 무엇을 뜻하나? 이 설정이 실제로 좋은 설정인가?</li>
+          <li>검색 방식을 벡터와 하이브리드로 바꿔 각각 저장한다. BM25와의 차이는 몇 문항인가? 이 차이를 “벡터가 낫다(또는 못하다)”의 근거로 삼아도 되나? 영어 전용 모델로 바꾸면 어떻게 되나?</li>
+          <li>“생성 평가 맛보기”에서 q12를 고르고 “근거에 없는 주장 섞기”를 넣는다. 휴리스틱과 LLM 판정(저장된 예시)이 다른 이유는 무엇인가? q09·q11의 “충실한 답변”이 휴리스틱에서 근거 없음으로 나오는 이유도 찾는다.</li>
+        </ol>
+      </section>
+
+      <section id="challenge">
+        <h2><span class="section-num">5</span>Challenge</h2>
+        <p>난이도 순서다. 코드 상자는 직접 고칠 수 있고, <strong>▶ 실행</strong>(또는 Ctrl+Enter)을 누르면 결과가 오른쪽 <b>실행 결과</b> 창에 나온다(휴대폰에서는 코드 바로 아래). 코드는 페이지와 분리된 워커에서 돌아가므로 무한 루프가 생겨도 10초 뒤 자동으로 멈춘다. 모든 Challenge는 임베딩 모델과 LLM 없이 동작한다.</p>
+
+        <div class="practice">
+          <div class="practice-head"><b>C1. 지표 손계산과 검산</b><span class="level" aria-label="난이도 1">★</span></div>
+          <div class="practice-body">
+          <p>정답이 <code>d2, d5, d9</code> 세 개인 질문에 검색기가 아래 순서로 결과를 돌려주었다. k=5에서 Precision@5, Recall@5, Hit@5, RR, nDCG@5를 <strong>먼저 종이에</strong> 계산해 <code>mine</code>에 적고, <code>metrics.js</code>의 값과 비교한다.</p>
+          <pre data-run="c1" data-title="C1 지표 손계산"><code class="language-javascript">import { precisionAtK, recallAtK, hitAtK, reciprocalRank, ndcgAtK } from '/assets/js/core/metrics.js';
+
+const retrieved = ['d7', 'd2', 'd4', 'd5', 'd1', 'd9', 'd3'];
+const relevant = ['d2', 'd5', 'd9'];
+const k = 5;
+
+// TODO: 손으로 계산한 값을 적는다 (소수 셋째 자리까지)
+const mine = { precision: 0, recall: 0, hit: 0, rr: 0, ndcg: 0 };
+
+const lib = {
+  precision: precisionAtK(retrieved, relevant, k),
+  recall: recallAtK(retrieved, relevant, k),
+  hit: hitAtK(retrieved, relevant, k),
+  rr: reciprocalRank(retrieved, relevant),
+  ndcg: ndcgAtK(retrieved, relevant, k),
+};
+console.table(Object.keys(lib).map((m) => ({ metric: m, mine: mine[m], lib: lib[m], ok: Math.abs(mine[m] - lib[m]) &lt; 0.001 })));
+// TODO: d9가 5위 안으로 들어오면(예: d1과 자리 바꿈) 어떤 지표가 얼마나 오르는지 예상하고 확인한다</code></pre>
+          </div>
+        </div>
+
+        <div class="practice">
+          <div class="practice-head"><b>C2. 골든셋 항목 만들고 검증하기</b><span class="level" aria-label="난이도 2">★★</span></div>
+          <div class="practice-body">
+          <p>문서셋을 읽고 새 골든셋 항목을 만든다. 초안 3개 중 두 개에는 일부러 문제를 넣어 두었다. <code>validate</code>를 완성해 ① 문서 id가 있는지 ② quote가 원문에 글자 그대로 있는지 ③ 질문이 근거 문장을 베끼지 않았는지(단어 겹침 비율)를 검사하고, 통과하는 항목을 2개 더 추가한다.</p>
+          <pre data-run="c2" data-title="C2 골든셋 항목 검증"><code class="language-javascript">import { tokenize } from '/assets/js/core/bm25.js';
+
+const corpus = await (await fetch('/assets/data/corpus/corpus.json')).json();
+const docById = Object.fromEntries(corpus.documents.map((d) => [d.id, d]));
+
+const drafts = [
+  { id: 'n01', question: '실습실은 평일 몇 시까지 여나?', answer: '오후 9시까지다.',
+    evidence: [{ doc: 'facility-rules', quote: '실습실은 수업 시간 외에도 평일 오후 9시까지 개방된다.' }] },
+  { id: 'n02', question: '위층에서 대략 위치를 찾은 뒤 아래층으로 내려가며 탐색하는 인덱스는?', answer: 'HNSW다.',
+    evidence: [{ doc: 'rag-vectordb', quote: '위층에서 대략 위치를 찾은 뒤 아래층으로 내려가며 탐색한다' }] },
+  { id: 'n03', question: '주말에 실습실을 쓰려면 언제까지 신청하나?', answer: '이용일 이틀 전까지다.',
+    evidence: [{ doc: 'facility-rules', quote: '신청은 이용일 3일 전까지 학과 행정실에 한다.' }] },
+  // TODO: 직접 만든 항목 2개 추가 (다른 문서에서)
+];
+
+/** question과 quote의 단어 겹침 비율: 질문 단어 중 quote에도 있는 비율 */
+function overlap(question, quote) {
+  const q = new Set(tokenize(question, { bigrams: false }));
+  const e = new Set(tokenize(quote, { bigrams: false }));
+  // TODO
+  return 0;
+}
+
+function validate(item) {
+  const problems = [];
+  // TODO: 문서 존재 / quote 원문 포함 / overlap &gt; 0.6 이면 "질문이 근거를 베꼈다"
+  return problems;
+}
+
+console.table(drafts.map((it) => ({ id: it.id, ok: validate(it).length === 0, problems: validate(it).join('; ') })));</code></pre>
+          </div>
+        </div>
+
+        <div class="practice">
+          <div class="practice-head"><b>C3. 청크 크기별 BM25 점수표</b><span class="level" aria-label="난이도 3">★★★</span></div>
+          <div class="practice-body">
+          <p>문서셋 전체를 청크 크기 100, 200, 400으로 자르고(고정 길이와 재귀 분할 둘 다), 골든셋 12문항을 BM25로 검색해 Recall@3, MRR, nDCG@3을 표로 출력한다. 정답은 청크 단위(근거 quote를 온전히 담은 청크)로 판정하고, 같은 근거가 여러 청크에 있어도 <strong>처음 나온 한 번만</strong> 정답으로 친다.</p>
+          <pre data-run="c3" data-title="C3 청크 크기별 점수표"><code class="language-javascript">import { chunk } from '/assets/js/core/chunker.js';
+import { BM25 } from '/assets/js/core/bm25.js';
+import { evaluate } from '/assets/js/core/metrics.js';
+
+const corpus = await (await fetch('/assets/data/corpus/corpus.json')).json();
+const golden = await (await fetch('/assets/data/golden/golden.json')).json();
+
+function buildIndex(cfg) {
+  const chunks = corpus.documents.flatMap((d) =>
+    chunk(d.text, cfg).map((c) => ({ id: `${d.id}#${c.index}`, doc: d.id, text: c.text })));
+  return { chunks, bm25: new BM25().add(chunks) };
+}
+
+function runsFor(cfg) {
+  const { chunks, bm25 } = buildIndex(cfg);
+  const byId = new Map(chunks.map((c) => [c.id, c]));
+  return golden.items.map((item) => {
+    const ev = item.evidence[0];
+    const ranked = bm25.search(item.question, chunks.length).map((r) => byId.get(r.id));
+    // TODO: 근거를 온전히 담은 첫 청크는 'EV'로, 나머지는 청크 id로 바꾼 retrieved 목록을 만든다
+    const retrieved = [];
+    return { retrieved, relevant: ['EV'] };
+  });
+}
+
+const rows = [];
+// TODO: strategy ['fixed', 'recursive'] × size [100, 200, 400] 조합마다 evaluate(runsFor(cfg), 3)
+console.table(rows);</code></pre>
+          </div>
+        </div>
+
+        <div class="practice">
+          <div class="practice-head"><b>C4. 근거 단위 vs 문서 단위 정답</b><span class="level" aria-label="난이도 3">★★★</span></div>
+          <div class="practice-body">
+          <p>고정 길이 100자(오버랩 0)와 재귀 분할 200자 두 설정에서, 같은 BM25 검색 결과를 두 가지 정답 기준으로 채점한다. 두 기준의 Hit@3을 나란히 출력하고, 기준에 따라 판정이 달라지는 문항을 모두 찾아 “왜 다른가”를 한 줄씩 출력한다(근거 잘림인지, 같은 문서의 다른 청크인지).</p>
+          <pre data-run="c4" data-title="C4 정답 기준 비교"><code class="language-javascript">import { chunk } from '/assets/js/core/chunker.js';
+import { BM25 } from '/assets/js/core/bm25.js';
+import { hitAtK } from '/assets/js/core/metrics.js';
+
+const corpus = await (await fetch('/assets/data/corpus/corpus.json')).json();
+const golden = await (await fetch('/assets/data/golden/golden.json')).json();
+const K = 3;
+
+function compare(cfg) {
+  const chunks = corpus.documents.flatMap((d) =>
+    chunk(d.text, cfg).map((c) => ({ id: `${d.id}#${c.index}`, doc: d.id, text: c.text })));
+  const byId = new Map(chunks.map((c) => [c.id, c]));
+  const bm25 = new BM25().add(chunks);
+  const diffs = [];
+  let evHits = 0, docHits = 0;
+  for (const item of golden.items) {
+    const ev = item.evidence[0];
+    const top = bm25.search(item.question, K).map((r) => byId.get(r.id));
+    // TODO: 근거 단위 성공 여부(evHit)와 문서 단위 성공 여부(docHit)를 구한다
+    const evHit = false, docHit = false;
+    evHits += evHit; docHits += docHit;
+    // TODO: 두 판정이 다르면 이유와 함께 diffs에 넣는다
+  }
+  console.log(cfg, `근거 단위 Hit@${K}=${(evHits / 12).toFixed(3)}  문서 단위 Hit@${K}=${(docHits / 12).toFixed(3)}`);
+  console.table(diffs);
+}
+
+compare({ strategy: 'fixed', size: 100, overlap: 0 });
+compare({ strategy: 'recursive', size: 200, overlap: 0 });</code></pre>
+          </div>
+        </div>
+
+        <div class="practice">
+          <div class="practice-head"><b>C5. 키 없이 재는 Faithfulness 휴리스틱</b><span class="level" aria-label="난이도 4">★★★★</span></div>
+          <div class="practice-body">
+          <p>답변을 문장으로 나누고, 문장의 핵심 단어(조사를 떼어 낸 2글자 이상 단어)가 <strong>모두</strong> 근거에 있으면 “뒷받침”으로 판정하는 <code>faithfulness(answer, context)</code>를 작성한다. 아래 세 답변의 점수를 출력하고, 휴리스틱이 속는 답변이 어느 것인지, 왜 속는지 주석으로 적는다. LLM은 쓰지 않는다.</p>
+          <pre data-run="c5" data-title="C5 Faithfulness 휴리스틱"><code class="language-javascript">import { sentenceSpans } from '/assets/js/core/chunker.js';
+
+const context = 'Q. 결석 시 보강이 있나요?\nA. 녹화 영상은 제공되지 않으며, 결석한 주의 실습 과제는 다음 주 수업 전까지 제출하면 인정됩니다.';
+const answers = {
+  faithful: '결석한 주의 실습 과제는 다음 주 수업 전까지 제출하면 인정된다.',
+  extra: '과제는 다음 주 수업 전까지 제출한다. 늦으면 감점 20%가 있다.',
+  contradict: '결석해도 녹화 영상으로 보강이 있다.',
+};
+
+const PARTICLES = ['에서', '으로', '까지', '부터', '은', '는', '이', '가', '을', '를', '에', '의', '로', '도', '다'];
+const STOP = new Set(['있다', '없다', '한다', '된다']); // 사실을 담지 않는 말
+function keyTokens(sentence) {
+  // TODO: 단어로 나누고(\p{L}\p{N}%), 끝의 조사 하나를 떼고(남는 길이 2 이상일 때만), 2글자 이상이면서 STOP이 아닌 것만 남긴다
+  return [];
+}
+
+function faithfulness(answer, context) {
+  // TODO: sentenceSpans로 문장을 나누고, 각 문장의 missing 단어 목록과 supported 여부를 구한다
+  //       힌트: '인정된'은 원문 '인정됩니다'에 없다. 마지막 글자를 뗀 '인정'으로 한 번 더 찾아본다
+  return { score: 0, sentences: [] };
+}
+
+for (const [name, a] of Object.entries(answers)) {
+  const r = faithfulness(a, context);
+  console.log(name, r.score.toFixed(2), r.sentences);
+}
+// TODO(주석): 휴리스틱이 속는 답변은? 왜?</code></pre>
+          </div>
+        </div>
+      </section>
+
+      <section id="wrap">
+        <h2><span class="section-num">6</span>정리 &amp; 다음 주 예고</h2>
+        <ul>
+          <li>RAG는 검색 평가(근거를 찾아왔나)와 생성 평가(근거대로 답했나)로 나눠 잰다. 검색이 놓친 근거는 생성이 복구하지 못한다.</li>
+          <li>골든셋은 질문·정답·근거(원문 quote)로 만들고, quote가 원문에 있는지는 코드로 검사한다.</li>
+          <li>Recall@k는 빠뜨림, Precision@k는 섞임, MRR은 첫 정답의 위치, nDCG@k는 순위 전체의 질을 본다. k는 LLM에 넣을 청크 수에 맞춘다.</li>
+          <li>정답 기준(청크 단위/문서 단위)에 따라 같은 결과의 점수가 두 배까지 달라진다. 점수에는 기준을 함께 적는다.</li>
+          <li>12문항 점수에서 1문항 차이는 잡음이다. 골든셋에 맞춘 튜닝은 과적합이므로 dev/test를 나눈다. LLM 판정자도 흔들리고 틀린다.</li>
+        </ul>
+        <p><strong>다음 주(10주차 프레임워크 리팩터링)</strong>에는 지금까지 직접 만든 청커·BM25·벡터스토어·RRF를 LangChain·LlamaIndex 같은 프레임워크 코드와 나란히 놓고 비교한다. 프레임워크로 바꾼 뒤에도 오늘 만든 평가 스크립트로 다시 채점해 점수가 그대로인지 확인한다. 평가는 리팩터링의 안전망이다.</p>
+      </section>
+
+      <div class="section-end">
+        <label class="done-toggle">
+          <input type="checkbox" data-done-toggle="9"> ✅ 9주차 학습 완료로 표시
+        </label>
+      </div>
+      <nav class="week-nav" data-week-nav="9" aria-label="주차 이동"></nav>
+        </article>
+      </div>
+    </main>
+  </div>
+
+  <script type="module">
+    import { mount } from '../../assets/js/widgets/w09-scoreboard.js';
+    import { initRunners } from '../../assets/js/site/runner.js';
+    mount(document.getElementById('w09-widget'));
+    initRunners(document.getElementById('challenge'));
+  </script>
+</body>
+</html>

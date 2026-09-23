@@ -1,0 +1,440 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>10주차 프레임워크 리팩터링 · RAG Lab</title>
+  <meta name="description" content="프레임워크 리팩터링: 같은 RAG 파이프라인을 직접 구현, LangChain, LlamaIndex로 나란히 비교하고, 결과를 바꾸는 숨은 기본값을 평가로 찾아낸다.">
+  <script>try{var t=JSON.parse(localStorage.getItem('raglab:theme'));if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+  <link rel="stylesheet" crossorigin="anonymous" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&display=swap">
+  <link rel="stylesheet" href="../../assets/css/tokens.css">
+  <link rel="stylesheet" href="../../assets/css/base.css">
+  <link rel="stylesheet" href="../../assets/css/components.css">
+  <link rel="stylesheet" href="../../assets/css/w10.css">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%232450c4'/%3E%3Ccircle cx='14' cy='14' r='6' fill='none' stroke='white' stroke-width='3'/%3E%3Cpath d='M19 19l6 6' stroke='white' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E">
+  <script type="module" src="../../assets/js/site/site.js"></script>
+</head>
+<body>
+  <div class="layout" data-layout data-role="student" data-week="10" data-crumb="PART 4 · 서비스와 프로젝트 › <b>10주차 · 프레임워크 리팩터링</b>">
+    <main class="pane center" id="main">
+      <div class="content" tabindex="-1">
+        <article class="doc">
+      <span class="chapter-badge">🧰 10주차 · 프레임워크 리팩터링</span>
+      <h1>프레임워크가 대신 정해 준 것들</h1>
+      <p class="lead">9주 동안 직접 만든 파이프라인을 LangChain과 LlamaIndex로 옮겨 본다. 코드는 짧아지지만, 인자를 하나 생략할 때마다 프레임워크의 기본값이 조용히 끼어든다. 이번 주는 그 기본값을 찾아내고, 평가로 “바뀐 것이 없다”를 증명한다.</p>
+      <div class="meta-row">
+        <span class="chip">⏱ 180분</span>
+        <span class="chip accent">▶ 체험: 코드 비교 뷰어</span>
+        <span class="chip">🧪 Challenge 4개</span>
+        <span class="chip ok">🔑 LLM API 키 필요 없음</span>
+      </div>
+      <div class="flow" aria-label="RAG 파이프라인에서 이번 주의 위치 (파이프라인 전체)">
+        <div><b>문서 파싱</b></div><div><b>청킹</b></div><div><b>임베딩</b></div><div><b>벡터스토어</b></div><div><b>검색</b></div><div><b>생성</b></div><div><b>평가</b></div>
+      </div>
+
+      <section id="goals">
+        <h2><span class="section-num">1</span>학습 목표</h2>
+        <div class="goals">
+        <b>이번 주가 끝나면</b>
+        <ul>
+          <li>직접 만든 RAG 파이프라인의 각 단계가 LangChain·LlamaIndex의 어떤 API에 대응하는지 설명할 수 있다.</li>
+          <li>결과를 바꾸는 프레임워크 기본값(청크 크기, 구분자, top-k, 프롬프트)을 찾아 설정 객체에 명시할 수 있다.</li>
+          <li>리팩터링 전후 골든셋 hit@3이 질문 단위로 같은지 확인하는 회귀 테스트를 작성할 수 있다.</li>
+        </ul>
+        </div>
+      </section>
+
+      <section id="why">
+        <h2><span class="section-num">2</span>왜 필요한가</h2>
+        <p>9주차까지 만든 파이프라인은 파일 다섯 개에 흩어진 함수 묶음이다. 팀 프로젝트를 시작하면 “다들 쓰는 프레임워크로 옮기자”는 말이 반드시 나온다. 실제로 옮기면 코드가 짧아지고, 오류도 나지 않는다. 문제는 그다음이다.</p>
+        <div class="callout callout--danger">
+          <span class="callout__title">오류 없이 결과가 바뀐다</span>
+          <p>우리 설정(재귀 분할 150자, 오버랩 20, k=3)으로 골든셋 12문항을 BM25로 검색하면 근거 청크 hit@3이 <b>0.917</b>이다. 같은 파이프라인을 LangChain으로 옮기면서 인자를 생략하면 청크 45개가 <b>12개</b>(문서 수 그대로)가 되고, 질문당 LLM에 보내는 컨텍스트가 305자에서 <b>1,392자</b>로 늘어난다. 청크 크기만 맞추고 구분자를 기본값으로 두면 hit@3이 <b>0.750</b>으로 떨어진다. 이 과정에서 경고는 한 줄도 나오지 않는다.</p>
+        </div>
+        <p>프레임워크가 틀린 것이 아니다. 우리가 4~9주차에 측정해서 고른 값을, 프레임워크는 “대부분의 영어 문서에 무난한 값”으로 바꿔 놓았을 뿐이다. 리팩터링(refactoring)은 동작을 바꾸지 않고 구조만 바꾸는 일이다. 동작이 바뀌지 않았다는 것은 느낌이 아니라 평가 숫자로 증명해야 한다.</p>
+      </section>
+
+      <section id="concept">
+        <h2><span class="section-num">3</span>개념</h2>
+
+        <h3>같은 파이프라인, 다른 상자 크기</h3>
+        <figure class="figure">
+          <svg viewBox="0 0 680 222" role="img" aria-labelledby="w10-fig-title" style="width: 100%">
+            <title id="w10-fig-title">파이프라인 8단계를 우리 코드, LangChain, LlamaIndex가 각각 몇 번의 API 호출로 처리하는지 비교한 그림</title>
+            <style>
+              .hd { font: 600 11px var(--font-sans); fill: var(--color-text-muted); text-anchor: middle; }
+              .row { font: 700 12px var(--font-sans); fill: var(--color-text); }
+              .bx { fill: var(--color-surface-2); stroke: var(--color-border-strong); }
+              .bx-ours { fill: var(--color-accent-soft); stroke: var(--color-accent); }
+              .bx-wide { fill: var(--color-accent2-soft); stroke: var(--color-accent2); }
+              .bx-self { fill: none; stroke: var(--color-text-muted); stroke-dasharray: 4 3; }
+              .t { font: 11px var(--font-mono); fill: var(--color-text); text-anchor: middle; }
+              .n { font: 11px var(--font-sans); fill: var(--color-text-muted); }
+            </style>
+            <text class="hd" x="131" y="14">로드</text><text class="hd" x="204" y="14">청킹</text><text class="hd" x="277" y="14">임베딩</text><text class="hd" x="350" y="14">저장</text>
+            <text class="hd" x="423" y="14">검색</text><text class="hd" x="496" y="14">프롬프트</text><text class="hd" x="569" y="14">생성</text><text class="hd" x="642" y="14">평가</text>
+
+            <text class="row" x="0" y="48">우리 코드</text>
+            <rect class="bx bx-ours" x="97" y="26" width="68" height="36" rx="5"/><text class="t" x="131" y="48">fetch</text>
+            <rect class="bx bx-ours" x="170" y="26" width="68" height="36" rx="5"/><text class="t" x="204" y="48">chunk</text>
+            <rect class="bx bx-ours" x="243" y="26" width="68" height="36" rx="5"/><text class="t" x="277" y="48">embed</text>
+            <rect class="bx bx-ours" x="316" y="26" width="68" height="36" rx="5"/><text class="t" x="350" y="48">add</text>
+            <rect class="bx bx-ours" x="389" y="26" width="68" height="36" rx="5"/><text class="t" x="423" y="48">search</text>
+            <rect class="bx bx-ours" x="462" y="26" width="68" height="36" rx="5"/><text class="t" x="496" y="48">ragPrompt</text>
+            <rect class="bx bx-ours" x="535" y="26" width="68" height="36" rx="5"/><text class="t" x="569" y="48">generate</text>
+            <rect class="bx bx-ours" x="608" y="26" width="68" height="36" rx="5"/><text class="t" x="642" y="48">metrics</text>
+
+            <text class="row" x="0" y="100">LangChain</text>
+            <rect class="bx" x="97" y="78" width="68" height="36" rx="5"/><text class="t" x="131" y="100">Document</text>
+            <rect class="bx" x="170" y="78" width="68" height="36" rx="5"/><text class="t" x="204" y="100">Splitter</text>
+            <rect class="bx bx-wide" x="243" y="78" width="141" height="36" rx="5"/><text class="t" x="313" y="100">from_documents</text>
+            <rect class="bx" x="389" y="78" width="68" height="36" rx="5"/><text class="t" x="423" y="100">retriever</text>
+            <rect class="bx bx-wide" x="462" y="78" width="141" height="36" rx="5"/><text class="t" x="532" y="100">prompt | llm</text>
+            <rect class="bx bx-self" x="608" y="78" width="68" height="36" rx="5"/><text class="t" x="642" y="100">직접</text>
+
+            <text class="row" x="0" y="152">LlamaIndex</text>
+            <rect class="bx" x="97" y="130" width="68" height="36" rx="5"/><text class="t" x="131" y="152">Document</text>
+            <rect class="bx bx-wide" x="170" y="130" width="214" height="36" rx="5"/><text class="t" x="277" y="152">VectorStoreIndex.from_documents</text>
+            <rect class="bx bx-wide" x="389" y="130" width="214" height="36" rx="5"/><text class="t" x="496" y="152">as_query_engine().query</text>
+            <rect class="bx bx-self" x="608" y="130" width="68" height="36" rx="5"/><text class="t" x="642" y="152">직접</text>
+
+            <text class="n" x="97" y="192">넓은 상자 = API 호출 한 번이 여러 단계를 처리한다. 그 안의 설정은 인자로 넘기지 않으면 기본값이 쓰인다.</text>
+            <text class="n" x="97" y="210">점선 = 프레임워크 코어에 검색 평가 도구가 없거나, 있어도 정답 형식이 달라 직접 작성한다.</text>
+          </svg>
+          <figcaption>상자가 넓을수록 코드는 짧아지고, 보이지 않는 결정은 많아진다. 우리 코드는 여덟 단계가 모두 한 줄씩 드러나 있다.</figcaption>
+        </figure>
+
+        <h3>대응표</h3>
+        <table>
+          <thead><tr><th>단계</th><th>우리 코드 (JS)</th><th>LangChain</th><th>LlamaIndex</th></tr></thead>
+          <tbody>
+            <tr><td>로드</td><td><code>fetch</code> → <code>{ id, title, text }</code></td><td><code>Document(page_content, metadata)</code></td><td><code>Document(text, id_, metadata)</code></td></tr>
+            <tr><td>청킹</td><td><code>chunk(text, { size, overlap })</code> · 문자</td><td><code>RecursiveCharacterTextSplitter</code> · 문자</td><td><code>SentenceSplitter</code> · <b>토큰</b></td></tr>
+            <tr><td>임베딩</td><td><code>embedBatch(texts, { role })</code></td><td><code>HuggingFaceEmbeddings</code></td><td><code>HuggingFaceEmbedding</code> → <code>Settings.embed_model</code></td></tr>
+            <tr><td>저장</td><td><code>VectorStore.add()</code></td><td><code>InMemoryVectorStore.from_documents()</code></td><td><code>VectorStoreIndex.from_documents()</code></td></tr>
+            <tr><td>검색</td><td><code>store.search(q, k)</code></td><td><code>as_retriever(search_kwargs={"k": 3})</code></td><td><code>as_retriever(similarity_top_k=3)</code></td></tr>
+            <tr><td>프롬프트</td><td><code>ragPrompt()</code></td><td><code>ChatPromptTemplate</code></td><td><code>PromptTemplate</code> → <code>text_qa_template</code></td></tr>
+            <tr><td>생성</td><td><code>generate()</code></td><td>LCEL <code>prompt | llm | parser</code></td><td><code>as_query_engine().query()</code></td></tr>
+            <tr><td>평가</td><td><code>hitAtK</code>, <code>reciprocalRank</code></td><td>직접 루프 또는 외부 평가 도구</td><td>직접 루프 또는 <code>RetrieverEvaluator</code> (정답 = 노드 ID)</td></tr>
+          </tbody>
+        </table>
+        <div class="callout">
+          <span class="callout__title">버전을 먼저 확인한다</span>
+          <p>프레임워크 API는 자주 바뀐다. 패키지가 쪼개지거나(<code>langchain</code> → <code>langchain-core</code>, <code>langchain-text-splitters</code>, <code>langchain-huggingface</code> …), 인자 이름과 기본값이 버전마다 달라진다. 이 페이지의 코드는 작성 시점의 공개 API 기준이다. 실행 전에 <code>pip show</code>로 설치된 버전을 보고 공식 문서와 대조한 뒤, <code>requirements.txt</code>에 버전을 고정한다.</p>
+        </div>
+
+        <h3>프레임워크의 이득과 비용</h3>
+        <div class="cards">
+          <div class="card"><b>이득 · 교체 가능한 부품</b><p>retriever, 임베딩, 벡터스토어가 공통 인터페이스를 가진다. FAISS를 Chroma로, BM25를 하이브리드 검색으로 바꿀 때 한두 줄만 고친다.</p></div>
+          <div class="card"><b>이득 · 이미 있는 연결</b><p>PDF·웹·노션 로더, 수십 종의 벡터 DB, LLM 공급자 연동이 준비되어 있다. 직접 짜면 며칠 걸리는 배관 작업이다.</p></div>
+          <div class="card"><b>비용 · 추상화</b><p>한 줄 API가 청킹·임베딩·저장을 삼킨다. 중간 결과(청크 목록, 벡터, 최종 프롬프트)를 보려면 따로 꺼내야 한다.</p></div>
+          <div class="card"><b>비용 · 기본값</b><p>생략한 인자는 프레임워크가 정한다. 청크 크기, 구분자, top-k, 기본 프롬프트 언어가 조용히 바뀐다.</p></div>
+          <div class="card"><b>비용 · 디버깅</b><p>오류가 나면 스택 트레이스가 여러 층의 래퍼를 지나간다. 결과가 이상할 때 어느 단계 탓인지 찾기 어렵다.</p></div>
+          <div class="card"><b>비용 · 버전 변화</b><p>6개월 전 튜토리얼 코드가 import 오류를 낸다. 업그레이드 후 기본값이 바뀌어 지표가 달라지기도 한다.</p></div>
+        </div>
+
+        <h3>언제 무엇을 쓰나</h3>
+        <table>
+          <thead><tr><th>상황</th><th>권장</th><th>이유</th></tr></thead>
+          <tbody>
+            <tr><td>원리를 배우는 중, 문서 수백 개 이하</td><td>직접 구현</td><td>모든 단계가 보이고 디버깅이 쉽다</td></tr>
+            <tr><td>여러 로더·벡터 DB·LLM을 바꿔 가며 실험</td><td>LangChain</td><td>부품 교체와 체인 조립이 강점이다</td></tr>
+            <tr><td>문서 색인·질의가 중심인 서비스</td><td>LlamaIndex</td><td>색인, 노드, 질의 엔진이 한 흐름으로 묶여 있다</td></tr>
+            <tr><td>어느 쪽이든</td><td>설정 객체 + 회귀 테스트</td><td>기본값을 명시하고, 바꿀 때마다 골든셋으로 확인한다</td></tr>
+          </tbody>
+        </table>
+
+        <h3>리팩터링은 평가로 끝난다</h3>
+        <p>리팩터링 전후를 비교할 때 평균 하나만 보면 안 된다. 질문 A가 새로 맞고 질문 B가 새로 틀리면 평균은 그대로다. 그래서 <b>질문 단위</b>로 비교한다.</p>
+        <pre><code class="language-text">전: [1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1]   hit@3 = 11/12 = 0.917
+후: [1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1]   hit@3 = 0.917  → 12문항 모두 같음 ✓
+후': [1, 1, 1, 1, 1, 1, 0, 1, 0, 0, 1, 1]  hit@3 = 0.750  → q07, q09 달라짐 ✗</code></pre>
+        <p>이 비교가 가능하려면 두 가지가 필요하다. 첫째, 모든 검색기가 <code>search(query, k)</code>라는 같은 인터페이스를 가져서 같은 평가 루프에 끼울 수 있어야 한다. 둘째, 청크 크기·구분자·k 같은 설정이 한 곳(설정 객체)에 모여 있어서 “무엇이 바뀌었나”를 코드 한 군데에서 읽을 수 있어야 한다.</p>
+      </section>
+
+      <section id="lab">
+        <h2><span class="section-num">4</span>실습</h2>
+        <p>아래 위젯은 같은 최소 RAG 파이프라인을 세 가지로 나란히 보여 준다. 단계 버튼을 누르면 각 코드에서 그 단계를 맡은 줄이 강조되고, 오른쪽 <b>실행 결과</b> 창에 프레임워크가 대신 해 주는 일과 그 단계의 숨은 기본값이 나온다. 아래쪽 <b>숨은 기본값 실험</b>은 설정을 바꿔 골든셋을 BM25로 다시 검색한다(모델 다운로드 없이 바로 계산된다). 처음 화면은 LangChain에 인자를 하나도 주지 않았을 때다.</p>
+      </section>
+
+      <div id="w10-widget"></div>
+
+      <section aria-labelledby="observe-title">
+        <h3 id="observe-title">관찰 질문</h3>
+        <ol>
+          <li><strong>저장</strong> 단계를 누른다. LlamaIndex에서 강조된 한 줄은 우리 코드의 어느 단계들을 한꺼번에 처리하나? 그 줄에서 청크 크기는 어디에 적혀 있나?</li>
+          <li>처음 화면(LangChain 기본값)에서 hit@4는 우리 설정보다 높다. 그런데도 판정이 빨간색인 이유는 무엇인가? 청크 수와 컨텍스트 길이를 근거로 설명한다.</li>
+          <li><strong>실패 재현: 구분자만 기본값</strong>을 누른다. 순위가 달라진 질문 두 개는 무엇인가? 근거 문장이 어디서 잘렸을지 4주차 청킹 플레이그라운드에서 같은 문서를 150자로 잘라 확인한다.</li>
+          <li><strong>우리 설정</strong>에서 k만 3 → 2 → 1로 줄인다. 처음으로 놓치는 질문은 몇 번 k에서 나오나? LlamaIndex 기본 top-k가 2라는 사실과 연결한다.</li>
+          <li>줄 수를 비교한다. 기본값을 모두 명시한 LangChain 코드는 우리 코드보다 짧은가? “프레임워크를 쓰면 코드가 짧아진다”는 말은 어떤 조건에서만 맞나?</li>
+        </ol>
+      </section>
+
+      <section id="challenge">
+        <h2><span class="section-num">5</span>Challenge</h2>
+        <p>난이도 순서다. 코드 상자는 직접 고칠 수 있고, <strong>▶ 실행</strong>(또는 Ctrl+Enter)을 누르면 결과가 오른쪽 <b>실행 결과</b> 창에 나온다(휴대폰에서는 코드 바로 아래). 프레임워크는 파이썬이지만 Challenge는 모두 우리 JS 코드로 푼다. 목표는 프레임워크를 설치하는 것이 아니라, 프레임워크가 하는 일을 우리 코드의 구조와 설정으로 옮기는 것이다.</p>
+
+        <div class="practice">
+          <div class="practice-head"><b>C1. 프레임워크 인자 이름을 우리 옵션으로</b><span class="level" aria-label="난이도 1">★</span></div>
+          <div class="practice-body">
+          <p>LangChain의 <code>chunk_size</code>, <code>chunk_overlap</code>, <code>separators</code>, <code>search_kwargs.k</code>와 LlamaIndex의 <code>chunk_size</code>(토큰), <code>similarity_top_k</code>를 우리 <code>chunk()</code>·<code>search()</code> 옵션으로 바꾸는 함수를 작성한다. 인자가 생략되면 프레임워크 기본값을 채운다. 마지막으로 크기·오버랩을 맞춘 LangChain 설정이 우리와 같은 청크를 만드는지 확인한다.</p>
+          <pre data-run="c1" data-title="C1 인자 이름 매핑"><code class="language-javascript">import { chunk } from '/assets/js/core/chunker.js';
+
+// Defaults each framework uses when an argument is omitted
+const LC_DEFAULTS = {
+  chunk_size: 0,    // TODO: RecursiveCharacterTextSplitter 기본값
+  chunk_overlap: 0, // TODO
+  separators: [],   // TODO: 기본 구분자 4개
+  k: 0,             // TODO: as_retriever()의 기본 k
+};
+const LI_DEFAULTS = {
+  chunk_size: 0,       // TODO: SentenceSplitter 기본값 (토큰)
+  chunk_overlap: 0,    // TODO (토큰)
+  similarity_top_k: 0, // TODO
+};
+
+// → our options { size, overlap, separators, k, unit }
+function fromLangChain(splitterArgs = {}, searchKwargs = {}) {
+  // TODO: 생략된 인자는 LC_DEFAULTS로 채우고 우리 이름으로 바꾼다
+  return { size: 0, overlap: 0, separators: undefined, k: 0, unit: 'char' };
+}
+
+function fromLlamaIndex(splitterArgs = {}, retrieverArgs = {}, charsPerToken = 1) {
+  // TODO: 토큰 단위를 문자로 근사(× charsPerToken)한다.
+  //       SentenceSplitter는 문장 경계를 지키므로 separators는 undefined(우리 기본값)로 둔다
+  return { size: 0, overlap: 0, separators: undefined, k: 0, unit: 'token→char' };
+}
+
+const corpus = await (await fetch('/assets/data/corpus/corpus.json')).json();
+const doc = corpus.documents.find((d) =&gt; d.id === 'rag-hybrid');
+const configs = {
+  ours: { size: 150, overlap: 20, separators: undefined, k: 3, unit: 'char' },
+  langchainDefault: fromLangChain(),
+  langchainTuned: fromLangChain({ chunk_size: 150, chunk_overlap: 20 }, { k: 3 }),
+  llamaindexDefault: fromLlamaIndex(),
+};
+console.table(Object.entries(configs).map(([name, c]) =&gt; ({
+  name, size: c.size, overlap: c.overlap, k: c.k, unit: c.unit,
+  separators: JSON.stringify(c.separators ?? '(chunker.js 기본)'),
+  chunks: c.size &gt; 0 ? chunk(doc.text, { strategy: 'recursive', ...c }).length : '-',
+})));
+// TODO: ours와 langchainTuned로 자른 청크가 같은지 비교해 출력한다 (크기를 맞춰도 같을까?)</code></pre>
+          </div>
+        </div>
+
+        <div class="practice">
+          <div class="practice-head"><b>C2. 지저분한 파이프라인을 작은 함수로</b><span class="level" aria-label="난이도 2">★★</span></div>
+          <div class="practice-body">
+          <p><code>messyRun</code>은 질문마다 전체 문서를 다시 청킹하고 BM25를 다시 색인한다. 이것을 <code>splitAll</code>, <code>bm25Retriever</code>(<code>search(query, k)</code> 인터페이스), <code>buildPrompt</code>로 나눈다. 리팩터링이므로 12문항 모두 검색 결과와 프롬프트가 글자 하나까지 같아야 한다. 걸린 시간도 비교한다.</p>
+          <pre data-run="c2" data-title="C2 작은 함수로 나누기"><code class="language-javascript">import { chunk } from '/assets/js/core/chunker.js';
+import { BM25 } from '/assets/js/core/bm25.js';
+
+const corpus = await (await fetch('/assets/data/corpus/corpus.json')).json();
+const golden = await (await fetch('/assets/data/golden/golden.json')).json();
+
+// ---- messy original: do not change (it is the reference) ----
+function messyRun(q) {
+  let all = [];
+  for (let i = 0; i &lt; corpus.documents.length; i++) {
+    const d = corpus.documents[i];
+    const cs = chunk(d.text, { strategy: 'recursive', size: 150, overlap: 20 });
+    for (let j = 0; j &lt; cs.length; j++) all.push({ id: d.id + '#' + j, text: cs[j].text });
+  }
+  const bm = new BM25();
+  bm.add(all); // rebuilt on every question!
+  const r = bm.search(q, 3);
+  let ctx = '';
+  for (let i = 0; i &lt; r.length; i++) ctx += '[' + (i + 1) + '] ' + r[i].text + '\n\n';
+  return { ids: r.map((x) =&gt; x.id), prompt: '근거 문서:\n' + ctx + '질문: ' + q };
+}
+
+// ---- refactor: small functions, index built once ----
+function splitAll(docs, { size, overlap }) {
+  // TODO: [{ id: 'docId#index', text }] 목록을 만든다
+  return [];
+}
+
+function bm25Retriever(chunks) {
+  // TODO: BM25를 한 번만 색인하고 search(query, k) → [{ id, score, text }]를 가진 객체를 반환한다
+  return { search: (query, k) =&gt; [] };
+}
+
+function buildPrompt(question, hits) {
+  // TODO: messyRun과 글자 하나까지 같은 프롬프트 문자열을 만든다
+  return '';
+}
+
+const retriever = bm25Retriever(splitAll(corpus.documents, { size: 150, overlap: 20 }));
+const same = (a, b) =&gt; JSON.stringify(a) === JSON.stringify(b);
+
+let t = performance.now();
+const before = golden.items.map((it) =&gt; messyRun(it.question));
+const tBefore = performance.now() - t;
+t = performance.now();
+const after = golden.items.map((it) =&gt; {
+  const hits = retriever.search(it.question, 3);
+  return { ids: hits.map((h) =&gt; h.id), prompt: buildPrompt(it.question, hits) };
+});
+const tAfter = performance.now() - t;
+
+console.table(golden.items.map((it, i) =&gt; ({ id: it.id, same: same(before[i], after[i]) })));
+console.log(`전체 동일: ${before.every((b, i) =&gt; same(b, after[i]))}`);
+console.log(`시간: 전 ${tBefore.toFixed(1)}ms → 후 ${tAfter.toFixed(1)}ms`);</code></pre>
+          </div>
+        </div>
+
+        <div class="practice">
+          <div class="practice-head"><b>C3. BM25와 벡터스토어를 한 인터페이스로</b><span class="level" aria-label="난이도 3">★★★</span></div>
+          <div class="practice-body">
+          <p><code>BM25.search(query, k)</code>는 문자열을 받지만 <code>VectorStore.search(vector, k)</code>는 벡터를 받고, 결과 모양도 다르다(<code>text</code> vs <code>meta.text</code>). 어댑터(adapter)를 만들어 둘 다 <code>search(query, k) → [{ id, score, text }]</code>로 맞추고, 같은 모양의 하이브리드 검색기를 RRF로 만든다. 임베딩 모델 대신 글자 바이그램 해시 벡터(<code>toyEmbed</code>)를 쓴다. LangChain의 retriever가 바로 이 역할이다.</p>
+          <pre data-run="c3" data-title="C3 검색기 어댑터"><code class="language-javascript">import { chunk } from '/assets/js/core/chunker.js';
+import { BM25 } from '/assets/js/core/bm25.js';
+import { VectorStore } from '/assets/js/core/vectorstore.js';
+import { rrf } from '/assets/js/core/rerank.js';
+
+const corpus = await (await fetch('/assets/data/corpus/corpus.json')).json();
+const golden = await (await fetch('/assets/data/golden/golden.json')).json();
+const chunks = corpus.documents.flatMap((d) =&gt; chunk(d.text, { strategy: 'recursive', size: 150, overlap: 20 })
+  .map((c) =&gt; ({ id: `${d.id}#${c.index}`, text: c.text })));
+
+// Toy embedding (no model download): hash character bigrams into 256 dims
+function toyEmbed(text, dim = 256) {
+  const v = new Float32Array(dim);
+  const s = text.replace(/\s+/g, ' ');
+  for (let i = 0; i &lt; s.length - 1; i++) {
+    let h = 0;
+    for (const ch of s.slice(i, i + 2)) h = (h * 31 + ch.codePointAt(0)) &gt;&gt;&gt; 0;
+    v[h % dim] += 1;
+  }
+  return v;
+}
+
+// Retriever interface: search(query, k) → [{ id, score, text }]
+function bm25Adapter(chunks) {
+  // TODO: BM25 결과에서 id, score, text만 남긴다
+  return { search: (query, k) =&gt; [] };
+}
+
+function vectorAdapter(chunks, embedFn) {
+  // TODO: VectorStore에 add(id, embedFn(text), { text })로 넣고,
+  //       search는 질의를 embedFn으로 바꿔 store.search → meta.text를 text로 옮긴다
+  return { search: (query, k) =&gt; [] };
+}
+
+function hybridAdapter(retrievers, { pool = 10 } = {}) {
+  // TODO: 각 retriever에서 pool개씩 받아 rrf()로 합치고 같은 모양으로 반환한다
+  return { search: (query, k) =&gt; [] };
+}
+
+// One evaluation loop works for every retriever — that is the point of the interface
+function hitAt3(retriever) {
+  let hit = 0;
+  for (const it of golden.items) {
+    const found = retriever.search(it.question, 3);
+    if (found.some((h) =&gt; it.evidence.some((e) =&gt; h.text?.includes(e.quote)))) hit++;
+  }
+  return hit / golden.items.length;
+}
+
+const bm25 = bm25Adapter(chunks);
+const vector = vectorAdapter(chunks, toyEmbed);
+const retrievers = { bm25, vector, hybrid: hybridAdapter([bm25, vector]) };
+console.table(Object.entries(retrievers).map(([name, r]) =&gt; {
+  const out = r.search('RRF에서 k 값은 보통 얼마를 쓰나?', 3);
+  const shapeOk = out.length === 3 &amp;&amp; out.every((h) =&gt;
+    typeof h.id === 'string' &amp;&amp; typeof h.score === 'number' &amp;&amp; typeof h.text === 'string');
+  return { name, shapeOk, top1: out[0]?.id ?? '-', 'hit@3': hitAt3(r) };
+}));</code></pre>
+          </div>
+        </div>
+
+        <div class="practice">
+          <div class="practice-head"><b>C4. 설정 객체와 회귀 테스트</b><span class="level" aria-label="난이도 4">★★★★</span></div>
+          <div class="practice-body">
+          <p>기본값을 한 곳에 모은 <code>DEFAULTS</code>와, 잘못된 설정을 조용히 고치지 않고 오류로 알리는 <code>makeConfig</code>를 작성한다. 그리고 리팩터링 전 질문별 hit@3(<code>BEFORE</code>)과 리팩터링 후 결과를 질문 단위로 비교하는 회귀 테스트를 완성한다. 기본 설정은 ✓, LangChain 기본 크기(4000/200)는 ✗가 나와야 테스트가 제 역할을 하는 것이다.</p>
+          <pre data-run="c4" data-title="C4 설정 객체 + 회귀 테스트"><code class="language-javascript">import { chunk } from '/assets/js/core/chunker.js';
+import { BM25 } from '/assets/js/core/bm25.js';
+import { hitAtK } from '/assets/js/core/metrics.js';
+
+const corpus = await (await fetch('/assets/data/corpus/corpus.json')).json();
+const golden = await (await fetch('/assets/data/golden/golden.json')).json();
+
+// Reference numbers from the pipeline before the refactor (per question, 1 = hit@3)
+const BEFORE = [1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1];
+
+const DEFAULTS = Object.freeze({ strategy: 'recursive', size: 150, overlap: 20, k: 3 });
+
+function makeConfig(overrides = {}) {
+  // TODO 1: DEFAULTS에 없는 키가 오면 오류를 던진다 (chunk_size 같은 프레임워크 이름 오타를 잡는다)
+  // TODO 2: overlap &gt;= size 이거나 k &lt; 1 이면 오류를 던진다 (조용히 고치지 않는다)
+  // TODO 3: DEFAULTS와 합쳐 Object.freeze 해서 반환한다
+  return DEFAULTS;
+}
+
+function buildPipeline(docs, config) {
+  const chunks = docs.flatMap((d) =&gt; chunk(d.text, config)
+    .map((c) =&gt; ({ id: `${d.id}#${c.index}`, text: c.text })));
+  const index = new BM25().add(chunks);
+  return { chunks, search: (q, k = config.k) =&gt; index.search(q, k) };
+}
+
+function hitsPerQuestion(pipeline, k) {
+  // TODO: 질문마다 relevant = 근거 문장(evidence.quote)이 든 청크 id 목록을 만들고
+  //       hitAtK(검색된 id 목록, relevant, k)를 배열로 반환한다
+  return golden.items.map(() =&gt; 0);
+}
+
+function regressionTest(name, config) {
+  const after = hitsPerQuestion(buildPipeline(corpus.documents, config), 3);
+  const diff = golden.items.filter((_, i) =&gt; after[i] !== BEFORE[i]).map((it) =&gt; it.id);
+  const mean = (a) =&gt; (a.reduce((s, x) =&gt; s + x, 0) / a.length).toFixed(3);
+  console.log(`${diff.length ? '✗' : '✓'} ${name}: hit@3 ${mean(BEFORE)} → ${mean(after)}`,
+    diff.length ? `달라진 질문 ${diff.join(', ')}` : '');
+}
+
+regressionTest('기본 설정', makeConfig());
+regressionTest('LangChain 기본 크기로 바꾸면', makeConfig({ size: 4000, overlap: 200 }));
+for (const bad of [{ chunk_size: 150 }, { size: 100, overlap: 100 }, { k: 0 }]) {
+  try {
+    makeConfig(bad);
+    console.warn('오류가 나야 하는데 통과했다:', bad);
+  } catch (err) {
+    console.log('잡았다:', err.message);
+  }
+}</code></pre>
+          </div>
+        </div>
+      </section>
+
+      <section id="wrap">
+        <h2><span class="section-num">6</span>정리 &amp; 다음 주 예고</h2>
+        <ul>
+          <li>LangChain·LlamaIndex의 각 API는 우리가 직접 만든 단계와 하나씩 대응한다. 다른 점은 한 번의 호출이 여러 단계를 묶는다는 것이다.</li>
+          <li>생략한 인자는 기본값이 된다. 청크 크기(4000자 / 1024토큰), 구분자, top-k(4 / 2), 기본 프롬프트 언어가 4~9주차에 측정해서 고른 값을 조용히 덮어쓴다.</li>
+          <li>기본값은 설정 객체에 모두 명시하고, 잘못된 값은 조용히 고치지 말고 오류로 알린다.</li>
+          <li>리팩터링은 골든셋 hit@3이 <b>질문 단위로</b> 같을 때 끝난다. 평균만 같으면 충분하지 않다.</li>
+          <li>프레임워크 API는 자주 바뀐다. 버전을 고정하고, 업그레이드할 때마다 같은 회귀 테스트를 돌린다.</li>
+        </ul>
+        <p><strong>다음 주(11주차 웹 UI + 인용 표기)</strong>에는 이 파이프라인에 사용자 화면을 붙인다. 답변 문장마다 붙은 <code>[1]</code> 같은 인용 번호를 클릭하면 원문의 근거 위치가 하이라이트되게 만든다. 4주차부터 지켜 온 청크의 <code>start</code>/<code>end</code> 위치가 여기서 쓰인다.</p>
+      </section>
+
+      <div class="section-end">
+        <label class="done-toggle">
+          <input type="checkbox" data-done-toggle="10"> ✅ 10주차 학습 완료로 표시
+        </label>
+      </div>
+      <nav class="week-nav" data-week-nav="10" aria-label="주차 이동"></nav>
+        </article>
+      </div>
+    </main>
+  </div>
+
+  <script type="module">
+    import { mount } from '../../assets/js/widgets/w10-code-compare.js';
+    import { initRunners } from '../../assets/js/site/runner.js';
+    mount(document.getElementById('w10-widget'));
+    initRunners(document.getElementById('challenge'));
+  </script>
+</body>
+</html>

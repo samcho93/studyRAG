@@ -91,6 +91,10 @@ textarea {
 
 .visually-hidden {
   position: absolute !important;
+  /* explicit offsets: without them the box keeps its static position and can
+     widen the page when it sits inside horizontally scrolled content */
+  top: 0;
+  left: 0;
   width: 1px;
   height: 1px;
   overflow: hidden;

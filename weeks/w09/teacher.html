@@ -1,0 +1,604 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>9주차 평가 데이터셋 &amp; 측정 · 교사용 · RAG Lab</title>
+  <meta name="description" content="9주차 평가 데이터셋 &amp; 측정 교사용 슬라이드: 강의 흐름, 교사 노트, Challenge 정답, 자주 막히는 지점, 토론 주제, 평가 루브릭.">
+  <script>try{var t=JSON.parse(localStorage.getItem('raglab:theme'));if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+  <link rel="stylesheet" crossorigin="anonymous" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&display=swap">
+  <link rel="stylesheet" href="../../assets/css/tokens.css">
+  <link rel="stylesheet" href="../../assets/css/base.css">
+  <link rel="stylesheet" href="../../assets/css/components.css">
+  <link rel="stylesheet" href="../../assets/css/slides.css">
+  <link rel="stylesheet" href="../../assets/css/w09.css">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%232450c4'/%3E%3Ccircle cx='14' cy='14' r='6' fill='none' stroke='white' stroke-width='3'/%3E%3Cpath d='M19 19l6 6' stroke='white' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E">
+  <script type="module" src="../../assets/js/site/site.js"></script>
+</head>
+<body>
+  <div class="layout" data-layout data-role="teacher" data-week="9" data-crumb="🧑‍🏫 교사용 › <b>9주차 · 평가 데이터셋 &amp; 측정</b>">
+    <main class="pane center" id="main">
+      <div class="slide-view" data-deck data-deck-title="9주차 · 평가 데이터셋 &amp; 측정">
+        <div class="deck-bar"><div class="deck-row" data-deck-controls></div></div>
+        <div class="deck-progress"><i></i></div>
+        <div class="deck-wrap">
+          <div class="deck-viewport">
+        <div class="deck-stage">
+
+          <!-- 1 -->
+          <section class="slide slide--title" data-title="표지">
+            <div class="kicker">검색증강생성(RAG) 시스템 구축 · 9주차</div>
+            <h1>평가 데이터셋 &amp; 측정</h1>
+            <p>좋아진 것 같다는 느낌을 숫자로 바꾼다</p>
+            <div class="deco" aria-hidden="true">📊</div>
+            <aside class="notes">
+              <p><strong>오늘 흐름 (180분)</strong></p>
+              <table>
+                <tr><td>0:00–0:15</td><td>도입 · 8주차 복습(“하이브리드가 정말 나았나?”)</td></tr>
+                <tr><td>0:15–0:35</td><td>눈으로 한 튜닝의 함정 · 검색 평가 vs 생성 평가 · 골든셋</td></tr>
+                <tr><td>0:35–1:05</td><td>지표 손계산(Precision·Recall·MRR·nDCG) · 청크/문서 단위 정답</td></tr>
+                <tr><td>1:05–1:30</td><td>점수판 위젯 실습 + 관찰 질문 1~4</td></tr>
+                <tr><td>1:30–1:40</td><td>휴식</td></tr>
+                <tr><td>1:40–2:05</td><td>생성 평가 · LLM-as-judge · 잡음과 과적합 · 관찰 5~6</td></tr>
+                <tr><td>2:05–2:50</td><td>Challenge C1~C4 (C5는 과제)</td></tr>
+                <tr><td>2:50–3:00</td><td>정리 · 10주차 예고</td></tr>
+              </table>
+              <p>T 키로 타이머를 시작한다. 벡터·하이브리드 데모를 쓰려면 수업 전에 이 덱을 한 번 열어 임베딩 모델(약 118MB)을 캐시해 둔다.</p>
+            </aside>
+          </section>
+
+          <!-- 2 -->
+          <section class="slide" data-title="학습 목표">
+            <h2>오늘 할 수 있게 되는 것</h2>
+            <ol>
+              <li>검색 평가와 생성 평가를 구분하고, 골든셋 항목(질문·정답·근거)을 만든다</li>
+              <li>Recall@k · Precision@k · MRR · nDCG@k를 손으로 계산하고 코드로 검산한다</li>
+              <li>골든셋으로 설정을 비교하고, 12문항 점수의 잡음·과적합 위험을 설명한다</li>
+            </ol>
+            <aside class="notes">
+              <p>4주차에 “크기는 감이 아니라 측정으로 고른다”고 예고했던 그 측정을 오늘 한다고 연결한다.</p>
+              <p>3번이 태도 목표다. 숫자를 만드는 것만큼 숫자를 의심하는 법이 중요하다고 미리 말해 둔다.</p>
+            </aside>
+          </section>
+
+          <!-- 3 -->
+          <section class="slide" data-title="눈으로 한 튜닝의 함정">
+            <h2>한 문항을 고치다 여섯 문항을 망친다</h2>
+            <table>
+              <thead><tr><th>설정</th><th>q10 근거 순위</th><th>Hit@3 (12문항)</th></tr></thead>
+              <tbody>
+                <tr><td>재귀 200 · BM25</td><td>12위 ✗</td><td><strong>0.833</strong></td></tr>
+                <tr><td>고정 100 · BM25</td><td>1위 ✓</td><td><strong>0.500</strong></td></tr>
+              </tbody>
+            </table>
+            <p>q10만 보면 “고쳤다”. 전체를 보면 근거 5개가 잘리고(q01·q04·q05·q08·q11), q09는 검색조차 안 된다</p>
+            <p class="muted">→ 같은 골든셋으로 매번 전체를 다시 채점한다</p>
+            <aside class="notes">
+              <p><strong>발문:</strong> “8주차에 하이브리드가 BM25보다 나았다고 느낀 사람? 몇 개 질문으로 확인했나?” 손을 들게 한 뒤 이 표를 공개한다.</p>
+              <p>숫자는 모두 위젯과 Challenge C3·C4에서 학생이 직접 재현한다. q09는 100자 경계에서 “HNSW”가 앞 청크로 떨어져 나가 BM25 점수가 0이 된 경우다(4주차 C5 제목 붙이기와 연결).</p>
+            </aside>
+          </section>
+
+          <!-- 4 -->
+          <section class="slide" data-title="검색 평가 vs 생성 평가">
+            <h2>두 단계로 나눠 잰다</h2>
+            <div class="cols">
+              <div>
+                <h3>① 검색 평가</h3>
+                <p>근거를 상위 k개 안에 찾아왔나?</p>
+                <p class="muted">Recall@k · Precision@k · MRR · nDCG@k<br>순위 비교 → 결정적 · 빠름 · LLM 불필요</p>
+              </div>
+              <div>
+                <h3>② 생성 평가</h3>
+                <p>답이 근거에 충실하고 질문에 맞나?</p>
+                <p class="muted">Faithfulness · Answer relevance<br>읽고 판정 → 느림 · 흔들림</p>
+              </div>
+            </div>
+            <p>검색이 0점이면 생성은 복구할 수 없다 → <strong>①부터 잰다</strong></p>
+            <aside class="notes">
+              <p>4주차 칠판 문장 “검색 실패는 생성으로 복구되지 않는다”를 다시 가리킨다.</p>
+              <p>생성 평가는 LLM 키가 있어야 제대로 하므로 오늘은 맛보기만 한다. 11주차에 인용과 함께 다시 다룬다.</p>
+            </aside>
+          </section>
+
+          <!-- 5 -->
+          <section class="slide" data-title="골든셋 만드는 법">
+            <h2>골든셋 = 질문 · 정답 · 근거</h2>
+            <pre><code>{ "question": "GPU 서버를 연속으로 쓸 수 있는 최대 시간은?",
+  "answer":   "최대 12시간이다.",
+  "evidence": [{ "doc": "facility-rules",
+     "quote": "…연속으로 사용할 수 있는 시간은 최대 12시간이다." }] }</code></pre>
+            <ul>
+              <li>근거는 <strong>원문 구간(quote)</strong>까지 — 원문에 있는지 코드로 검사</li>
+              <li>질문은 사용자처럼 — 원문을 베끼면 BM25에 유리한 시험</li>
+              <li>망가진 문서 · 숫자 답 · 여러 근거를 섞는다</li>
+            </ul>
+            <aside class="notes">
+              <p><strong>발문:</strong> “우리 골든셋 질문 중 원문 단어를 거의 그대로 쓴 것은?” (q07 “RRF에서 k 값”, q08 “Faithfulness” 등) → BM25가 이 골든셋에서 유리하다는 편향을 스스로 찾게 한다.</p>
+              <p>C2에서 겹침 비율 0.6 초과를 “베낌”으로 잡는다. n02 초안은 겹침 0.78로 걸린다.</p>
+            </aside>
+          </section>
+
+          <!-- 6 -->
+          <section class="slide" data-title="지표 손계산">
+            <h2>손으로 계산하기 · 정답 {A, C}</h2>
+            <div class="cols">
+              <div>
+                <table>
+                  <thead><tr><th>순위</th><th>청크</th><th>1/log₂(i+1)</th></tr></thead>
+                  <tbody>
+                    <tr><td>1</td><td>B</td><td>1.000</td></tr>
+                    <tr><td>2</td><td><strong>A ✓</strong></td><td>0.631</td></tr>
+                    <tr><td>3</td><td>D</td><td>0.500</td></tr>
+                    <tr><td>4</td><td><strong>C ✓</strong></td><td>0.431</td></tr>
+                    <tr><td>5</td><td>E</td><td>0.387</td></tr>
+                  </tbody>
+                </table>
+              </div>
+              <div>
+                <p>P@3 = 1/3 = 0.333</p>
+                <p>R@3 = 1/2 = 0.500 · R@5 = 1.0</p>
+                <p>RR = 1/2 = 0.500</p>
+                <p>nDCG@5 = 1.062 / 1.631 = <strong>0.651</strong></p>
+                <p class="muted">nDCG@3 = 0.631 / 1.631 = 0.387</p>
+              </div>
+            </div>
+            <aside class="notes">
+              <p>표 왼쪽만 먼저 보여 주고 오른쪽 숫자는 학생이 계산하게 한다(3분). 오른쪽은 가리기(B)로 가렸다가 공개한다.</p>
+              <p>IDCG는 “정답 2개를 1·2위에 몰아 둔 경우” = 1 + 0.631. 정답 수가 k보다 많으면 IDCG는 k개까지만 더한다는 점을 C1에서 확인한다.</p>
+              <p>MRR은 k와 무관하게 전체 순위로 계산한다(core/metrics.js 구현도 동일). 그래서 위젯에서 k를 바꿔도 MRR은 변하지 않는다.</p>
+            </aside>
+          </section>
+
+          <!-- 7 -->
+          <section class="slide" data-title="청크 단위 vs 문서 단위">
+            <h2>무엇을 정답으로 칠까</h2>
+            <table>
+              <thead><tr><th>고정 100 · BM25 · k=3</th><th>Hit@3</th></tr></thead>
+              <tbody>
+                <tr><td>문서 단위: 근거 문서의 아무 청크</td><td><strong>1.000</strong></td></tr>
+                <tr><td>청크 단위: 근거 문장을 온전히 담은 청크</td><td><strong>0.500</strong></td></tr>
+              </tbody>
+            </table>
+            <p>같은 검색 결과, 정답 정의만 바꿨는데 <strong>두 배</strong></p>
+            <p class="muted">점수를 보고할 때는 정답 기준을 반드시 함께 적는다</p>
+            <aside class="notes">
+              <p>문서 단위 만점의 속임수: 답이 없는 청크(“문장이 잘리면 답에 필요한 정보가 두 청크에”까지만 있는 조각)도 정답으로 쳤다.</p>
+              <p>우리 문서셋은 문서가 12개뿐이라 문서 단위로 채점하면 거의 무조건 만점이 나온다. 문서가 수천 개면 문서 단위도 의미가 있다는 점을 덧붙인다.</p>
+            </aside>
+          </section>
+
+          <!-- 8 -->
+          <section class="slide slide--demo" data-title="데모: 평가 점수판">
+            <h2>데모 · 평가 점수판</h2>
+            <div id="deck-w09-widget"></div>
+            <aside class="notes">
+              <p><strong>시연 순서</strong> (결과는 오른쪽 실행 결과 창에 실시간으로 나온다)</p>
+              <ol>
+                <li>처음 화면(재귀 200 · BM25 · k=3): Recall@3 0.833, MRR 0.861, nDCG@3 0.833. “＋ 현재 설정 저장”</li>
+                <li>문항별 결과에서 q09(4위), q10(12위)를 펼쳐 상위 청크를 보여 준다. q10은 표 머리행(요일·교시·강의실)만 검색되고 데이터 행은 12위다</li>
+                <li>k를 4로 → q09 성공(Hit@4 0.917). “k를 올리면 점수가 오르지만 LLM에 넣는 양도 늘어난다”</li>
+                <li>“실패 재현: 고정 100” → 0.500, ✂ 5개. 저장. 오버랩 20 → Hit@3 0.917, MRR 0.778, q06이 새로 잘림. 저장해서 3행 비교</li>
+                <li>“같은 설정을 문서 단위로 채점” → 1.000. 저장 표의 경고 문구를 읽어 준다</li>
+                <li>“큰 청크: 고정 400” → 만점. “우리 문서는 400~550자라 청크 ≈ 문서다. 만점은 좋은 설정이 아니라 쉬운 시험의 신호”</li>
+                <li>(모델 캐시 시) 벡터·하이브리드로 바꿔 저장. 차이가 1문항 이하면 표 아래 잡음 경고가 뜬다</li>
+              </ol>
+              <p>벡터·하이브리드 숫자는 모델·기기에 따라 조금 다를 수 있으니 수업 전에 미리 한 번 돌려 기록해 둔다.</p>
+            </aside>
+          </section>
+
+          <!-- 9 -->
+          <section class="slide" data-title="관찰 질문">
+            <h2>관찰 질문</h2>
+            <ol>
+              <li>처음 설정에서 실패하는 두 문항과 근거 순위는? k를 몇까지 올려야 하나?</li>
+              <li>고정 100에서 ✂는 몇 개? 오버랩 20이면?</li>
+              <li>문서 단위로 채점하면? 보고서에는 어느 숫자를?</li>
+              <li>고정 400의 만점은 무엇을 뜻하나?</li>
+              <li>벡터·하이브리드와 BM25의 차이는 몇 문항인가? 믿어도 되나?</li>
+              <li>q12 판정에서 휴리스틱과 LLM이 다른 이유는?</li>
+            </ol>
+            <aside class="notes">
+              <p>1~4는 짝 활동 15분. 5~6은 휴식 후 전체 토론.</p>
+              <p>기대 답: ① q09 4위, q10 12위 → k=12, 청크 12개(약 1,500자)를 LLM에 넣어야 함 ② 5개(q01·q04·q05·q08·q11) → 오버랩 20이면 q06 1개 ③ 1.000 vs 0.500, 청크 단위 ④ 청크 ≈ 문서라 쉬운 시험 ⑤ 1~2문항 차이는 신뢰구간 안 ⑥ 단어는 있지만 “제공되지 않으며”라는 부정을 휴리스틱은 못 본다.</p>
+            </aside>
+          </section>
+
+          <!-- 10 -->
+          <section class="slide" data-title="생성 평가 · LLM-as-judge">
+            <h2>생성 평가와 LLM 판정자</h2>
+            <ul>
+              <li><strong>Faithfulness</strong>: 주장별로 근거가 뒷받침하는 비율</li>
+              <li><strong>Answer relevance</strong>: 질문에 실제로 답했나</li>
+            </ul>
+            <h3>LLM-as-judge 주의점</h3>
+            <ul>
+              <li>흔들린다 → temperature 0, 여러 번 실행</li>
+              <li>편향 → 긴 답 · 자기 문체 · 첫 번째 답 선호</li>
+              <li>형식 위반 → JSON 파싱 실패 처리, 산술은 코드로</li>
+              <li>사람 채점 일부와 일치율 확인 후 신뢰</li>
+            </ul>
+            <aside class="notes">
+              <p>위젯 “생성 평가 맛보기”의 저장된 예시(q01, q12)를 띄워 설명한다. q01: “연장하려면 조교에게 신청” → 근거 없음, Faithfulness 0.5. q12: “녹화 영상으로 보강이 있다” → 근거와 모순.</p>
+              <p>키가 있다면 같은 판정을 두세 번 요청해 결과가 바뀌는지 보여 준다. 키는 교사 개인 키를 쓰고 화면 공유 시 입력란이 password 형식임을 확인한다.</p>
+            </aside>
+          </section>
+
+          <!-- 11 -->
+          <section class="slide" data-title="잡음과 과적합">
+            <h2>숫자를 믿기 전에</h2>
+            <div class="cols">
+              <div>
+                <h3>잡음</h3>
+                <p>1문항 = 1/12 ≈ <strong>0.083</strong></p>
+                <p>Hit@3 = 10/12의 95% 구간 ≈ <strong>0.55 ~ 0.95</strong></p>
+                <p class="muted">0.833 vs 0.917은 “아직 모른다”</p>
+              </div>
+              <div>
+                <h3>과적합</h3>
+                <p>12문항 점수가 오를 때까지 수십 번 바꾸면 “이 12문항”에 맞춘 설정이 된다</p>
+                <p class="muted">dev / test로 나누고 test는 마지막에 한 번</p>
+              </div>
+            </div>
+            <aside class="notes">
+              <p>윌슨 구간은 위젯의 요약 아래 문장에 자동으로 표시된다. 공식은 몰라도 된다고 말하고 “폭이 이렇게 넓다”는 감각만 가져가게 한다.</p>
+              <p><strong>발문:</strong> “팀 프로젝트 골든셋은 몇 문항이 필요할까?” 1문항 차이를 구별하려면 수백 문항이 필요하다는 결론으로 이끈다. 현실적 목표: 팀당 30~50문항.</p>
+            </aside>
+          </section>
+
+          <!-- 12 -->
+          <section class="slide" data-title="코드로 확인: 점수판 한 줄">
+            <h2>코드로 확인하기</h2>
+            <pre data-run="deck-score" data-title="점수판 한 줄 만들기"><code class="language-javascript">import { chunk } from '/assets/js/core/chunker.js';
+import { BM25 } from '/assets/js/core/bm25.js';
+import { evaluate } from '/assets/js/core/metrics.js';
+const corpus = await (await fetch('/assets/data/corpus/corpus.json')).json();
+const golden = await (await fetch('/assets/data/golden/golden.json')).json();
+
+const cfg = { strategy: 'recursive', size: 200, overlap: 0 }; // 바꿔 보기
+const chunks = corpus.documents.flatMap((d) =&gt;
+  chunk(d.text, cfg).map((c) =&gt; ({ id: `${d.id}#${c.index}`, text: c.text })));
+const bm25 = new BM25().add(chunks);
+
+const runs = golden.items.map(({ id, question, evidence: [ev] }) =&gt; {
+  const hits = bm25.search(question, chunks.length);
+  const i = hits.findIndex((h) =&gt; h.text.includes(ev.quote)); // 근거 단위 정답
+  console.log(id, i === -1 ? '근거 없음' : `${i + 1}위`);
+  return { retrieved: hits.map((h, j) =&gt; (j === i ? 'EV' : h.id)), relevant: ['EV'] };
+});
+console.table(evaluate(runs, 3));</code></pre>
+            <aside class="notes">
+              <p>▶ 실행하면 q09 4위, q10 12위와 recall 0.833 · mrr 0.861 · ndcg 0.833이 나온다(위젯 처음 화면과 같다).</p>
+              <p><code>cfg</code>의 size를 100, strategy를 'fixed'로 바꿔 다시 실행한다 → 근거 없음 5개 + q09 근거 없음(검색 안 됨), recall 0.5.</p>
+            </aside>
+          </section>
+
+          <!-- 13 -->
+          <section class="slide" data-title="Challenge 안내">
+            <h2>Challenge</h2>
+            <table>
+              <tbody>
+                <tr><td>C1 ★</td><td>지표 손계산 후 metrics.js로 검산</td></tr>
+                <tr><td>C2 ★★</td><td>골든셋 항목 만들고 검증 (quote 존재 · 베낌 검사)</td></tr>
+                <tr><td>C3 ★★★</td><td>청크 크기 100/200/400 × 전략 2개 BM25 점수표</td></tr>
+                <tr><td>C4 ★★★</td><td>근거 단위 vs 문서 단위 정답 비교</td></tr>
+                <tr><td>C5 ★★★★</td><td>키 없이 재는 Faithfulness 휴리스틱 (과제)</td></tr>
+              </tbody>
+            </table>
+            <p class="muted">모두 모델·LLM 없이 브라우저 워커에서 실행된다</p>
+            <aside class="notes">
+              <p>C1~C2는 모두 끝내야 한다. C3 결과 표는 캡처해 제출하게 한다. 정답은 부록 B.</p>
+            </aside>
+          </section>
+
+          <!-- 14 -->
+          <section class="slide" data-title="정리 & 다음 주">
+            <h2>정리</h2>
+            <ul>
+              <li>검색 평가 → 생성 평가 순서로 잰다</li>
+              <li>골든셋: 질문 · 정답 · 원문 quote, 존재 여부는 코드로 검사</li>
+              <li>k는 LLM에 넣을 청크 수. 정답 기준을 함께 보고한다</li>
+              <li>12문항의 1문항 차이는 잡음, 골든셋 튜닝은 과적합</li>
+            </ul>
+            <h3>다음 주 · 프레임워크 리팩터링</h3>
+            <p class="muted">직접 만든 파이프라인을 프레임워크 코드와 비교하고, 바꾼 뒤에도 오늘의 골든셋 점수가 그대로인지 확인한다</p>
+            <aside class="notes">
+              <p>오늘 만든 C3 스크립트를 10주차에 “회귀 테스트”로 그대로 다시 쓴다. 파일로 저장해 두라고 공지한다.</p>
+            </aside>
+          </section>
+
+          <!-- Appendix -->
+          <section class="slide" data-title="부록 A · 강의안" data-appendix>
+            <h2>부록 A · 강의안</h2>
+            <table>
+              <thead><tr><th>시간</th><th>활동</th><th>산출물</th></tr></thead>
+              <tbody>
+                <tr><td>15분</td><td>도입 · 8주차 복습</td><td>—</td></tr>
+                <tr><td>20분</td><td>함정 사례 · 검색/생성 평가 · 골든셋</td><td>—</td></tr>
+                <tr><td>30분</td><td>지표 손계산 · 정답 기준</td><td>손계산 1문제</td></tr>
+                <tr><td>25분</td><td>위젯 실습 · 관찰 1~4</td><td>저장 표 캡처</td></tr>
+                <tr><td>10분</td><td>휴식</td><td>—</td></tr>
+                <tr><td>25분</td><td>생성 평가 · 잡음·과적합 · 관찰 5~6</td><td>—</td></tr>
+                <tr><td>45분</td><td>Challenge C1~C4</td><td>C3 점수표</td></tr>
+                <tr><td>10분</td><td>정리 · 예고</td><td>—</td></tr>
+              </tbody>
+            </table>
+          </section>
+
+          <section class="slide" data-title="부록 B · C1 정답" data-appendix>
+            <h2>부록 B · C1 정답</h2>
+            <pre data-run="ans-c1" data-title="C1 정답"><code class="language-javascript">import { precisionAtK, recallAtK, hitAtK, reciprocalRank, ndcgAtK } from '/assets/js/core/metrics.js';
+
+const retrieved = ['d7', 'd2', 'd4', 'd5', 'd1', 'd9', 'd3'];
+const relevant = ['d2', 'd5', 'd9'];
+const k = 5;
+
+// 상위 5개: d7 ✗, d2 ✓(2위), d4 ✗, d5 ✓(4위), d1 ✗  → 정답 2개
+// DCG  = 1/log2(3) + 1/log2(5) = 0.631 + 0.431 = 1.062
+// IDCG = 1 + 1/log2(3) + 1/log2(4) = 1 + 0.631 + 0.5 = 2.131 (정답 3개를 1~3위에)
+const mine = { precision: 2 / 5, recall: 2 / 3, hit: 1, rr: 1 / 2, ndcg: 1.062 / 2.131 };
+
+const lib = {
+  precision: precisionAtK(retrieved, relevant, k),
+  recall: recallAtK(retrieved, relevant, k),
+  hit: hitAtK(retrieved, relevant, k),
+  rr: reciprocalRank(retrieved, relevant),
+  ndcg: ndcgAtK(retrieved, relevant, k),
+};
+console.table(Object.keys(lib).map((m) =&gt; ({ metric: m, mine: +mine[m].toFixed(3), lib: +lib[m].toFixed(3), ok: Math.abs(mine[m] - lib[m]) &lt; 0.001 })));
+
+// d9와 d1의 자리를 바꾸면 d9가 5위로 들어온다
+const swapped = ['d7', 'd2', 'd4', 'd5', 'd9', 'd1', 'd3'];
+console.log('swap → recall', recallAtK(swapped, relevant, k).toFixed(3),
+  'precision', precisionAtK(swapped, relevant, k).toFixed(3),
+  'ndcg', ndcgAtK(swapped, relevant, k).toFixed(3), 'rr', reciprocalRank(swapped, relevant));</code></pre>
+            <aside class="notes">
+              <p><strong>기대 출력:</strong> precision 0.4 · recall 0.667 · hit 1 · rr 0.5 · ndcg 0.498 모두 ok=true. 자리 바꿈 후 recall 1.000, precision 0.600, ndcg 0.680, rr 0.5(그대로).</p>
+              <p><strong>왜:</strong> IDCG에서 정답이 3개이므로 1~3위를 채운 1 + 0.631 + 0.5 = 2.131로 나눈다. 학생들이 가장 많이 틀리는 곳은 IDCG를 “상위 5개 중 정답 2개”로 계산하는 것이다. 이상적 순서는 검색 결과가 아니라 정답 집합에서 만든다.</p>
+              <p>손계산 1.062/2.131 = 0.4984와 라이브러리 0.4982의 차이는 반올림 때문이다(허용 오차 0.001).</p>
+            </aside>
+          </section>
+
+          <section class="slide" data-title="부록 B · C2 정답" data-appendix>
+            <h2>부록 B · C2 정답</h2>
+            <pre data-run="ans-c2" data-title="C2 정답"><code class="language-javascript">import { tokenize } from '/assets/js/core/bm25.js';
+
+const corpus = await (await fetch('/assets/data/corpus/corpus.json')).json();
+const docById = Object.fromEntries(corpus.documents.map((d) =&gt; [d.id, d]));
+
+const drafts = [
+  { id: 'n01', question: '실습실은 평일 몇 시까지 여나?', answer: '오후 9시까지다.',
+    evidence: [{ doc: 'facility-rules', quote: '실습실은 수업 시간 외에도 평일 오후 9시까지 개방된다.' }] },
+  { id: 'n02', question: '위층에서 대략 위치를 찾은 뒤 아래층으로 내려가며 탐색하는 인덱스는?', answer: 'HNSW다.',
+    evidence: [{ doc: 'rag-vectordb', quote: '위층에서 대략 위치를 찾은 뒤 아래층으로 내려가며 탐색한다' }] },
+  { id: 'n03', question: '주말에 실습실을 쓰려면 언제까지 신청하나?', answer: '이용일 이틀 전까지다.',
+    evidence: [{ doc: 'facility-rules', quote: '신청은 이용일 3일 전까지 학과 행정실에 한다.' }] },
+  { id: 'n04', question: '벡터를 미리 정규화하면 코사인 유사도 계산이 어떻게 바뀌나?', answer: '내적과 같아진다.',
+    evidence: [{ doc: 'rag-embedding', quote: '벡터를 미리 정규화해 두면 코사인 유사도는 내적과 같아진다.' }] },
+  { id: 'n05', question: '크로스 인코더를 전체 문서가 아니라 후보에만 쓰는 이유는?', answer: '정확하지만 느리기 때문이다.',
+    evidence: [{ doc: 'rag-hybrid', quote: '크로스 인코더는 질문과 문서를 한꺼번에 입력받아 관련도를 계산하므로 정확하지만 느리다.' }] },
+];
+
+/** 질문 단어 중 quote에도 있는 단어의 비율 */
+function overlap(question, quote) {
+  const q = new Set(tokenize(question, { bigrams: false }));
+  const e = new Set(tokenize(quote, { bigrams: false }));
+  if (q.size === 0) return 0;
+  return [...q].filter((t) =&gt; e.has(t)).length / q.size;
+}
+
+function validate(item) {
+  const problems = [];
+  if (!item.question?.trim() || !item.answer?.trim()) problems.push('질문/정답 비어 있음');
+  for (const ev of item.evidence ?? []) {
+    const doc = docById[ev.doc];
+    if (!doc) { problems.push(`문서 없음: ${ev.doc}`); continue; }
+    if (!doc.text.includes(ev.quote)) problems.push(`quote가 원문에 없음: "${ev.quote.slice(0, 20)}…"`);
+    const ov = overlap(item.question, ev.quote);
+    if (ov &gt; 0.6) problems.push(`질문이 근거를 베꼈다 (겹침 ${ov.toFixed(2)})`);
+  }
+  if (!item.evidence?.length) problems.push('근거 없음');
+  return problems;
+}
+
+console.table(drafts.map((it) =&gt; ({ id: it.id, ok: validate(it).length === 0, overlap: +overlap(it.question, it.evidence[0].quote).toFixed(2), problems: validate(it).join('; ') })));</code></pre>
+            <aside class="notes">
+              <p><strong>기대 출력:</strong> n01 ok(겹침 0.4) · n02 “질문이 근거를 베꼈다 (겹침 0.78)” · n03 “quote가 원문에 없음”(원문은 “이틀 전까지”) · n04 ok(0.38) · n05 ok(0.13).</p>
+              <p><strong>왜:</strong> quote는 사람이 옮겨 적다 보면 조금씩 바뀐다(“이틀”→“3일”). <code>includes</code> 검사 하나로 골든셋 오류를 대부분 잡는다. 겹침 비율은 bigram 없이 단어 단위로 재야 조사 차이에 덜 민감하다.</p>
+              <p>0.6이라는 기준은 임의다. 기준보다 “질문을 원문을 보지 않고 쓴다”는 습관이 중요하다고 말한다.</p>
+            </aside>
+          </section>
+
+          <section class="slide" data-title="부록 B · C3 정답" data-appendix>
+            <h2>부록 B · C3 정답</h2>
+            <pre data-run="ans-c3" data-title="C3 정답"><code class="language-javascript">import { chunk } from '/assets/js/core/chunker.js';
+import { BM25 } from '/assets/js/core/bm25.js';
+import { evaluate } from '/assets/js/core/metrics.js';
+
+const corpus = await (await fetch('/assets/data/corpus/corpus.json')).json();
+const golden = await (await fetch('/assets/data/golden/golden.json')).json();
+
+function buildIndex(cfg) {
+  const chunks = corpus.documents.flatMap((d) =&gt;
+    chunk(d.text, cfg).map((c) =&gt; ({ id: `${d.id}#${c.index}`, doc: d.id, text: c.text })));
+  return { chunks, bm25: new BM25().add(chunks) };
+}
+
+function runsFor(cfg) {
+  const { chunks, bm25 } = buildIndex(cfg);
+  const byId = new Map(chunks.map((c) =&gt; [c.id, c]));
+  return golden.items.map((item) =&gt; {
+    const ev = item.evidence[0];
+    const ranked = bm25.search(item.question, chunks.length).map((r) =&gt; byId.get(r.id));
+    let credited = false; // 같은 근거는 처음 한 번만 정답
+    const retrieved = ranked.map((c) =&gt; {
+      const rel = c.doc === ev.doc &amp;&amp; c.text.includes(ev.quote);
+      if (rel &amp;&amp; !credited) { credited = true; return 'EV'; }
+      return c.id;
+    });
+    return { retrieved, relevant: ['EV'] };
+  });
+}
+
+const rows = [];
+for (const strategy of ['fixed', 'recursive'])
+  for (const size of [100, 200, 400]) {
+    const m = evaluate(runsFor({ strategy, size, overlap: 0 }), 3);
+    rows.push({ strategy, size, 'Recall@3': +m.recall.toFixed(3), MRR: +m.mrr.toFixed(3), 'nDCG@3': +m.ndcg.toFixed(3) });
+  }
+console.table(rows);</code></pre>
+            <aside class="notes">
+              <p><strong>기대 출력 (Recall@3 / MRR / nDCG@3):</strong> fixed 100 → 0.5 / 0.5 / 0.5 · fixed 200 → 0.833 / 0.792 / 0.803 · fixed 400 → 1 / 1 / 1 · recursive 100 → 0.833 / 0.701 / 0.73 · recursive 200 → 0.833 / 0.861 / 0.833 · recursive 400 → 1 / 1 / 1.</p>
+              <p><strong>왜:</strong> 근거가 여러 청크(오버랩)에 걸쳐 있어도 처음 한 번만 정답으로 쳐야 Recall이 1을 넘지 않는다. BM25 <code>search</code>는 점수 0인 청크를 돌려주지 않으므로 전체 청크 수만큼 요청해도 근거가 없을 수 있다(→ RR 0).</p>
+              <p>토론: 400이 만점인 이유는 문서가 400~550자라 청크 ≈ 문서이기 때문이다. 같은 recall 0.833이라도 재귀 200의 MRR이 재귀 100보다 높다 — Recall만 보면 놓치는 차이.</p>
+            </aside>
+          </section>
+
+          <section class="slide" data-title="부록 B · C4 정답" data-appendix>
+            <h2>부록 B · C4 정답</h2>
+            <pre data-run="ans-c4" data-title="C4 정답"><code class="language-javascript">import { chunk } from '/assets/js/core/chunker.js';
+import { BM25 } from '/assets/js/core/bm25.js';
+
+const corpus = await (await fetch('/assets/data/corpus/corpus.json')).json();
+const golden = await (await fetch('/assets/data/golden/golden.json')).json();
+const K = 3;
+
+function compare(cfg) {
+  const chunks = corpus.documents.flatMap((d) =&gt;
+    chunk(d.text, cfg).map((c) =&gt; ({ id: `${d.id}#${c.index}`, doc: d.id, text: c.text })));
+  const byId = new Map(chunks.map((c) =&gt; [c.id, c]));
+  const bm25 = new BM25().add(chunks);
+  const diffs = [];
+  let evHits = 0, docHits = 0;
+  for (const item of golden.items) {
+    const ev = item.evidence[0];
+    const top = bm25.search(item.question, K).map((r) =&gt; byId.get(r.id));
+    const evHit = top.some((c) =&gt; c.doc === ev.doc &amp;&amp; c.text.includes(ev.quote));
+    const docHit = top.some((c) =&gt; c.doc === ev.doc);
+    evHits += evHit; docHits += docHit;
+    if (evHit !== docHit) {
+      const cut = !chunks.some((c) =&gt; c.doc === ev.doc &amp;&amp; c.text.includes(ev.quote));
+      diffs.push({ id: item.id, 근거단위: evHit, 문서단위: docHit,
+        이유: cut ? '근거가 청크 경계에서 잘림 — 온전히 담은 청크가 없다' : '같은 문서의 다른 청크(답 없음)가 대신 검색됨' });
+    }
+  }
+  console.log(`${cfg.strategy} ${cfg.size}/${cfg.overlap}: 근거 단위 Hit@${K}=${(evHits / 12).toFixed(3)}  문서 단위 Hit@${K}=${(docHits / 12).toFixed(3)}`);
+  console.table(diffs);
+}
+
+compare({ strategy: 'fixed', size: 100, overlap: 0 });
+compare({ strategy: 'recursive', size: 200, overlap: 0 });</code></pre>
+            <aside class="notes">
+              <p><strong>기대 출력:</strong> fixed 100/0 → 근거 단위 0.500, 문서 단위 1.000. 다른 문항 6개: q01·q04·q05·q08·q11(근거 잘림), q09(같은 문서의 다른 청크). recursive 200/0 → 0.833 vs 1.000, 다른 문항 q09·q10(같은 문서의 다른 청크).</p>
+              <p><strong>왜:</strong> 문서 단위는 “근거가 잘렸다”와 “엉뚱한 조각이 왔다”를 모두 정답으로 숨긴다. q10은 표 머리행 청크가 대신 검색된 경우로, 3주차 파싱 문제가 평가 숫자에서 어떻게 보이는지 보여 준다.</p>
+            </aside>
+          </section>
+
+          <section class="slide" data-title="부록 B · C5 정답" data-appendix>
+            <h2>부록 B · C5 정답</h2>
+            <pre data-run="ans-c5" data-title="C5 정답"><code class="language-javascript">import { sentenceSpans } from '/assets/js/core/chunker.js';
+
+const context = 'Q. 결석 시 보강이 있나요?\nA. 녹화 영상은 제공되지 않으며, 결석한 주의 실습 과제는 다음 주 수업 전까지 제출하면 인정됩니다.';
+const answers = {
+  faithful: '결석한 주의 실습 과제는 다음 주 수업 전까지 제출하면 인정된다.',
+  extra: '과제는 다음 주 수업 전까지 제출한다. 늦으면 감점 20%가 있다.',
+  contradict: '결석해도 녹화 영상으로 보강이 있다.',
+};
+
+const PARTICLES = ['에서', '으로', '까지', '부터', '은', '는', '이', '가', '을', '를', '에', '의', '로', '도', '다'];
+const STOP = new Set(['있다', '없다', '한다', '된다']); // 사실을 담지 않는 말
+function keyTokens(sentence) {
+  const words = sentence.toLowerCase().match(/[\p{L}\p{N}%]+/gu) ?? [];
+  return words
+    .map((w) =&gt; {
+      const p = PARTICLES.find((s) =&gt; w.endsWith(s) &amp;&amp; w.length - s.length &gt;= 2);
+      return p ? w.slice(0, -p.length) : w;
+    })
+    .filter((w) =&gt; w.length &gt;= 2 &amp;&amp; !STOP.has(w));
+}
+
+function faithfulness(answer, context) {
+  // 활용형 차이(인정된 ↔ 인정됩니다)는 마지막 글자를 뗀 어간으로 한 번 더 찾는다
+  const found = (t) =&gt; context.includes(t) || (t.length &gt;= 3 &amp;&amp; context.includes(t.slice(0, -1)));
+  const sentences = sentenceSpans(answer).map(([s, e]) =&gt; answer.slice(s, e).trim()).filter(Boolean).map((text) =&gt; {
+    const missing = keyTokens(text).filter((t) =&gt; !found(t));
+    return { text, missing, supported: missing.length === 0 };
+  });
+  const score = sentences.filter((x) =&gt; x.supported).length / (sentences.length || 1);
+  return { score, sentences };
+}
+
+for (const [name, a] of Object.entries(answers)) {
+  const r = faithfulness(a, context);
+  console.log(name, r.score.toFixed(2), r.sentences.map((x) =&gt; `${x.supported ? '✓' : '✗'} ${x.text} ${x.missing.length ? '[없음: ' + x.missing.join(', ') + ']' : ''}`));
+}
+// 휴리스틱이 속는 답변은 contradict다. '녹화', '영상', '보강'이 모두 근거에 있지만
+// 근거는 "제공되지 않으며"라고 부정한다. 단어의 존재만 보고 뜻(부정·모순)은 보지 못한다.
+// → 모순 검출에는 NLI 모델이나 LLM 판정자가 필요하다.</code></pre>
+            <aside class="notes">
+              <p><strong>기대 출력:</strong> faithful 1.00 · extra 0.50(“늦으면 감점 20%가 있다”에서 늦으면·감점·20% 없음) · contradict 1.00(속음).</p>
+              <p><strong>왜:</strong> 단어 존재만 보므로 부정(“제공되지 않으며”)과 모순을 못 잡는다. 반대로 표현만 다르고 뜻이 같은 문장은 “근거 없음”으로 잘못 판정한다. 그래서 실무는 NLI 모델이나 LLM 판정자를 쓰고, 휴리스틱은 값싼 1차 필터로만 쓴다.</p>
+              <p>어간 근사(마지막 글자 떼기)가 없으면 faithful도 “인정된”이 없어 0점이 된다. 한국어 형태 변화가 휴리스틱을 얼마나 어렵게 하는지 짚는다.</p>
+            </aside>
+          </section>
+
+          <section class="slide" data-title="부록 C · 자주 막히는 지점" data-appendix>
+            <h2>부록 C · 학생이 자주 막히는 지점</h2>
+            <table>
+              <thead><tr><th>증상</th><th>원인</th><th>대응</th></tr></thead>
+              <tbody>
+                <tr><td>nDCG가 1보다 크다</td><td>IDCG를 검색 결과로 계산</td><td>이상적 순서는 정답 집합으로 만든다</td></tr>
+                <tr><td>Recall이 1을 넘는다</td><td>같은 근거를 여러 번 정답 처리</td><td>처음 한 번만 정답으로 친다</td></tr>
+                <tr><td>k를 바꿔도 MRR 그대로</td><td>정상 — MRR은 전체 순위 기준</td><td>metrics.js 구현을 같이 읽는다</td></tr>
+                <tr><td>벡터 점수가 안 나온다</td><td>모델 다운로드 중 · 방화벽</td><td>BM25로 먼저 진행, 모델은 캐시 후</td></tr>
+                <tr><td>C2 quote 검사가 다 통과</td><td>doc.text 대신 title 검사</td><td><code>doc.text.includes(quote)</code></td></tr>
+                <tr><td>“만점이니 최고 설정”</td><td>쉬운 골든셋 · 청크 ≈ 문서</td><td>고정 400 사례로 토론</td></tr>
+              </tbody>
+            </table>
+          </section>
+
+          <section class="slide" data-title="부록 D · 토론 주제" data-appendix>
+            <h2>부록 D · 토론 주제</h2>
+            <ol>
+              <li>우리 골든셋 질문은 원문 단어를 많이 공유한다. 이 골든셋으로 “BM25가 벡터보다 낫다”고 결론 내려도 되는가?</li>
+              <li>q11(스캔 “5O%”)은 검색은 성공하지만 근거 자체가 틀렸다. 이 실패는 어떤 지표로 잡을 수 있나?</li>
+              <li>LLM 판정자와 사람의 판정이 70%만 일치한다면 그 판정자를 계속 써야 하나?</li>
+              <li>팀 프로젝트 골든셋은 누가, 몇 문항을, 어떤 순서로 만들어야 과적합을 피할 수 있나?</li>
+            </ol>
+          </section>
+
+          <section class="slide" data-title="부록 E · 평가 루브릭" data-appendix>
+            <h2>부록 E · 평가 루브릭</h2>
+            <table>
+              <thead><tr><th>항목</th><th>우수 (3)</th><th>보통 (2)</th><th>미흡 (1)</th></tr></thead>
+              <tbody>
+                <tr><td>계산 (C1)</td><td>5개 지표 손계산 일치 + IDCG 설명</td><td>코드 결과만 일치</td><td>오답</td></tr>
+                <tr><td>골든셋 (C2)</td><td>검증 3종 + 새 항목 2개 통과</td><td>quote 검사만</td><td>검증 없음</td></tr>
+                <tr><td>측정 (C3·C4)</td><td>표 + 정답 기준 명시 + 해석</td><td>표만 제시</td><td>일부 설정만</td></tr>
+                <tr><td>해석·토론</td><td>잡음·과적합·기준 차이를 근거로 결론 유보</td><td>숫자 크기만 비교</td><td>참여 없음</td></tr>
+              </tbody>
+            </table>
+          </section>
+
+        </div>
+          </div>
+        </div>
+        <section class="notes-pane" aria-label="교사 노트">
+          <button type="button" class="notes-head"><span>🧑‍🏫 교사 노트</span><span class="spacer"></span><span class="notes-next"></span><span class="notes-toggle">▾ 접기</span></button>
+          <div class="notes-body"></div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <script type="module">
+    import { initDeck } from '../../assets/js/site/slides.js';
+    import { initRunners } from '../../assets/js/site/runner.js';
+    import { mount } from '../../assets/js/widgets/w09-scoreboard.js';
+    initRunners(document.querySelector('.deck-stage'));
+    initDeck();
+    mount(document.getElementById('deck-w09-widget'), { outputTitle: '평가 점수판 (데모 슬라이드)' });
+  </script>
+</body>
+</html>

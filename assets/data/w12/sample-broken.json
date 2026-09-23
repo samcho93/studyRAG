@@ -1,0 +1,42 @@
+{
+  "team": "",
+  "members": "예시 학생 X1, 예시 학생 X2",
+  "system": {
+    "chunking": "recursive 200",
+    "embedding": "Xenova/multilingual-e5-small",
+    "retriever": "hybrid",
+    "k": "5"
+  },
+  "golden": [
+    {
+      "id": "q01",
+      "answer": "최대 12시간이다.",
+      "citations": [
+        "facility-rules#1"
+      ]
+    },
+    {
+      "id": "q02",
+      "retrieved": "course-rag-syllabus#2",
+      "answer": "40%다.",
+      "citations": []
+    },
+    {
+      "id": "q99",
+      "retrieved": [
+        "dept-overview#3"
+      ],
+      "answer": "출석률 80% 이상이다.",
+      "citations": []
+    },
+    {
+      "id": "q01",
+      "retrieved": [
+        "facility-rules#1"
+      ],
+      "answer": "12시간",
+      "citations": "facility-rules#1"
+    }
+  ],
+  "notes": "의도적으로 망가뜨린 예시 파일이다. 검증 오류 메시지를 확인하는 용도다."
+}

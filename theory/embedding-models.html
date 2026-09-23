@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>한국어 임베딩 모델 비교 · RAG Lab</title>
+  <meta name="description" content="한국어 RAG에 쓸 임베딩 모델 비교: KURE-v1/v2, BGE-M3, OpenAI text-embedding-3, multilingual-e5-small의 크기·차원·라이선스·비용과 고르는 기준.">
+  <script>try{var t=JSON.parse(localStorage.getItem('raglab:theme'));if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+  <link rel="stylesheet" crossorigin="anonymous" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&display=swap">
+  <link rel="stylesheet" href="../assets/css/tokens.css">
+  <link rel="stylesheet" href="../assets/css/base.css">
+  <link rel="stylesheet" href="../assets/css/components.css">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%232450c4'/%3E%3Ccircle cx='14' cy='14' r='6' fill='none' stroke='white' stroke-width='3'/%3E%3Cpath d='M19 19l6 6' stroke='white' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E">
+  <script type="module" src="../assets/js/site/site.js"></script>
+</head>
+<body>
+  <div class="layout" data-layout data-role="student" data-crumb="이론 › <b>한국어 임베딩 모델 비교</b>">
+    <main class="pane center" id="main">
+      <div class="content" tabindex="-1">
+        <article class="doc">
+      <span class="chapter-badge">📚 이론 · 5주차 연계</span>
+      <h1>한국어 임베딩 모델 비교</h1>
+      <p class="lead">이 과정은 브라우저에서 돌아가는 multilingual-e5-small을 쓴다. 실제 서비스를 만들 때는 무엇을 골라야 할까. 대표 후보의 크기·차원·라이선스·비용을 정리하고, 고르는 기준을 제시한다.</p>
+      <div class="callout">
+        <span class="callout__title">읽기 전에</span>
+        <p>아래 정보는 각 모델 카드와 공식 문서를 바탕으로 작성 시점 기준으로 정리했다. 모델은 자주 새 버전이 나오고 API 가격은 바뀐다. 이 페이지에는 벤치마크 점수를 옮겨 적지 않았다. 점수는 평가 데이터마다 크게 다르고, 결국 <strong>우리 문서와 우리 골든셋으로 직접 측정</strong>한 결과가 가장 믿을 만하다(9주차).</p>
+      </div>
+
+      <section id="summary">
+        <h2><span class="section-num">1</span>한눈에 보기</h2>
+        <div style="overflow-x: auto">
+        <table>
+          <thead><tr><th>모델</th><th>제공</th><th>크기</th><th>벡터</th><th>최대 입력</th><th>라이선스 · 비용</th></tr></thead>
+          <tbody>
+            <tr><td><b>multilingual-e5-small</b><br><small>이 과정의 기본</small></td><td>intfloat (Microsoft 연구진)</td><td>약 1.2억 파라미터 · 브라우저용 8비트 ONNX 약 118MB</td><td>384차원</td><td>512토큰</td><td>MIT · 무료(직접 실행)</td></tr>
+            <tr><td><b>BGE-M3</b></td><td>BAAI</td><td>약 5.7억 파라미터</td><td>1024차원 (밀집) + 희소 · 다중 벡터 출력 지원</td><td>8192토큰</td><td>MIT · 무료(직접 실행)</td></tr>
+            <tr><td><b>KURE-v1</b></td><td>고려대 NLP&amp;AI 연구실</td><td>BGE-M3와 같은 크기</td><td>1024차원</td><td>8192토큰</td><td>MIT · 무료(직접 실행)</td></tr>
+            <tr><td><b>KURE-v2</b></td><td>고려대 NLP&amp;AI 연구실</td><td>약 1.5억 파라미터</td><td>토큰마다 128차원 (다중 벡터, late interaction)</td><td>8192토큰</td><td>Apache-2.0 · 무료(직접 실행)</td></tr>
+            <tr><td><b>text-embedding-3-small</b></td><td>OpenAI API</td><td>비공개</td><td>1536차원 (줄일 수 있음)</td><td>8191토큰</td><td>유료 API · 토큰당 과금</td></tr>
+            <tr><td><b>text-embedding-3-large</b></td><td>OpenAI API</td><td>비공개</td><td>3072차원 (줄일 수 있음)</td><td>8191토큰</td><td>유료 API · small보다 비쌈</td></tr>
+          </tbody>
+        </table>
+        </div>
+        <p>비교용으로 이 과정 위젯의 all-MiniLM-L6-v2(약 2,300만 파라미터, 384차원, Apache-2.0)는 <strong>영어 전용</strong>이다. 한국어에서는 쓰지 않는다. 5주차 실습에서 한국어 문장들이 모두 비슷하게 나오는 실패를 직접 확인했다.</p>
+      </section>
+
+      <section id="models">
+        <h2><span class="section-num">2</span>모델별 특징</h2>
+
+        <h3>multilingual-e5-small — 이 과정의 선택</h3>
+        <ul>
+          <li>작은 다국어 트랜스포머(Multilingual-MiniLM)를 바탕으로 한국어를 포함한 여러 언어의 문장 쌍으로 학습한 모델이다.</li>
+          <li>작아서 브라우저(Transformers.js)에서 설치 없이 돌릴 수 있다. 이것이 이 과정이 이 모델을 고른 가장 큰 이유다.</li>
+          <li>질문에는 <code>query: </code>, 문서에는 <code>passage: </code> 접두어를 붙여야 한다. 모델 카드는 코사인 점수가 0.7~1.0 근처에 몰리는 것이 정상이라고 설명한다.</li>
+          <li>한계: 작은 모델이라 큰 모델보다 미묘한 뜻 구분이 약할 수 있고, 입력이 512토큰으로 짧다. 청크 크기를 이 한도 안으로 맞춘다.</li>
+        </ul>
+
+        <h3>BGE-M3 — 긴 문서와 다국어의 강자</h3>
+        <ul>
+          <li>이름의 M3는 다국어(Multi-Linguality), 다기능(Multi-Functionality), 다양한 입력 길이(Multi-Granularity)를 뜻한다.</li>
+          <li>한 모델로 밀집 벡터, 희소(단어 가중치) 표현, 토큰별 다중 벡터를 모두 낼 수 있어 하이브리드 검색(8주차)과 궁합이 좋다.</li>
+          <li>최대 8192토큰까지 받으므로 긴 청크도 한 번에 임베딩할 수 있다. 접두어가 필요 없다.</li>
+          <li>한계: 약 5.7억 파라미터로, 대량 색인에는 GPU가 있는 편이 현실적이다. 브라우저에서 돌리기에는 무겁다.</li>
+        </ul>
+
+        <h3>KURE-v1 — BGE-M3를 한국어 검색에 맞춰 추가 학습</h3>
+        <ul>
+          <li>BGE-M3를 한국어 질문-문서-오답(hard negative) 데이터로 추가 학습한 모델이다. 모델 카드는 한국어 검색에서 대부분의 다국어 모델보다 성능이 좋다고 보고한다.</li>
+          <li>구조와 크기가 BGE-M3와 같으므로 사용법·비용도 비슷하다(1024차원, 8192토큰, sentence-transformers로 바로 사용).</li>
+          <li>한국어 문서가 중심인 서비스라면 가장 먼저 비교해 볼 후보다. 다만 “한국어에 특화”가 우리 문서에서도 더 좋다는 보장은 아니므로 측정해서 확인한다.</li>
+        </ul>
+
+        <h3>KURE-v2 — 다른 방식의 모델 (다중 벡터)</h3>
+        <ul>
+          <li>문장 하나를 벡터 하나로 만드는 대신, <strong>토큰마다 128차원 벡터</strong>를 만들고 질문 토큰과 문서 토큰의 최댓값 유사도(MaxSim)를 더해 점수를 낸다. 이런 방식을 late interaction(ColBERT 방식)이라 한다.</li>
+          <li>SKT의 A.X-Encoder-base를 기반으로 한 한국어·영어 모델이며, 약 1.5억 파라미터로 KURE-v1보다 작다. 접두어는 필요 없다.</li>
+          <li>모델 카드는 한국어 검색 벤치마크에서 단일 벡터 모델들보다 높은 결과를 보고한다.</li>
+          <li>주의: 이 과정의 <code>vectorstore.js</code>나 일반 벡터DB처럼 “문서당 벡터 하나”를 가정하는 구조에는 그대로 넣을 수 없다. 문서 길이만큼 벡터가 생겨 저장 공간이 크게 늘고, PyLate 같은 전용 라이브러리와 인덱스가 필요하다. 1단계 검색 결과를 다시 정렬하는 리랭킹 용도로 쓰는 방법도 있다.</li>
+        </ul>
+
+        <h3>OpenAI text-embedding-3-small / large — 운영 부담 없는 API</h3>
+        <ul>
+          <li>서버나 GPU 없이 API 호출만으로 쓴다. 다국어를 지원하며 한국어 서비스에서도 널리 쓰인다.</li>
+          <li><code>dimensions</code> 매개변수로 벡터를 짧게 줄여 받을 수 있다(예: large를 1024차원으로). 저장 비용과 품질을 맞바꾸는 손잡이다.</li>
+          <li>비용은 입력 토큰 수에 비례한다. 2024년 발표 당시 small이 large보다 훨씬 쌌다. 현재 가격은 OpenAI 공식 가격 페이지에서 확인한다.</li>
+          <li>한계: 문서 내용이 외부 서버로 전송된다(개인정보·내부 문서 정책 확인 필요). 모델이 교체되거나 중단되면 전체를 다시 임베딩해야 한다. 한국어 전용 공개 모델과의 우열은 과제와 데이터에 따라 다르다.</li>
+        </ul>
+      </section>
+
+      <section id="choose">
+        <h2><span class="section-num">3</span>고르는 기준</h2>
+        <table>
+          <thead><tr><th>상황</th><th>먼저 볼 후보</th><th>이유</th></tr></thead>
+          <tbody>
+            <tr><td>설치 없이 브라우저에서 실습 · 시연</td><td>multilingual-e5-small</td><td>작고 무료이며 Transformers.js로 바로 돈다</td></tr>
+            <tr><td>한국어 문서 중심 사내 검색, GPU 서버 있음</td><td>KURE-v1, BGE-M3</td><td>한국어 검색 품질, 긴 입력, 무료 라이선스</td></tr>
+            <tr><td>최고 수준의 한국어 검색을 노리고 전용 인덱스를 운영할 수 있음</td><td>KURE-v2</td><td>다중 벡터 방식. 저장 공간과 구현 복잡도를 감수</td></tr>
+            <tr><td>인프라 없이 빨리 서비스, 문서 외부 전송 가능</td><td>text-embedding-3-small</td><td>운영 부담이 없고 비용이 낮다</td></tr>
+            <tr><td>API를 쓰되 품질이 더 필요</td><td>text-embedding-3-large (+ <code>dimensions</code>로 축소)</td><td>비용과 저장 공간을 보고 차원을 조절</td></tr>
+          </tbody>
+        </table>
+        <h3>체크리스트</h3>
+        <ol>
+          <li><strong>언어:</strong> 한국어로 학습했는가? 영어 전용 모델은 제외한다.</li>
+          <li><strong>입력 길이:</strong> 청크 크기(4주차)가 최대 입력 안에 들어가는가? 넘치면 뒷부분이 잘려 버려진다.</li>
+          <li><strong>사용 규칙:</strong> 접두어(e5), 정규화 여부, 질문·문서 역할 구분을 모델 카드에서 확인했는가?</li>
+          <li><strong>비용:</strong> 문서 수 × 차원 × 4바이트의 저장 공간, 색인·질의 때의 계산 또는 API 요금.</li>
+          <li><strong>데이터 정책:</strong> 문서를 외부 API로 보내도 되는가?</li>
+          <li><strong>라이선스:</strong> 상업적 사용이 허용되는가(MIT, Apache-2.0은 허용)?</li>
+          <li><strong>측정:</strong> 후보 2~3개를 같은 골든셋으로 Recall@k를 재서 고른다(9주차).</li>
+        </ol>
+        <div class="callout callout--danger">
+          <span class="callout__title">모델을 바꾸면 전부 다시 임베딩한다</span>
+          <p>모델마다 벡터 공간이 다르다. 문서는 A 모델로, 질문은 B 모델로 임베딩하면 차원이 같더라도 비교가 의미 없다. 모델을 바꾸는 것은 색인 전체를 다시 만드는 일이므로, 처음에 측정해서 신중하게 고른다.</p>
+        </div>
+      </section>
+
+      <section id="refs">
+        <h2><span class="section-num">4</span>참고</h2>
+        <ul>
+          <li>모델 카드(Hugging Face): <code>intfloat/multilingual-e5-small</code>, <code>BAAI/bge-m3</code>, <code>nlpai-lab/KURE-v1</code>, <code>nlpai-lab/KURE-v2</code>, <code>sentence-transformers/all-MiniLM-L6-v2</code></li>
+          <li>OpenAI 공식 문서의 Embeddings 가이드와 가격 페이지</li>
+          <li>이 과정: <a href="../weeks/w05/index.html">5주차 임베딩 &amp; 유사도</a> 실습 위젯에서 모델을 바꿔 가며 비교한다</li>
+        </ul>
+      </section>
+        </article>
+      </div>
+    </main>
+  </div>
+</body>
+</html>

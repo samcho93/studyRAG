@@ -1,0 +1,556 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>1주차 LLM 기초 &amp; RAG 필요성 · 교사용 · RAG Lab</title>
+  <meta name="description" content="1주차 LLM 기초 &amp; RAG 필요성 교사용 슬라이드: 강의 흐름, 교사 노트, Challenge 정답, 자주 막히는 지점, 토론 주제, 평가 루브릭.">
+  <script>try{var t=JSON.parse(localStorage.getItem('raglab:theme'));if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+  <link rel="stylesheet" crossorigin="anonymous" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&display=swap">
+  <link rel="stylesheet" href="../../assets/css/tokens.css">
+  <link rel="stylesheet" href="../../assets/css/base.css">
+  <link rel="stylesheet" href="../../assets/css/components.css">
+  <link rel="stylesheet" href="../../assets/css/slides.css">
+  <link rel="stylesheet" href="../../assets/css/w01.css">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%232450c4'/%3E%3Ccircle cx='14' cy='14' r='6' fill='none' stroke='white' stroke-width='3'/%3E%3Cpath d='M19 19l6 6' stroke='white' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E">
+  <script type="module" src="../../assets/js/site/site.js"></script>
+</head>
+<body>
+  <div class="layout" data-layout data-role="teacher" data-week="1" data-crumb="🧑‍🏫 교사용 › <b>1주차 · LLM 기초 &amp; RAG 필요성</b>">
+    <main class="pane center" id="main">
+      <div class="slide-view" data-deck data-deck-title="1주차 · LLM 기초 &amp; RAG 필요성">
+        <div class="deck-bar"><div class="deck-row" data-deck-controls></div></div>
+        <div class="deck-progress"><i></i></div>
+        <div class="deck-wrap">
+          <div class="deck-viewport">
+        <div class="deck-stage">
+
+          <!-- 1 -->
+          <section class="slide slide--title" data-title="표지">
+            <div class="kicker">검색증강생성(RAG) 시스템 구축 · 1주차</div>
+            <h1>LLM 기초 &amp; RAG 필요성</h1>
+            <p>LLM은 우리 학과를 모른다</p>
+            <div class="deco" aria-hidden="true">🧠</div>
+            <aside class="notes">
+              <p><strong>오늘 흐름 (180분)</strong></p>
+              <table>
+                <tr><td>0:00–0:15</td><td>과목 소개 · 12주 로드맵 · 사이트 사용법(학생용/교사용, 실행 결과 창)</td></tr>
+                <tr><td>0:15–0:45</td><td>질문으로 시작 · LLM은 다음 토큰 예측 · 토큰과 토크나이저</td></tr>
+                <tr><td>0:45–1:15</td><td>토큰 카운터 데모 + 학생 조작 · 관찰 질문 1~4</td></tr>
+                <tr><td>1:15–1:25</td><td>휴식</td></tr>
+                <tr><td>1:25–2:00</td><td>환각 · 환각 체험 데모 · RAG 한 장 요약</td></tr>
+                <tr><td>2:00–2:50</td><td>Challenge C1~C4 (C5는 과제)</td></tr>
+                <tr><td>2:50–3:00</td><td>정리 · 2주차 예고(API 키 준비)</td></tr>
+              </table>
+              <p>첫 시간이므로 사이트를 <code>python -m http.server</code>로 여는 방법과 오른쪽 실행 결과 창 위치를 먼저 보여 준다. T 키로 타이머를 시작한다.</p>
+            </aside>
+          </section>
+
+          <!-- 2 -->
+          <section class="slide" data-title="학습 목표">
+            <h2>오늘 할 수 있게 되는 것</h2>
+            <ol>
+              <li>토큰 수 차이를 <strong>비용</strong>과 <strong>컨텍스트 창 사용률</strong>로 환산한다</li>
+              <li>환각이 왜 생기는지, 근거 없는 답을 왜 <strong>검증할 수 없는지</strong> 설명한다</li>
+              <li>근거 기반 프롬프트를 만들고, 답이 골든 정답을 포함하는지 판정하는 코드를 쓴다</li>
+            </ol>
+            <aside class="notes">
+              <p>3번의 <code>groundedPrompt</code>는 7주차 최소 RAG에서, 골든 사실 판정은 9주차 평가에서 다시 쓴다고 미리 말한다. 오늘 코드가 12주 동안 이어진다는 감각을 준다.</p>
+            </aside>
+          </section>
+
+          <!-- 3 -->
+          <section class="slide" data-title="질문으로 시작">
+            <h2>GPU 서버, 한 사람이 최대 몇 시간?</h2>
+            <p class="big-quote">“보통 1회 4시간 정도로 제한한다.”</p>
+            <p>→ 우리 규정: <strong>최대 12시간</strong> (실습실 이용 규정)</p>
+            <p class="muted">LLM은 이 문서를 본 적이 없다. 그런데도 자신 있게 답했다</p>
+            <aside class="notes">
+              <p><strong>발문:</strong> 먼저 학생들에게 “몇 시간일 것 같나?”를 묻고 손을 들게 한다. 대부분 4~8시간을 고른다. LLM도 똑같이 “일반적인 값”을 고른다는 점을 연결한다.</p>
+              <p>이어서 “LLM이 맞혔다면 믿을 수 있었을까?”를 묻는다. 기대 답: 출처가 없어 확인할 수 없다 → 오늘의 핵심.</p>
+            </aside>
+          </section>
+
+          <!-- 4 -->
+          <section class="slide" data-title="LLM은 다음 토큰을 예측한다">
+            <h2>LLM은 다음 토큰을 예측한다</h2>
+            <div class="cols">
+              <div>
+                <p>입력: 토큰 열 → 출력: <strong>다음 토큰의 확률</strong></p>
+                <ul>
+                  <li>학습 데이터에 “대학 실습실 일반”은 많다</li>
+                  <li>“우리 학과 규정”은 없다</li>
+                  <li>그래도 무언가는 <strong>반드시</strong> 출력한다</li>
+                </ul>
+              </div>
+              <div>
+                <table>
+                  <thead><tr><th>후보</th><th>확률(예시)</th></tr></thead>
+                  <tbody>
+                    <tr><td>4시간</td><td>높음</td></tr>
+                    <tr><td>8시간</td><td>중간</td></tr>
+                    <tr><td>12시간</td><td>낮음</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <aside class="notes">
+              <p>확률 값은 설명용이다. 실제 분포는 모델마다 다르다고 짚는다.</p>
+              <p>“모르는 것은 정상, 모를 때 지어내는 것이 문제”를 칠판에 적는다. 환각(hallucination)이라는 용어는 여기서 처음 준다.</p>
+            </aside>
+          </section>
+
+          <!-- 5 -->
+          <section class="slide" data-title="토큰과 토크나이저">
+            <h2>LLM은 글자가 아니라 토큰을 읽는다</h2>
+            <table>
+              <thead><tr><th>같은 뜻의 문장</th><th>문자</th><th>GPT-2</th><th>GPT-4o</th></tr></thead>
+              <tbody>
+                <tr><td>GPU 규정 · 한국어</td><td>84</td><td>161</td><td>43</td></tr>
+                <tr><td>GPU 규정 · 영어</td><td>167</td><td>35</td><td>36</td></tr>
+                <tr><td>배수 (한/영)</td><td>0.5</td><td><strong>4.6배</strong></td><td>1.2배</td></tr>
+              </tbody>
+            </table>
+            <p>한글 음절 = UTF-8 <strong>3바이트</strong> · 영어 중심 어휘는 이 바이트를 거의 합치지 못한다</p>
+            <aside class="notes">
+              <p>숫자는 브라우저에서 Transformers.js 토크나이저(Xenova/gpt2, Xenova/gpt-4o)로 실제로 센 값이다.</p>
+              <p><strong>발문:</strong> “글자 수는 한국어가 절반인데 왜 토큰은 4배인가?” → 다음 슬라이드의 창·비용으로 연결한다.</p>
+            </aside>
+          </section>
+
+          <!-- 6 -->
+          <section class="slide" data-title="컨텍스트 창과 비용">
+            <h2>토큰 = 들어가는 양 = 내는 돈</h2>
+            <pre><code>창 사용률 = 입력 토큰 / 창 크기
+입력 비용 = 입력 토큰 × 단가 / 1,000,000</code></pre>
+            <ul>
+              <li>코퍼스 12문서: GPT-2 <strong>8,848</strong>토큰 → 8,192 창의 108% (넘침)</li>
+              <li>같은 문서 GPT-4o: 2,660토큰 → 8,192 창의 32%</li>
+              <li>문서 5,000개면? 약 110만 토큰 → 128K 창의 <strong>866%</strong></li>
+            </ul>
+            <aside class="notes">
+              <p>“그럼 문서를 다 넣으면 되지 않나?”라는 질문이 반드시 나온다. 이 슬라이드가 답이다: 창에 안 들어가고, 들어가도 매번 돈을 낸다.</p>
+              <p>5,000개 계산은 Challenge C2의 마지막 문항이다(문서당 평균 221.7토큰 × 5,000 = 1,108,333토큰).</p>
+            </aside>
+          </section>
+
+          <!-- 7 -->
+          <section class="slide slide--demo" data-title="데모: 토큰 카운터">
+            <h2>데모 · 토큰 카운터</h2>
+            <div id="deck-w01-tokens"></div>
+            <aside class="notes">
+              <p><strong>시연 순서</strong> (결과는 오른쪽 실행 결과 창에 실시간으로 나온다)</p>
+              <ol>
+                <li>처음 화면: GPU 규정 문장. 표에서 GPT-2 한국어 161 vs 영어 35를 짚는다. 설명 카드의 배수 4.6배</li>
+                <li>토큰 조각을 GPT-2로: 점선 상자와 숫자 3 → “한 글자가 토큰 3개”</li>
+                <li>GPT-4o로 바꾸면 “ 서버”, “시간”이 토큰 하나</li>
+                <li>“코퍼스 전체 12문서” 프리셋 → 빨간 판정 “컨텍스트 창 초과”. 창을 1,024 / 128,000으로 바꿔 본다</li>
+              </ol>
+              <p>토크나이저는 약 12MB다. 수업 전에 교탁 PC에서 한 번 열어 캐시해 둔다.</p>
+            </aside>
+          </section>
+
+          <!-- 8 -->
+          <section class="slide" data-title="환각">
+            <h2>환각: 그럴듯한 거짓</h2>
+            <div class="callout callout--danger">
+              <p>모를 때 “모른다” 대신 <strong>가장 그럴듯한 값</strong>을 만든다</p>
+            </div>
+            <ul>
+              <li>문법·말투는 완벽하다 → 틀린 줄 모른다</li>
+              <li>우연히 맞아도 <strong>출처가 없다</strong> → 검증할 수 없다</li>
+              <li>해결: 모르는 사실을 <strong>입력으로 넣어 준다</strong></li>
+            </ul>
+            <aside class="notes">
+              <p>최신 모델은 “학교마다 다르니 확인하라”처럼 얼버무리기도 한다. 이것도 실패다: 사용자는 답을 얻지 못했다.</p>
+              <p><strong>발문:</strong> “사람이라면 모를 때 어떻게 하나?” → 문서를 찾아본다 → 그것을 LLM에게 해 주는 것이 RAG.</p>
+            </aside>
+          </section>
+
+          <!-- 9 -->
+          <section class="slide slide--demo" data-title="데모: 환각 체험">
+            <h2>데모 · 환각 체험</h2>
+            <div id="deck-w01-hallucination"></div>
+            <aside class="notes">
+              <p><strong>시연 순서</strong></p>
+              <ol>
+                <li>키 없이: 세 질문을 차례로 고른다. A는 4시간/30%/90% (빨간 ✗), B는 12시간/40%/80% (초록 ✓). 모두 “예시 응답 · 수업용 작성 예시” 표시임을 밝힌다</li>
+                <li>B 카드의 “보낸 프롬프트”를 펼쳐 근거 문서가 통째로 들어간 것을 보여 준다. 글자 수 비교(A 수십 자 vs B 수백 자)</li>
+                <li>교사 키가 있다면 “내 API 키로 직접 비교하기”에서 실제로 호출한다. 키 입력란은 화면 공유 전에 붙여 넣는다</li>
+              </ol>
+              <p>실제 A 답이 우연히 맞으면 오히려 좋은 토론거리다: “맞았는데 왜 믿으면 안 되나?”</p>
+            </aside>
+          </section>
+
+          <!-- 10 -->
+          <section class="slide" data-title="RAG 한 장 요약">
+            <h2>RAG = 관련 부분만 찾아서 넣는다</h2>
+            <p class="big-quote">질문 → 검색 → [근거 + 질문] → LLM → 답 + 인용 [1]</p>
+            <table>
+              <thead><tr><th>방법</th><th>새 정보</th><th>근거</th><th>비용</th></tr></thead>
+              <tbody>
+                <tr><td>그냥 묻기</td><td>불가</td><td>불가</td><td>최소</td></tr>
+                <tr><td>파인튜닝</td><td>재학습</td><td>어렵다</td><td>학습비 큼</td></tr>
+                <tr><td>문서 전체 붙이기</td><td>즉시</td><td>가능</td><td>창·비용 한계</td></tr>
+                <tr><td><strong>RAG</strong></td><td>즉시</td><td>가능</td><td>관련 부분만</td></tr>
+              </tbody>
+            </table>
+            <aside class="notes">
+              <p>오늘 환각 체험의 B는 “검색”을 사람이 대신한 것이다. 4~8주차에 이 검색(청킹·임베딩·벡터스토어·하이브리드 검색·리랭킹)을 직접 만든다.</p>
+              <p>파인튜닝은 말투·형식을 바꾸는 데 강하고, 사실을 주입하는 데는 비효율적이라는 점만 짧게 언급한다.</p>
+            </aside>
+          </section>
+
+          <!-- 11 -->
+          <section class="slide" data-title="관찰 질문">
+            <h2>관찰 질문</h2>
+            <ol>
+              <li>GPU 규정 문장의 한/영 배수는 GPT-2, GPT-4o에서 각각?</li>
+              <li>코퍼스 전체는 어느 토크나이저·어느 창에서 넘치나?</li>
+              <li>A의 숫자는 골든 정답과 얼마나 다른가? 말투는 조심스러운가?</li>
+              <li>정답을 얻은 대가로 입력은 몇 배 늘었나?</li>
+              <li>골든셋이 없다면 B가 맞았다는 것을 어떻게 확인할까?</li>
+            </ol>
+            <aside class="notes">
+              <p>1~2는 토큰 카운터 직후 짝 활동 10분. 3~5는 환각 체험 직후 전체 토론.</p>
+              <p>기대 답: 1) 4.6배 / 1.2배 2) GPT-2가 8,192 창에서 108%로 넘침, 1,024 창은 둘 다 넘침, 128K는 둘 다 들어감 4) 근거 문서만큼 늘어난다(수 배~수십 배) 5) 인용 번호로 원문과 대조 → 11주차 인용 하이라이트, 9주차 Faithfulness.</p>
+            </aside>
+          </section>
+
+          <!-- 12 -->
+          <section class="slide" data-title="코드로 확인: 한 글자는 몇 바이트">
+            <h2>코드로 확인하기</h2>
+            <pre data-run="deck-bytes" data-title="문자 수 vs UTF-8 바이트"><code class="language-javascript">// 한 글자가 몇 바이트인가? 바이트 단위 BPE 토크나이저가 보는 것은 바이트다
+const enc = new TextEncoder();
+for (const s of ['token', '토큰', '12시간', 'GPU 서버']) {
+  const bytes = enc.encode(s);
+  console.log(`${s.padEnd(8)} 문자 ${[...s].length} · 바이트 ${bytes.length} · ${[...bytes].map((b) =&gt; b.toString(16)).join(' ')}`);
+}
+// GPT-2 토크나이저는 '가'(ea b0 80)를 토큰 3개 [166, 108, 222]로 자른다</code></pre>
+            <aside class="notes">
+              <p>▶ 실행 결과: token 5문자/5바이트, 토큰 2문자/6바이트, 12시간 4문자/8바이트, GPU 서버 6문자/10바이트.</p>
+              <p>한글은 음절마다 3바이트다. 바이트 단위 BPE가 이 3바이트를 합친 토큰을 어휘에 갖고 있지 않으면 음절 하나가 토큰 여러 개가 된다. 문자열을 바꿔 다시 실행해 보인다.</p>
+            </aside>
+          </section>
+
+          <!-- 13 -->
+          <section class="slide" data-title="Challenge 안내">
+            <h2>Challenge</h2>
+            <table>
+              <tbody>
+                <tr><td>C1 ★</td><td>토큰 수 어림하기 (오차 ±10%)</td></tr>
+                <tr><td>C2 ★</td><td>컨텍스트 창과 비용 계산</td></tr>
+                <tr><td>C3 ★★</td><td>근거 기반 프롬프트 만들기 → 7주차에 재사용</td></tr>
+                <tr><td>C4 ★★★</td><td>답에 골든 사실이 들어 있는가</td></tr>
+                <tr><td>C5 ★★★★</td><td>가짜 LLM으로 검증 가능성 실험 (과제)</td></tr>
+              </tbody>
+            </table>
+            <p class="muted">모두 LLM 호출 없이 학생용 페이지의 코드 상자에서 ▶ 실행한다</p>
+            <aside class="notes">
+              <p>C1~C3은 수업 중 모두 끝낸다. C3 코드는 저장해 두라고 한다(7주차). 정답은 부록 B.</p>
+            </aside>
+          </section>
+
+          <!-- 14 -->
+          <section class="slide" data-title="정리 & 다음 주">
+            <h2>정리</h2>
+            <ul>
+              <li>LLM은 다음 토큰을 예측한다 → 모르면 <strong>지어낸다</strong>(환각)</li>
+              <li>토큰 수 = 창 사용량 = 비용. 영어 중심 토크나이저에서 한국어는 4배 넘게 든다</li>
+              <li>근거를 넣으면 같은 모델도 맞히고, <strong>검증할 수 있다</strong></li>
+              <li>문서 전체는 못 넣는다 → 관련 부분만 찾아 넣는 것이 RAG</li>
+            </ul>
+            <h3>다음 주 · 프롬프트 엔지니어링</h3>
+            <p class="muted">오늘 만든 근거 기반 프롬프트를 A/B로 비교하며 다듬는다 · LLM API 키 필요</p>
+            <aside class="notes">
+              <p>2주차는 API 키가 필요하다. 발급 방법과 무료 한도, 키를 코드나 저장소에 넣지 않는 규칙을 공지한다. 키가 없는 학생은 짝과 함께 실습한다.</p>
+            </aside>
+          </section>
+
+          <!-- Appendix -->
+          <section class="slide" data-title="부록 A · 강의안" data-appendix>
+            <h2>부록 A · 강의안</h2>
+            <table>
+              <thead><tr><th>시간</th><th>활동</th><th>산출물</th></tr></thead>
+              <tbody>
+                <tr><td>15분</td><td>과목 소개 · 사이트 사용법</td><td>—</td></tr>
+                <tr><td>30분</td><td>개념: 다음 토큰 예측 · 토큰 · 창과 비용</td><td>배수 계산 1문제</td></tr>
+                <tr><td>30분</td><td>토큰 카운터 실습 · 관찰 1~2</td><td>짝 활동 메모</td></tr>
+                <tr><td>10분</td><td>휴식</td><td>—</td></tr>
+                <tr><td>35분</td><td>환각 · 환각 체험 · RAG 요약 · 관찰 3~5</td><td>—</td></tr>
+                <tr><td>50분</td><td>Challenge C1~C4</td><td>C3 코드(7주차 재사용)</td></tr>
+                <tr><td>10분</td><td>정리 · 2주차 예고</td><td>—</td></tr>
+              </tbody>
+            </table>
+          </section>
+
+          <section class="slide" data-title="부록 B · C1 정답" data-appendix>
+            <h2>부록 B · C1 정답</h2>
+            <pre data-run="ans-c1" data-title="C1 정답"><code class="language-javascript">// 실제 토큰 수는 Transformers.js 토크나이저로 미리 센 값이다
+const samples = [
+  { name: 'GPU 규정(한)', text: 'GPU 서버에 장시간 학습 작업을 실행할 때는 공용 캘린더에 사용 시간을 등록해야 하며, 한 사람이 연속으로 사용할 수 있는 시간은 최대 12시간이다.', gpt2: 161, gpt4o: 43 },
+  { name: 'GPU 규정(영)', text: 'When running a long training job on the GPU server, you must register the usage time on the shared calendar, and one person may use it continuously for up to 12 hours.', gpt2: 35, gpt4o: 36 },
+  { name: '성적 비율(한)', text: '성적 평가는 주차별 실습 과제 30%, 중간 점검 20%, 팀 프로젝트 40%, 수업 참여 10%로 구성된다.', gpt2: 103, gpt4o: 36 },
+  { name: '성적 비율(영)', text: 'The grade consists of weekly lab assignments 30%, a midterm check 20%, the team project 40%, and class participation 10%.', gpt2: 24, gpt4o: 29 },
+];
+
+function estimateTokens(text) {
+  const hangul = (text.match(/[가-힣]/g) ?? []).length;
+  const other = (text.match(/[^\s가-힣]/g) ?? []).length;
+  // 한글 음절 = UTF-8 3바이트, GPT-2 어휘는 거의 병합하지 못한다 → 음절당 약 3토큰
+  // 영어·숫자·기호는 약 4문자당 1토큰
+  return Math.round(hangul * 3 + other / 4);
+}
+
+console.table(samples.map((s) =&gt; {
+  const est = estimateTokens(s.text);
+  return { name: s.name, chars: [...s.text].length, est, gpt2: s.gpt2, errPct: Math.round(((est - s.gpt2) / s.gpt2) * 100) };
+}));
+console.log('GPT-2 한/영 배수:', (161 / 35).toFixed(1), (103 / 24).toFixed(1));
+console.log('GPT-4o 한/영 배수:', (43 / 36).toFixed(1), (36 / 29).toFixed(1));</code></pre>
+            <aside class="notes">
+              <p><strong>실행 결과:</strong> 추정 170/34/94/26 vs 실제 161/35/103/24 → 오차 +6%, −3%, −9%, +8%. 배수: GPT-2 4.6 · 4.3, GPT-4o 1.2 · 1.2.</p>
+              <p><strong>왜 3인가:</strong> 한글 음절은 UTF-8 3바이트이고 GPT-2 어휘는 이 바이트를 거의 합치지 못한다. 실측 계수는 (토큰 − 기타/4) / 음절 = 2.84~3.30이다. 공백은 뒤 단어 토큰에 붙으므로 따로 세지 않는다.</p>
+            </aside>
+          </section>
+
+          <section class="slide" data-title="부록 B · C2 정답" data-appendix>
+            <h2>부록 B · C2 정답</h2>
+            <pre data-run="ans-c2" data-title="C2 정답"><code class="language-javascript">const corpusTokens = { gpt2: 8848, gpt4o: 2660 }; // 코퍼스 12문서 전체 (실측)
+const windows = [1024, 8192, 128000];
+const PRICE_PER_1M = 0.4;   // 가상 단가: 입력 100만 토큰당 0.4달러
+const queries = 30 * 20;    // 학생 30명 × 질문 20개
+const questionTokens = 20;
+const ragTokens = 370;      // 질문 20 + 검색된 청크 3개 350 (가정)
+
+console.table(windows.map((w) =&gt; ({
+  window: w,
+  gpt2Pct: +((corpusTokens.gpt2 / w) * 100).toFixed(1),
+  gpt4oPct: +((corpusTokens.gpt4o / w) * 100).toFixed(1),
+})));
+
+const stuffTotal = queries * (corpusTokens.gpt4o + questionTokens);
+const ragTotal = queries * ragTokens;
+const cost = (t) =&gt; +((t / 1e6) * PRICE_PER_1M).toFixed(4);
+console.table([
+  { 방식: '코퍼스 통째로', 총토큰: stuffTotal, 달러: cost(stuffTotal) },
+  { 방식: 'RAG(청크 3개)', 총토큰: ragTotal, 달러: cost(ragTotal) },
+]);
+console.log(`RAG가 ${(stuffTotal / ragTotal).toFixed(1)}배 적게 쓴다`);
+
+const perDoc = corpusTokens.gpt4o / 12;
+const bigTokens = Math.round(perDoc * 5000);
+console.log(`문서 5,000개 ≈ ${bigTokens.toLocaleString()}토큰 → 128K 창의 ${Math.round((bigTokens / 128000) * 100)}%`);</code></pre>
+            <aside class="notes">
+              <p><strong>실행 결과:</strong> 창 사용률 GPT-2 864.1% / 108% / 6.9%, GPT-4o 259.8% / 32.5% / 2.1%.</p>
+              <p>통째로 1,608,000토큰 $0.6432 vs RAG 222,000토큰 $0.0888 → 7.2배. 문서 5,000개 ≈ 1,108,333토큰 → 128K 창의 866%.</p>
+              <p>단가는 가상 값이다. 금액보다 “비율”이 핵심이라고 강조한다.</p>
+            </aside>
+          </section>
+
+          <section class="slide" data-title="부록 B · C3 정답" data-appendix>
+            <h2>부록 B · C3 정답</h2>
+            <pre data-run="ans-c3" data-title="C3 정답"><code class="language-javascript">const corpus = await (await fetch('/assets/data/corpus/corpus.json')).json();
+const golden = await (await fetch('/assets/data/golden/golden.json')).json();
+const docById = Object.fromEntries(corpus.documents.map((d) =&gt; [d.id, d]));
+
+function groundedPrompt(question, evidences) {
+  const rules = [
+    '너는 아래 근거 문서만 사용해 답하는 조교다.',
+    '근거에 없는 내용은 추측하지 말고 "문서에서 찾을 수 없다"고 답한다.',
+    '문장마다 사용한 근거 번호를 [1]처럼 표기한다.',
+  ].join('\n');
+  const sources = evidences.length
+    ? evidences.map((e, i) =&gt; `[${i + 1}] (${e.title})\n${e.text}`).join('\n\n')
+    : '(검색된 근거 없음)';
+  return `${rules}\n\n### 근거 문서\n${sources}\n\n### 질문\n${question}`;
+}
+
+const item = golden.items.find((it) =&gt; it.id === 'q01');
+const evidences = item.evidence.map((e) =&gt; ({ title: docById[e.doc].title, text: docById[e.doc].text }));
+const prompt = groundedPrompt(item.question, evidences);
+console.log(prompt);
+console.table({
+  질문포함: prompt.includes(item.question),
+  근거문장포함: prompt.includes(item.evidence[0].quote),
+  번호표기: prompt.includes('[1]'),
+  질문이마지막: prompt.trimEnd().endsWith(item.question),
+  근거없음처리: groundedPrompt('와이파이 비밀번호는?', []).includes('찾을 수 없다'),
+});
+console.log('문자 수:', [...prompt].length);</code></pre>
+            <aside class="notes">
+              <p><strong>실행 결과:</strong> 다섯 검사 모두 true, 프롬프트 453자.</p>
+              <p><strong>왜:</strong> 규칙을 앞에, 질문을 맨 끝에 두면 모델이 근거를 읽은 뒤 질문을 본다. 번호 + 문서 제목은 인용(11주차)의 기반이다. 근거 0개일 때 “(검색된 근거 없음)”을 넣어야 검색 실패 시에도 “찾을 수 없다”는 규칙이 작동한다. core/llm.js의 <code>ragPrompt</code>와 비교해 보게 한다.</p>
+            </aside>
+          </section>
+
+          <section class="slide" data-title="부록 B · C4 정답" data-appendix>
+            <h2>부록 B · C4 정답</h2>
+            <pre data-run="ans-c4" data-title="C4 정답"><code class="language-javascript">const golden = await (await fetch('/assets/data/golden/golden.json')).json();
+const byId = Object.fromEntries(golden.items.map((it) =&gt; [it.id, it]));
+
+const CLAIM_RE = /\d+(?:\.\d+)?\s*(?:%|퍼센트|시간|교시|학점|호|명|주|회)?/g;
+const normalize = (s) =&gt; String(s).normalize('NFKC').toLowerCase().replace(/퍼센트/g, '%').replace(/\s+/g, '');
+
+function goldenFacts(answer) {
+  const nums = (answer.match(CLAIM_RE) ?? []).map(normalize);
+  if (nums.length) return [...new Set(nums)];
+  return [normalize(answer).replace(/[.。!]+$/, '').replace(/다$/, '')];
+}
+
+function includesFact(t, f) {
+  const digitEnd = /\d$/.test(f);
+  for (let i = t.indexOf(f); i &gt;= 0; i = t.indexOf(f, i + 1)) {
+    const before = t[i - 1] ?? '';
+    const after = t[i + f.length] ?? '';
+    // "112시간"은 "12시간"이 아니다: 앞뒤가 숫자로 이어지면 다른 수다
+    if (!/\d/.test(before) &amp;&amp; !(digitEnd &amp;&amp; /\d/.test(after))) return true;
+  }
+  return false;
+}
+
+function containsGoldenFact(text, goldenAnswer) {
+  const t = normalize(text);
+  return goldenFacts(goldenAnswer).every((f) =&gt; includesFact(t, f));
+}
+
+const answers = [
+  { q: 'q01', text: '보통 1회 4시간 정도로 제한한다.' },
+  { q: 'q01', text: '최대 12 시간이다 [1].' },
+  { q: 'q01', text: '112시간까지 가능하다.' },
+  { q: 'q02', text: '팀 프로젝트는 40 퍼센트다.' },
+  { q: 'q02', text: '30% 안팎이다.' },
+  { q: 'q03', text: '출석률 80% 이상과 최종 발표 통과다.' },
+  { q: 'q03', text: '출석률 90% 이상이다.' },
+  { q: 'q01', text: '열두 시간이다.' },
+];
+console.table(answers.map((a) =&gt; ({ q: a.q, answer: a.text, facts: goldenFacts(byId[a.q].answer).join(','), ok: containsGoldenFact(a.text, byId[a.q].answer) })));
+console.log('골든 정답끼리 자기 일치:', golden.items.every((it) =&gt; containsGoldenFact(it.answer, it.answer)));</code></pre>
+            <aside class="notes">
+              <p><strong>실행 결과:</strong> ok = false, true, false, true, false, true, false, false. 골든 정답끼리 자기 일치 true.</p>
+              <p><strong>왜:</strong> 공백 제거와 “퍼센트→%” 정규화로 표기 차이를 흡수하고, 앞뒤 숫자 검사로 “112시간” 오탐을 막는다. “열두 시간”은 규칙 기반 판정의 한계다 → 9주차에 LLM 판정(LLM-as-judge)과 비교한다.</p>
+            </aside>
+          </section>
+
+          <section class="slide" data-title="부록 B · C5 정답" data-appendix>
+            <h2>부록 B · C5 정답</h2>
+            <pre data-run="ans-c5" data-title="C5 정답"><code class="language-javascript">const corpus = await (await fetch('/assets/data/corpus/corpus.json')).json();
+const golden = await (await fetch('/assets/data/golden/golden.json')).json();
+const item = golden.items.find((it) =&gt; it.id === 'q01');
+const evidenceDoc = corpus.documents.find((d) =&gt; d.id === item.evidence[0].doc);
+
+// ---- 제공: 재현 가능한 난수와 가짜 LLM ----
+function mulberry32(seed) {
+  return () =&gt; {
+    seed = (seed + 0x6d2b79f5) | 0;
+    let t = Math.imul(seed ^ (seed &gt;&gt;&gt; 15), 1 | seed);
+    t = (t + Math.imul(t ^ (t &gt;&gt;&gt; 7), 61 | t)) ^ t;
+    return ((t ^ (t &gt;&gt;&gt; 14)) &gt;&gt;&gt; 0) / 4294967296;
+  };
+}
+const rand = mulberry32(42);
+const bigrams = (s) =&gt; new Set([...s.replace(/\s+/g, '')].map((c, i, a) =&gt; c + (a[i + 1] ?? '')));
+
+// 근거가 있으면 질문과 가장 비슷한 문장을 인용하고, 없으면 그럴듯한 값을 지어낸다
+function mockLLM(question, context = null) {
+  if (context) {
+    const q = bigrams(question);
+    const sentences = context.split(/(?&lt;=다\.)\s*/);
+    const best = sentences
+      .map((s) =&gt; ({ s, score: [...bigrams(s)].filter((b) =&gt; q.has(b)).length }))
+      .sort((a, b) =&gt; b.score - a.score)[0].s.trim();
+    return { answer: best, cite: best };
+  }
+  const guesses = ['4시간', '6시간', '8시간', '12시간', '24시간'];
+  return { answer: `보통 최대 ${guesses[Math.floor(rand() * guesses.length)]}이다.`, cite: null };
+}
+const hasFact = (text) =&gt; /(?&lt;!\d)12\s*시간/.test(text);
+// ---- 풀이 ----
+const allText = corpus.documents.map((d) =&gt; d.text).join('\n');
+function verify(result) {
+  return Boolean(result.cite) &amp;&amp; allText.includes(result.cite) &amp;&amp; hasFact(result.cite);
+}
+
+const N = 20;
+const rows = [];
+for (const mode of ['문맥 없음', '근거 포함']) {
+  let correct = 0, verified = 0;
+  const seen = new Set();
+  for (let i = 0; i &lt; N; i++) {
+    const r = mockLLM(item.question, mode === '근거 포함' ? evidenceDoc.text : null);
+    if (hasFact(r.answer)) correct++;
+    if (verify(r)) verified++;
+    seen.add(r.answer);
+  }
+  rows.push({ mode, 정답률: correct / N, 검증가능률: verified / N, 서로다른답: seen.size });
+}
+console.table(rows);</code></pre>
+            <aside class="notes">
+              <p><strong>실행 결과 (seed 42):</strong> 문맥 없음 — 정답률 0.3, 검증 가능률 0, 서로 다른 답 5개 · 근거 포함 — 정답률 1, 검증 가능률 1, 서로 다른 답 1개.</p>
+              <p><strong>핵심:</strong> 문맥 없는 답도 30%는 “맞았다”. 그러나 인용이 없으니 어느 답이 맞은 것인지 사용자는 구별할 수 없다. 정답률이 아니라 검증 가능성이 RAG의 가치다. 같은 질문에 답이 5가지로 흔들리는 것도 짚는다.</p>
+              <p>코드가 길어 슬라이드 안에서 스크롤된다. 위쪽 절반은 스켈레톤에서 제공한 부분 그대로다.</p>
+            </aside>
+          </section>
+
+          <section class="slide" data-title="부록 C · 자주 막히는 지점" data-appendix>
+            <h2>부록 C · 학생이 자주 막히는 지점</h2>
+            <table>
+              <thead><tr><th>증상</th><th>원인</th><th>대응</th></tr></thead>
+              <tbody>
+                <tr><td>토큰 수가 계속 “…”</td><td>토크나이저 다운로드 차단·지연</td><td>상태 줄의 % 확인, huggingface.co 방화벽 확인</td></tr>
+                <tr><td>위젯이 안 뜬다</td><td><code>file://</code>로 열었다</td><td><code>python -m http.server</code> 안내</td></tr>
+                <tr><td>“한국어가 글자 수가 적으니 싸다”</td><td>문자와 토큰 혼동</td><td>토큰/문자 열을 같이 읽게 한다</td></tr>
+                <tr><td>LLM 호출 401</td><td>키 오타·공급자 불일치</td><td>공급자 선택과 키 종류를 맞춘다</td></tr>
+                <tr><td>C4 “112시간”이 true</td><td><code>includes</code>만 사용</td><td>앞뒤 문자가 숫자인지 검사</td></tr>
+                <tr><td>C5 정답률만 비교</td><td>검증 가능성 개념 부족</td><td>“맞았는지 어떻게 아나?”를 되묻는다</td></tr>
+              </tbody>
+            </table>
+          </section>
+
+          <section class="slide" data-title="부록 D · 토론 주제" data-appendix>
+            <h2>부록 D · 토론 주제</h2>
+            <ol>
+              <li>LLM이 “모른다”고 답하는 것은 환각보다 나은가? 사용자 입장에서 무엇이 부족한가?</li>
+              <li>컨텍스트 창이 1,000만 토큰이 되면 RAG는 필요 없어지는가? (비용·속도·정확도)</li>
+              <li>한국어 서비스라면 토크나이저가 모델 선택 기준이 되어야 하는가?</li>
+              <li>근거를 넣었는데도 틀린 답이 나온다면, 원인은 어디에 있을 수 있나?</li>
+            </ol>
+          </section>
+
+          <section class="slide" data-title="부록 E · 평가 루브릭" data-appendix>
+            <h2>부록 E · 평가 루브릭</h2>
+            <table>
+              <thead><tr><th>항목</th><th>우수 (3)</th><th>보통 (2)</th><th>미흡 (1)</th></tr></thead>
+              <tbody>
+                <tr><td>계산 (C1·C2)</td><td>오차 ±10%, 창·비용 표 + 해석</td><td>결과만 제시</td><td>오답</td></tr>
+                <tr><td>구현 (C3)</td><td>다섯 검사 통과, 근거 0개 처리</td><td>일부 검사 실패</td><td>동작하지 않음</td></tr>
+                <tr><td>판정 (C4·C5)</td><td>오탐 방지 + 검증 가능성 설명</td><td>동작하나 “112시간” 오탐</td><td>미제출</td></tr>
+                <tr><td>관찰·토론</td><td>환각과 검증 불가를 구분해 설명</td><td>현상만 서술</td><td>참여 없음</td></tr>
+              </tbody>
+            </table>
+          </section>
+
+        </div>
+          </div>
+        </div>
+        <section class="notes-pane" aria-label="교사 노트">
+          <button type="button" class="notes-head"><span>🧑‍🏫 교사 노트</span><span class="spacer"></span><span class="notes-next"></span><span class="notes-toggle">▾ 접기</span></button>
+          <div class="notes-body"></div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <script type="module">
+    import { initDeck } from '../../assets/js/site/slides.js';
+    import { initRunners } from '../../assets/js/site/runner.js';
+    import { mount as mountTokens } from '../../assets/js/widgets/w01-tokens.js';
+    import { mount as mountHallucination } from '../../assets/js/widgets/w01-hallucination.js';
+    initRunners(document.querySelector('.deck-stage'));
+    initDeck();
+    mountTokens(document.getElementById('deck-w01-tokens'), { outputTitle: '토큰 카운터 결과 (데모 슬라이드)' });
+    mountHallucination(document.getElementById('deck-w01-hallucination'), { outputTitle: '환각 체험 결과 (데모 슬라이드)' });
+  </script>
+</body>
+</html>

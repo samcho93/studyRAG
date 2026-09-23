@@ -1,0 +1,501 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>3주차 문서 로딩 &amp; 파싱 · 교사용 · RAG Lab</title>
+  <meta name="description" content="3주차 문서 로딩 & 파싱 교사용 슬라이드: 강의 흐름, 교사 노트, Challenge 정답, 자주 막히는 지점, 토론 주제, 평가 루브릭.">
+  <script>try{var t=JSON.parse(localStorage.getItem('raglab:theme'));if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+  <link rel="stylesheet" crossorigin="anonymous" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&display=swap">
+  <link rel="stylesheet" href="../../assets/css/tokens.css">
+  <link rel="stylesheet" href="../../assets/css/base.css">
+  <link rel="stylesheet" href="../../assets/css/components.css">
+  <link rel="stylesheet" href="../../assets/css/slides.css">
+  <link rel="stylesheet" href="../../assets/css/w03.css">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%232450c4'/%3E%3Ccircle cx='14' cy='14' r='6' fill='none' stroke='white' stroke-width='3'/%3E%3Cpath d='M19 19l6 6' stroke='white' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E">
+  <script type="module" src="../../assets/js/site/site.js"></script>
+</head>
+<body>
+  <div class="layout" data-layout data-role="teacher" data-week="3" data-crumb="🧑‍🏫 교사용 › <b>3주차 · 문서 로딩 &amp; 파싱</b>">
+    <main class="pane center" id="main">
+      <div class="slide-view" data-deck data-deck-title="3주차 · 문서 로딩 &amp; 파싱">
+        <div class="deck-bar"><div class="deck-row" data-deck-controls></div></div>
+        <div class="deck-progress"><i></i></div>
+        <div class="deck-wrap">
+          <div class="deck-viewport">
+        <div class="deck-stage">
+
+          <!-- 1 -->
+          <section class="slide slide--title" data-title="표지">
+            <div class="kicker">검색증강생성(RAG) 시스템 구축 · 3주차</div>
+            <h1>문서 로딩 &amp; 파싱</h1>
+            <p>문서는 텍스트가 아니다</p>
+            <div class="deco" aria-hidden="true">📄</div>
+            <aside class="notes">
+              <p><strong>오늘 흐름 (180분)</strong></p>
+              <table>
+                <tr><td>0:00–0:15</td><td>도입 · “장학금 지급액은?” 질문으로 시작</td></tr>
+                <tr><td>0:15–0:55</td><td>로더 네 종류 · 메타데이터 · 정제 규칙과 부작용 · 파싱 상한</td></tr>
+                <tr><td>0:55–1:35</td><td>위젯 실습 + 관찰 질문 1~3</td></tr>
+                <tr><td>1:35–1:45</td><td>휴식</td></tr>
+                <tr><td>1:45–2:10</td><td>관찰 질문 4~6 · 순서와 과도한 정제 토론</td></tr>
+                <tr><td>2:10–2:50</td><td>Challenge C1~C4 (C5는 과제)</td></tr>
+                <tr><td>2:50–3:00</td><td>정리 · 4주차 예고</td></tr>
+              </table>
+              <p>T 키로 타이머를 시작한다. 1·2주차에 LLM을 다뤘다면 오늘부터는 “LLM에 넣을 재료”를 만든다고 연결한다.</p>
+            </aside>
+          </section>
+
+          <!-- 2 -->
+          <section class="slide" data-title="학습 목표">
+            <h2>오늘 할 수 있게 되는 것</h2>
+            <ol>
+              <li>텍스트층 PDF · 스캔 PDF · HTML · 표가 어떻게 텍스트가 되고 어떻게 깨지는지 설명한다</li>
+              <li>정제 단계를 문서에 맞게 고르고, 과도한 정제를 알아본다</li>
+              <li>정제한 조각에 출처 · 페이지 메타데이터를 붙인다</li>
+            </ol>
+            <aside class="notes">
+              <p>2번의 “과도한 정제를 알아본다”가 오늘의 차별점이다. 정제는 많이 할수록 좋은 게 아니라는 점을 처음부터 예고한다.</p>
+            </aside>
+          </section>
+
+          <!-- 3 -->
+          <section class="slide" data-title="질문으로 시작">
+            <h2>성적 우수 장학금 지급액은?</h2>
+            <p>스캔한 안내문을 OCR로 뽑은 텍스트</p>
+            <pre><code>한국폴리텍대학 분당융합기술교육원     - 1 -
+2025학년도 장 학 금 안 내
+… 평균 평 점이 4.0 이상인 학생에게 지급한 다.
+지급액은 수업료의 5O% 이다.</code></pre>
+            <p class="muted">이상한 곳을 모두 찾아보자. 몇 군데인가?</p>
+            <aside class="notes">
+              <p><strong>발문:</strong> “이 텍스트에서 이상한 곳을 전부 찾아라.” 1분 준다.</p>
+              <p>기대 답: 머리글 반복(- 1 -), “장 학 금 안 내” 공백, “평 점이”, “지급한 다”, 그리고 가장 찾기 어려운 <b>5O%</b>(영문 O). 5O%를 못 찾는 학생이 많다 — 사람 눈에도 안 보이는 오류가 기계에는 전혀 다른 토큰이라는 점이 오늘의 출발점이다.</p>
+            </aside>
+          </section>
+
+          <!-- 4 -->
+          <section class="slide" data-title="한 글자가 끝까지 간다">
+            <h2>망가진 한 글자가 끝까지 간다</h2>
+            <table>
+              <tbody>
+                <tr><td><b>검색</b></td><td>질문 “50%” → 토큰 <code>50</code> · 문서 “5O%” → 토큰 <code>5o</code> → 불일치</td></tr>
+                <tr><td><b>생성</b></td><td>검색되어도 “5O%”를 그대로 인용하거나 “알 수 없다”</td></tr>
+                <tr><td><b>평가</b></td><td>골든셋 근거 인용문도 「… 5O% 이다.」 — 정답지까지 오염</td></tr>
+              </tbody>
+            </table>
+            <div class="callout callout--danger">
+              <p>파싱에서 사라진 정보는 어떤 단계도 되살리지 못한다</p>
+            </div>
+            <aside class="notes">
+              <p>평가 행이 중요하다. golden.json의 q11 evidence.quote가 실제로 “5O%”로 기록되어 있다. 파싱을 고치면 골든셋도 같이 고쳐야 한다 → 9주차 평가에서 다시 나온다.</p>
+              <p>시간표(q10)도 같은 구조의 실패라고 한 줄 언급하고 넘어간다. 데모에서 보여 준다.</p>
+            </aside>
+          </section>
+
+          <!-- 5 -->
+          <section class="slide" data-title="로더 네 종류">
+            <h2>로더: 원본마다 방법이 다르다</h2>
+            <table>
+              <thead><tr><th>원본</th><th>방법</th><th>흔한 깨짐</th><th>도구 예</th></tr></thead>
+              <tbody>
+                <tr><td>텍스트층 PDF</td><td>저장된 글자·좌표 읽기</td><td>읽기 순서, 머리글 반복</td><td>pdf.js, PyMuPDF</td></tr>
+                <tr><td>스캔 PDF</td><td>OCR로 글자 추정</td><td>0↔O, 1↔l, 음절 공백</td><td>Tesseract</td></tr>
+                <tr><td>HTML</td><td>DOM 파싱</td><td>메뉴·푸터, 중복 블록</td><td>DOMParser, BeautifulSoup</td></tr>
+                <tr><td>표</td><td>행·열 구조 읽기</td><td>셀이 한 줄로 이어짐</td><td>pdfplumber, Camelot</td></tr>
+              </tbody>
+            </table>
+            <p class="muted">통합 도구: Unstructured — 요소(제목·본문·표)로 나누고 메타데이터를 붙인다</p>
+            <aside class="notes">
+              <p><strong>발문:</strong> “PDF 파일을 열어 Ctrl+A, Ctrl+C가 되면 어느 종류고, 안 되면 어느 종류인가?” → 복사되면 텍스트층, 안 되면 스캔(그림). 가장 쉬운 판별법이다.</p>
+              <p>도구는 소개만 한다. 이 사이트는 설치 없는 브라우저 실습이 원칙이라 PDF 라이브러리를 쓰지 않고, 문서셋에 “로더 출력”을 저장해 두었다고 설명한다.</p>
+            </aside>
+          </section>
+
+          <!-- 6 -->
+          <section class="slide" data-title="메타데이터">
+            <h2>메타데이터: 조각이 어디서 왔는가</h2>
+            <pre><code>{ "text": "지급액은 수업료의 50% 이다.",
+  "metadata": { "source": "broken-scan", "page": 1, "loader": "ocr" } }</code></pre>
+            <div class="cols">
+              <div>
+                <ul>
+                  <li><b>인용</b> — “장학금 안내 1쪽”</li>
+                  <li><b>필터</b> — 특정 문서·연도만 검색</li>
+                </ul>
+              </div>
+              <div>
+                <ul>
+                  <li><b>디버깅</b> — 틀린 답의 출처 추적</li>
+                  <li><b>갱신</b> — 바뀐 문서만 재임베딩</li>
+                </ul>
+              </div>
+            </div>
+            <p class="muted">쪽 번호는 지우기 전에 메타데이터로 옮긴다 (C5)</p>
+            <aside class="notes">
+              <p>“쪽 번호는 잡음이면서 정보다”라는 역설을 강조한다. 정제 단계에서 지우는 바로 그 줄이 page 메타데이터의 유일한 출처다.</p>
+              <p>11주차 인용 하이라이트, 7주차 최소 RAG의 “출처 표시”가 모두 여기서 시작한다.</p>
+            </aside>
+          </section>
+
+          <!-- 7 -->
+          <section class="slide" data-title="정제 단계와 부작용">
+            <h2>정제 규칙에는 부작용이 있다</h2>
+            <table>
+              <thead><tr><th>단계</th><th>고치는 것</th><th>잘못 쓰면</th></tr></thead>
+              <tbody>
+                <tr><td>머리글·바닥글</td><td>반복 줄, 메뉴·저작권</td><td>반복된 본문까지 삭제</td></tr>
+                <tr><td>중복 문단</td><td>같은 Q&amp;A 2번</td><td>—</td></tr>
+                <tr><td>표 행 복원</td><td>요일+교시로 행 분리</td><td>패턴 밖의 행은 추측</td></tr>
+                <tr><td>OCR 숫자</td><td>5O% → 50%</td><td>MLOps → ML0ps</td></tr>
+                <tr><td>공백 병합</td><td>“평 점이” → 평점이</td><td>“조 교수” → 조교수</td></tr>
+              </tbody>
+            </table>
+            <p><strong>규칙은 문서 종류별로 켠다 · 결과는 사실로 검증한다</strong></p>
+            <aside class="notes">
+              <p>“조 교수 → 조교수”에서 웃음이 나오면 성공이다. 뜻이 바뀌는(교수 이름 → 직급) 실제 사례다.</p>
+              <p>공백 병합의 한계: 사전 없이 규칙만으로는 “결석 시 보강”과 “시 간당”을 구별할 수 없다. 실무는 형태소 분석기나 띄어쓰기 교정 모델을 쓴다고 언급한다.</p>
+            </aside>
+          </section>
+
+          <!-- 8 -->
+          <section class="slide" data-title="파싱 품질은 상한이다">
+            <h2>파싱 품질은 상한이다</h2>
+            <p class="big-quote">정답률 ≤ 파싱 × 청킹 × 검색 × 생성</p>
+            <ul>
+              <li>골든셋 12문항 중 q10(표) · q11(OCR) 근거가 깨짐</li>
+              <li>파싱 보존율 10/12 → 뒤가 완벽해도 <strong>최대 83%</strong></li>
+              <li>4~9주차의 어떤 튜닝도 이 천장을 못 올린다</li>
+            </ul>
+            <aside class="notes">
+              <p>엄밀한 공식이 아니라 “곱으로 줄어든다”는 직관이다. 각 단계가 90%면 0.9⁴ ≈ 66%라는 것도 같이 계산해 보인다.</p>
+              <p><strong>발문:</strong> “RAG가 틀렸을 때 어디부터 봐야 하나?” → 파싱 결과부터. 9주차 평가 토론의 복선이다.</p>
+            </aside>
+          </section>
+
+          <!-- 9 -->
+          <section class="slide slide--demo" data-title="데모: 파싱 정제 뷰어">
+            <h2>데모 · 파싱 정제 뷰어</h2>
+            <div id="deck-w03-widget"></div>
+            <aside class="notes">
+              <p><strong>시연 순서</strong> (결과는 오른쪽 실행 결과 창에 실시간으로 나온다)</p>
+              <ol>
+                <li>처음 화면: 장학금 스캔본, 모두 끔 → 사실 0/5 (5O%, 평 점이, 1O시간, 2l4, 머리글)</li>
+                <li>OCR 숫자 교정만 켠다 → 3건 교정, 3/5. 원문 쪽 빨간 O와 정제본 쪽 초록 0을 짚는다</li>
+                <li>“권장 설정” → 5/5. 머리글 2줄, 쪽 번호 2건, 공백 병합 7건</li>
+                <li>“전부 켜기” → 2/5. 한글 사이 공백 전부 제거가 문장을 망가뜨린다</li>
+                <li>문서를 2학기 시간표로 → 모두 끔 0/3, 표 행 복원 켜면 8행 3/3. 여기서 “과도: 모든 O→0”을 켜면 MLOps → ML0ps</li>
+                <li>자주 묻는 질문 → 머리글·바닥글만 켜면 노트북 Q&amp;A가 0번(둘 다 삭제). 중복 문단 제거를 켜면 복구 → 순서 이야기</li>
+              </ol>
+            </aside>
+          </section>
+
+          <!-- 10 -->
+          <section class="slide" data-title="관찰 질문">
+            <h2>관찰 질문</h2>
+            <ol>
+              <li>모두 끈 상태에서 ✗인 사실과 그 이유는?</li>
+              <li>OCR 교정 vs 과도한 O→0 — 시간표에서 무엇이 망가지나?</li>
+              <li>「수 | 1-6 | 현장 실습 | 외부 산업체 | —」는 원본인가 추측인가?</li>
+              <li>공백 병합을 시간표·FAQ에 켜면?</li>
+              <li>머리글 제거만 켜면 노트북 Q&amp;A는? 순서가 왜 중요한가?</li>
+              <li>(선택) 내 .html 파일의 표는 어떻게 보이나?</li>
+            </ol>
+            <aside class="notes">
+              <p>1~3은 짝 활동 15분. 4~6은 휴식 후 전체 토론.</p>
+              <p>3번 정답: 추측이다. 원문에는 강의실 번호도 담당도 없다. 규칙이 “외부”라는 단어에서 강의실 칸을 시작했을 뿐이다. 표는 텍스트로 복원하는 것보다 로더가 <code>&lt;td&gt;</code>를 읽는 쪽이 근본 해결이라는 결론(6번)으로 이어 간다.</p>
+              <p>5번 정답: 머리글 규칙은 “2번 이상 반복된 줄”이므로, 중복된 Q와 A 줄을 머리글로 오인한다. 중복 제거가 먼저 돌면 반복이 사라져 오인하지 않는다.</p>
+            </aside>
+          </section>
+
+          <!-- 11 -->
+          <section class="slide" data-title="코드로 확인: 5O% vs 50%">
+            <h2>코드로 확인하기 · 키워드 검색이 보는 것</h2>
+            <pre data-run="deck-tokens" data-title="5O% vs 50% 토큰"><code class="language-javascript">import { tokenize } from '/assets/js/core/bm25.js';
+
+const broken = '지급액은 수업료의 5O% 이다.';
+const fixed = broken.replace(/(?&lt;![A-Za-z])[0-9OoIl]*\d[0-9OoIl]*(?![A-Za-z])/g,
+  (run) =&gt; run.replace(/[Oo]/g, '0').replace(/[Il]/g, '1'));
+
+console.log('질문 토큰:', tokenize('장학금 지급액 50%'));
+for (const text of [broken, fixed]) {
+  const tokens = tokenize(text);
+  console.log(text, '→ 숫자 토큰', tokens.filter((t) =&gt; /\d/.test(t)), '| "50" 일치:', tokens.includes('50'));
+}</code></pre>
+            <aside class="notes">
+              <p>▶ 실행 결과: 질문 토큰에 <code>50</code>이 있고, 망가진 문장은 숫자 토큰 <code>["5o"]</code>로 “50” 일치 false, 교정 후 <code>["50"]</code>로 true.</p>
+              <p>8주차 BM25에서 쓰는 바로 그 토크나이저다. 임베딩 검색은 덜 민감하지만 숫자 정확도에는 약하다(5주차에 확인).</p>
+            </aside>
+          </section>
+
+          <!-- 12 -->
+          <section class="slide" data-title="Challenge 안내">
+            <h2>Challenge</h2>
+            <table>
+              <tbody>
+                <tr><td>C1 ★</td><td>빈도로 머리글·바닥글 찾기</td></tr>
+                <tr><td>C2 ★★</td><td>단어를 망가뜨리지 않는 OCR 숫자 교정 (9개 사례)</td></tr>
+                <tr><td>C3 ★★</td><td>중복 문단 제거 (자주 묻는 질문)</td></tr>
+                <tr><td>C4 ★★★</td><td>시간표 행을 객체로 복원</td></tr>
+                <tr><td>C5 ★★★★</td><td>정제된 청크에 출처·페이지 붙이기 (과제)</td></tr>
+              </tbody>
+            </table>
+            <p class="muted">학생용 페이지의 코드 상자에서 바로 ▶ 실행한다</p>
+            <aside class="notes">
+              <p>C1~C3는 모두 끝내야 한다. C2는 “9/9 통과” 출력 캡처를 제출하게 한다. 정답은 부록 B.</p>
+            </aside>
+          </section>
+
+          <!-- 13 -->
+          <section class="slide" data-title="정리 & 다음 주">
+            <h2>정리</h2>
+            <ul>
+              <li>로더마다 깨지는 모양이 다르다 — 머리글, OCR, 메뉴·중복, 표 구조</li>
+              <li>정제 규칙은 부작용이 있다 — <strong>문서별로 켜고, 순서를 지킨다</strong></li>
+              <li>결과는 골든 사실로 검증한다. 골든셋도 함께 고친다</li>
+              <li>쪽 번호는 지우기 전에 메타데이터로</li>
+              <li>파싱 보존율 = 이후 모든 단계의 상한</li>
+            </ul>
+            <h3>다음 주 · 청킹 전략</h3>
+            <p class="muted">오늘 정제한 텍스트를 검색 단위로 자른다. 근거 문장이 경계에서 잘리는 조건과 오버랩의 비용을 측정한다</p>
+            <aside class="notes">
+              <p>4주차 청킹 위젯에 “2학기 시간표 (표 깨짐)”을 넣으면 어떤 전략도 소용없다는 관찰 질문이 있다. 오늘 배운 “파싱의 문제”를 그때 다시 떠올리게 한다.</p>
+            </aside>
+          </section>
+
+          <!-- Appendix -->
+          <section class="slide" data-title="부록 A · 강의안" data-appendix>
+            <h2>부록 A · 강의안</h2>
+            <table>
+              <thead><tr><th>시간</th><th>활동</th><th>산출물</th></tr></thead>
+              <tbody>
+                <tr><td>15분</td><td>도입 · 스캔 텍스트에서 오류 찾기</td><td>찾은 오류 개수</td></tr>
+                <tr><td>40분</td><td>개념: 로더 · 메타데이터 · 정제 부작용 · 상한</td><td>—</td></tr>
+                <tr><td>40분</td><td>위젯 실습 · 관찰 질문 1~3</td><td>짝 활동 메모</td></tr>
+                <tr><td>10분</td><td>휴식</td><td>—</td></tr>
+                <tr><td>25분</td><td>관찰 4~6 · 순서·과도 정제 토론</td><td>—</td></tr>
+                <tr><td>40분</td><td>Challenge C1~C4</td><td>C2 9/9 캡처</td></tr>
+                <tr><td>10분</td><td>정리 · 예고</td><td>—</td></tr>
+              </tbody>
+            </table>
+          </section>
+
+          <section class="slide" data-title="부록 B · C1 정답" data-appendix>
+            <h2>부록 B · C1 정답</h2>
+            <pre data-run="ans-c1" data-title="C1 정답"><code class="language-javascript">const pages = [
+  '한국폴리텍대학 분당융합기술교육원 - 1 -\n2025학년도 장학금 안내\n성적 우수 장학금 지급액은 수업료의 50%다.\n교무처 | 무단 전재 금지',
+  '한국폴리텍대학 분당융합기술교육원 - 2 -\n가계 곤란 장학금은 소득 3분위 이하가 대상이다.\n교무처 | 무단 전재 금지',
+  '한국폴리텍대학 분당융합기술교육원 - 3 -\n근로 장학생은 주 10시간 이내로 일한다.\n교무처 | 무단 전재 금지',
+];
+const norm = (line) =&gt; line.replace(/\d+/g, '#').replace(/\s+/g, ' ').trim();
+
+function removeRepeated(pages, minRatio = 0.5) {
+  const pageCount = new Map();
+  for (const page of pages) {
+    const seen = new Set(page.split('\n').map(norm).filter(Boolean));
+    for (const key of seen) pageCount.set(key, (pageCount.get(key) ?? 0) + 1);
+  }
+  const need = Math.max(2, Math.ceil(pages.length * minRatio));
+  const repeated = new Set([...pageCount].filter(([, n]) =&gt; n &gt;= need).map(([k]) =&gt; k));
+  const cleaned = pages.map((page) =&gt;
+    page.split('\n').filter((line) =&gt; !repeated.has(norm(line))).join('\n'));
+  return { cleaned, repeated: [...repeated] };
+}
+const { cleaned, repeated } = removeRepeated(pages);
+console.log('반복으로 판정된 줄:', repeated);
+cleaned.forEach((p, i) =&gt; console.log(`--- ${i + 1}쪽\n${p}`));</code></pre>
+            <aside class="notes">
+              <p><strong>실행 결과:</strong> 반복 줄 2개 — <code>'한국폴리텍대학 분당융합기술교육원 - # -'</code>, <code>'교무처 | 무단 전재 금지'</code>. 각 쪽에 본문만 남는다.</p>
+              <p><strong>왜:</strong> 숫자를 <code>#</code>으로 바꾸지 않으면 “- 1 -”과 “- 2 -”가 다른 줄이 되어 머리글을 못 찾는다. “쪽 수”로 세는 이유는 한 쪽 안에서 우연히 반복된 줄(예: 같은 문장 두 번)을 머리글로 오인하지 않기 위해서다. <code>Math.max(2, …)</code>는 1쪽짜리 문서에서 모든 줄이 지워지는 것을 막는다.</p>
+            </aside>
+          </section>
+
+          <section class="slide" data-title="부록 B · C2 정답" data-appendix>
+            <h2>부록 B · C2 정답</h2>
+            <pre data-run="ans-c2" data-title="C2 정답"><code class="language-javascript">const cases = [
+  ['지급액은 5O%', '지급액은 50%'], ['주 1O시간', '주 10시간'], ['내선 2l4', '내선 214'],
+  ['2OO5년', '2005년'], ['MLOps 과목', 'MLOps 과목'], ['Model1 결과', 'Model1 결과'],
+  ['COVID19', 'COVID19'], ['CO2 배출', 'CO2 배출'], ['Hello World', 'Hello World'],
+];
+// 숫자를 하나 이상 포함하고 [0-9OoIl]로만 된 덩어리. 앞뒤가 영문자면(= 단어의 일부) 제외
+const OCR_RUN = /(?&lt;![A-Za-z])[0-9OoIl]*\d[0-9OoIl]*(?![A-Za-z])/g;
+
+function fixOcr(text) {
+  return text.replace(OCR_RUN, (run) =&gt; run.replace(/[Oo]/g, '0').replace(/[Il]/g, '1'));
+}
+
+const naive = (t) =&gt; t.replace(/O/g, '0').replace(/l/g, '1');
+let pass = 0;
+for (const [input, want] of cases) {
+  const got = fixOcr(input);
+  if (got === want) pass++;
+  console.log(got === want ? '✓' : '✗', input, '→', got, '| naive:', naive(input));
+}
+console.log(`${pass}/${cases.length} 통과`);</code></pre>
+            <aside class="notes">
+              <p><strong>실행 결과:</strong> 9/9 통과. naive는 ML0ps, Mode11, C0VID19, C02, He11o Wor1d로 5개를 망가뜨린다.</p>
+              <p><strong>왜:</strong> 글자 단위로 “숫자 옆의 O·l”만 보는 <code>/(?&lt;=\d)[Ol]|[Ol](?=\d)/</code>는 CO2 → C02, Model1 → Mode11로 망가뜨리고, 2OOO5처럼 O가 셋 이상이면 가운데를 놓친다. 덩어리 단위로 잡고 덩어리 전체가 영문자에 붙어 있지 않은지 확인해야 두 문제가 함께 풀린다.</p>
+              <p>남는 한계: 영문 약어 자체가 OCR로 깨진 경우(IoT → 1oT)는 규칙으로 판단할 수 없다. 사전·문맥이 필요하다.</p>
+            </aside>
+          </section>
+
+          <section class="slide" data-title="부록 B · C3 정답" data-appendix>
+            <h2>부록 B · C3 정답</h2>
+            <pre data-run="ans-c3" data-title="C3 정답"><code class="language-javascript">const corpus = await (await fetch('/assets/data/corpus/corpus.json')).json();
+const doc = corpus.documents.find((d) =&gt; d.id === 'broken-mixed');
+
+function dedupeParagraphs(text) {
+  const seen = new Set();
+  const kept = [];
+  const removed = [];
+  for (const para of text.split(/\n\s*\n/)) {
+    const key = para.replace(/\s+/g, ' ').trim();
+    if (!key) continue;
+    if (seen.has(key)) removed.push(key.slice(0, 20) + '…');
+    else {
+      seen.add(key);
+      kept.push(para.trim());
+    }
+  }
+  return { text: kept.join('\n\n'), removed };
+}
+const before = doc.text.split(/\n\s*\n/).length;
+const { text, removed } = dedupeParagraphs(doc.text);
+console.log(`문단 ${before}개 → ${text.split('\n\n').length}개`);
+console.log('지운 문단:', removed);
+console.log(text);</code></pre>
+            <aside class="notes">
+              <p><strong>실행 결과:</strong> 문단 5개 → 4개. 지운 문단 <code>'Q. 노트북을 가져와도 되나요? A.…'</code>. 메뉴(“홈 | 학과소개 | … | 로그인”)와 저작권 줄은 남는다.</p>
+              <p><strong>왜 메뉴가 남나:</strong> 한 번만 나오기 때문이다. 중복 제거는 “같은 것 두 번”만 잡는다. 메뉴·푸터는 키워드 규칙이나, 더 근본적으로는 HTML 로더가 <code>&lt;nav&gt;</code>·<code>&lt;footer&gt;</code>를 버려야 한다.</p>
+              <p>확장 토론: 공백만 다른 중복은 key 정규화로 잡힌다. 한 글자만 다른 “거의 중복”은? → 해시(MinHash) 또는 임베딩 유사도(5주차).</p>
+            </aside>
+          </section>
+
+          <section class="slide" data-title="부록 B · C4 정답" data-appendix>
+            <h2>부록 B · C4 정답</h2>
+            <pre data-run="ans-c4" data-title="C4 정답"><code class="language-javascript">const corpus = await (await fetch('/assets/data/corpus/corpus.json')).json();
+const doc = corpus.documents.find((d) =&gt; d.id === 'broken-table');
+
+function parseTimetable(text) {
+  const lines = text.split('\n');
+  const h = lines.findIndex((l) =&gt; /^요일\s+교시\s+과목\s+강의실\s+담당$/.test(l.trim()));
+  return lines[h + 1].split(/\s+(?=[월화수목금토일]\s+\d+-\d+\s)/).map((row) =&gt; {
+    const [, day, period, rest] = row.match(/^([월화수목금토일])\s+(\d+-\d+)\s+(.*)$/);
+    const toks = rest.split(/\s+/);
+    let teacher = null;
+    if (toks.at(-1) === '공동') teacher = toks.pop();
+    else if (toks.at(-1) === '교수') teacher = toks.splice(-2).join(' ');
+    let r = toks.findIndex((t) =&gt; /^\d{3}$/.test(t));
+    if (r &lt; 0) r = toks.indexOf('외부'); // 강의실 번호가 없는 행: 장소 단어에서 자른다(추측)
+    return { day, period, subject: toks.slice(0, r).join(' '), room: toks.slice(r).join(' '), teacher };
+  });
+}
+const rows = parseTimetable(doc.text);
+console.table(rows);
+const rag = rows.find((r) =&gt; r.subject.includes('RAG'));
+console.log(`RAG 수업: ${rag.day}요일 ${rag.period}교시, ${rag.room}호`);</code></pre>
+            <aside class="notes">
+              <p><strong>실행 결과:</strong> 8행. 마지막 줄 “RAG 수업: 화요일 1-3교시, 305호”. 수요일 행은 <code>{ subject: '현장 실습', room: '외부 산업체', teacher: null }</code>.</p>
+              <p><strong>왜 teacher → room → subject 순서인가:</strong> 과목명은 길이가 제각각(“검색증강생성(RAG) 시스템 구축”)이라 앞에서 자를 수 없다. 모양이 확실한 끝(담당)과 숫자(강의실)를 먼저 떼면 남는 것이 과목이다.</p>
+              <p>핵심 토론: 수요일 행은 규칙이 추측한 것이다. 원본 HTML의 <code>&lt;td&gt;</code>를 읽었다면 추측이 필요 없다 → “표는 로더에서 고친다”.</p>
+            </aside>
+          </section>
+
+          <section class="slide" data-title="부록 B · C5 정답" data-appendix>
+            <h2>부록 B · C5 정답</h2>
+            <pre data-run="ans-c5" data-title="C5 정답"><code class="language-javascript">import { chunk } from '/assets/js/core/chunker.js';
+const corpus = await (await fetch('/assets/data/corpus/corpus.json')).json();
+const doc = corpus.documents.find((d) =&gt; d.id === 'broken-scan');
+const fixOcr = (t) =&gt;
+  t.replace(/(?&lt;![A-Za-z])[0-9OoIl]*\d[0-9OoIl]*(?![A-Za-z])/g, (r) =&gt; r.replace(/[Oo]/g, '0').replace(/[Il]/g, '1'));
+
+function splitPages(text) {
+  const pages = [];
+  for (const line of text.split('\n')) {
+    const m = line.match(/-\s*(\d+)\s*-\s*$/);
+    if (m) pages.push({ page: Number(m[1]), lines: [] }); // 머리글 줄은 버리고 쪽 번호만 기억
+    else if (pages.length) pages.at(-1).lines.push(line);
+  }
+  return pages.map((p) =&gt; ({ page: p.page, text: p.lines.join('\n').trim() }));
+}
+const chunks = splitPages(doc.text).flatMap(({ page, text }) =&gt;
+  chunk(fixOcr(text), { strategy: 'sentence', size: 80 }).map((c) =&gt; ({
+    id: `${doc.id}#p${page}-c${c.index}`,
+    text: c.text.trim(),
+    metadata: { source: doc.id, title: doc.title, page, start: c.start, end: c.end },
+  })));
+console.table(chunks.map((c) =&gt; ({ id: c.id, page: c.metadata.page, text: c.text.slice(0, 30) })));
+for (const q of ['50%', '10시간']) {
+  const hit = chunks.find((c) =&gt; c.text.includes(q));
+  console.log(`「${q}」 → ${hit.metadata.title} ${hit.metadata.page}쪽`);
+}</code></pre>
+            <aside class="notes">
+              <p><strong>실행 결과:</strong> 청크 4개(p1-c0, p1-c1, p1-c2, p2-c0). 「50%」 → 1쪽, 「10시간」 → 2쪽.</p>
+              <p><strong>왜:</strong> 쪽 번호 줄을 지우는 순간 페이지 정보가 사라지므로, 지우기 전에 페이지 단위로 나눠 두고 청크마다 page를 복사한다.</p>
+              <p>짚을 점: 여기서 <code>start/end</code>는 “정제된 페이지 텍스트” 기준이다. 원문 기준 위치가 필요하면(11주차 하이라이트) 정제 과정에서 위치 매핑을 따로 유지해야 한다. 메타데이터에 기준을 명시하라고 지도한다.</p>
+            </aside>
+          </section>
+
+          <section class="slide" data-title="부록 C · 자주 막히는 지점" data-appendix>
+            <h2>부록 C · 학생이 자주 막히는 지점</h2>
+            <table>
+              <thead><tr><th>증상</th><th>원인</th><th>대응</th></tr></thead>
+              <tbody>
+                <tr><td>C1에서 아무 줄도 안 지워짐</td><td>숫자 정규화 누락 (- 1 - ≠ - 2 -)</td><td>norm 결과를 console.log로 먼저 보게 한다</td></tr>
+                <tr><td>C2에서 CO2·2OO5년 실패</td><td>글자 단위 전방/후방 탐색만 사용</td><td>“덩어리 단위로 잡기” 힌트</td></tr>
+                <tr><td>정규식 문법 오류</td><td>후방탐색 <code>(?&lt;!…)</code> 오타</td><td>regex101 등에서 사례별로 확인</td></tr>
+                <tr><td>C4 행이 1개만 나옴</td><td>split에 전방탐색 없이 요일을 소비</td><td><code>(?=…)</code>로 경계만 찾게 한다</td></tr>
+                <tr><td>위젯이 안 뜬다</td><td><code>file://</code>로 열었다</td><td><code>python -m http.server</code> 안내</td></tr>
+                <tr><td>“전부 켜면 제일 깨끗하다”</td><td>사실 확인을 안 봄</td><td>“전부 켜기”에서 ✗ 개수를 세게 한다</td></tr>
+              </tbody>
+            </table>
+          </section>
+
+          <section class="slide" data-title="부록 D · 토론 주제" data-appendix>
+            <h2>부록 D · 토론 주제</h2>
+            <ol>
+              <li>표는 텍스트 규칙으로 복원해야 하나, 로더를 바꿔야 하나? 원본이 없으면?</li>
+              <li>파싱을 고치면 골든셋 인용문(q11 “5O%”)도 고쳐야 한다. 평가 데이터는 언제 누가 갱신해야 하나?</li>
+              <li>OCR 오류를 LLM에게 교정시키면? 장점과 위험(없는 숫자를 만들어 냄)은?</li>
+              <li>정제 규칙 목록을 문서 종류마다 따로 두면 관리 비용은 어떻게 되나?</li>
+            </ol>
+            <aside class="notes">
+              <p>3번은 1·2주차 환각 주제와 연결된다. “LLM 교정은 사람 검수 없이는 사실을 바꿀 수 있다”는 결론으로 유도한다.</p>
+            </aside>
+          </section>
+
+          <section class="slide" data-title="부록 E · 평가 루브릭" data-appendix>
+            <h2>부록 E · 평가 루브릭</h2>
+            <table>
+              <thead><tr><th>항목</th><th>우수 (3)</th><th>보통 (2)</th><th>미흡 (1)</th></tr></thead>
+              <tbody>
+                <tr><td>정제 구현 (C1·C3)</td><td>정규화·쪽 단위 계산, 경계 조건 처리</td><td>동작하나 1쪽 문서 등 경계 누락</td><td>동작하지 않음</td></tr>
+                <tr><td>정규식 (C2)</td><td>9/9 + 실패 사례 설명</td><td>7~8개 통과</td><td>6개 이하</td></tr>
+                <tr><td>구조 복원 (C4·C5)</td><td>객체 복원 + 추측 행·위치 기준 명시</td><td>결과만 맞음</td><td>일부만</td></tr>
+                <tr><td>관찰·토론</td><td>과도한 정제와 순서 문제를 사실 확인으로 설명</td><td>현상만 서술</td><td>참여 없음</td></tr>
+              </tbody>
+            </table>
+          </section>
+
+        </div>
+          </div>
+        </div>
+        <section class="notes-pane" aria-label="교사 노트">
+          <button type="button" class="notes-head"><span>🧑‍🏫 교사 노트</span><span class="spacer"></span><span class="notes-next"></span><span class="notes-toggle">▾ 접기</span></button>
+          <div class="notes-body"></div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <script type="module">
+    import { initDeck } from '../../assets/js/site/slides.js';
+    import { initRunners } from '../../assets/js/site/runner.js';
+    import { mount } from '../../assets/js/widgets/w03-parse-viewer.js';
+    initRunners(document.querySelector('.deck-stage'));
+    initDeck();
+    mount(document.getElementById('deck-w03-widget'), { outputTitle: '파싱 정제 결과 (데모 슬라이드)' });
+  </script>
+</body>
+</html>

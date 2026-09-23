@@ -1,0 +1,571 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>8주차 하이브리드 검색 + 리랭킹 · 교사용 · RAG Lab</title>
+  <meta name="description" content="8주차 하이브리드 검색 + 리랭킹 교사용 슬라이드: 강의 흐름, 교사 노트, Challenge 정답, 자주 막히는 지점, 토론 주제, 평가 루브릭.">
+  <script>try{var t=JSON.parse(localStorage.getItem('raglab:theme'));if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+  <link rel="stylesheet" crossorigin="anonymous" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&display=swap">
+  <link rel="stylesheet" href="../../assets/css/tokens.css">
+  <link rel="stylesheet" href="../../assets/css/base.css">
+  <link rel="stylesheet" href="../../assets/css/components.css">
+  <link rel="stylesheet" href="../../assets/css/slides.css">
+  <link rel="stylesheet" href="../../assets/css/w08.css">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%232450c4'/%3E%3Ccircle cx='14' cy='14' r='6' fill='none' stroke='white' stroke-width='3'/%3E%3Cpath d='M19 19l6 6' stroke='white' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E">
+  <script type="module" src="../../assets/js/site/site.js"></script>
+</head>
+<body>
+  <div class="layout" data-layout data-role="teacher" data-week="8" data-crumb="🧑‍🏫 교사용 › <b>8주차 · 하이브리드 검색 + 리랭킹</b>">
+    <main class="pane center" id="main">
+      <div class="slide-view" data-deck data-deck-title="8주차 · 하이브리드 검색 + 리랭킹">
+        <div class="deck-bar"><div class="deck-row" data-deck-controls></div></div>
+        <div class="deck-progress"><i></i></div>
+        <div class="deck-wrap">
+          <div class="deck-viewport">
+        <div class="deck-stage">
+
+          <!-- 1 -->
+          <section class="slide slide--title" data-title="표지">
+            <div class="kicker">검색증강생성(RAG) 시스템 구축 · 8주차</div>
+            <h1>하이브리드 검색 + 리랭킹</h1>
+            <p>키워드와 의미, 두 검색을 합친다</p>
+            <div class="deco" aria-hidden="true">⚖️</div>
+            <aside class="notes">
+              <p><strong>오늘 흐름 (180분)</strong></p>
+              <table>
+                <tr><td>0:00–0:15</td><td>도입 · 7주차 최소 RAG 복습(검색은 벡터 하나였다)</td></tr>
+                <tr><td>0:15–0:55</td><td>두 가지 실패 · BM25 직관 · 바이그램 · RRF · 가중 융합</td></tr>
+                <tr><td>0:55–1:30</td><td>위젯 실습 + 관찰 질문 1~4</td></tr>
+                <tr><td>1:30–1:40</td><td>휴식</td></tr>
+                <tr><td>1:40–2:00</td><td>관찰 5~6 · 리랭킹(크로스 인코더) 설명</td></tr>
+                <tr><td>2:00–2:50</td><td>Challenge C1~C4 (C5는 과제)</td></tr>
+                <tr><td>2:50–3:00</td><td>정리 · 9주차 예고</td></tr>
+              </table>
+              <p>수업 시작 전에 학생용 페이지를 열어 임베딩 모델(약 118MB)을 미리 받게 한다. 5주차에 받았다면 캐시에서 바로 뜬다. T 키로 타이머를 시작한다.</p>
+            </aside>
+          </section>
+
+          <!-- 2 -->
+          <section class="slide" data-title="학습 목표">
+            <h2>오늘 할 수 있게 되는 것</h2>
+            <ol>
+              <li>BM25와 벡터 검색이 각각 실패하는 질문 유형을 예로 설명한다</li>
+              <li>RRF와 가중 융합으로 두 결과를 합치고 k · α의 영향을 계산한다</li>
+              <li>골든셋으로 hit@3을 재서 세 방법을 비교하는 코드를 쓴다</li>
+            </ol>
+            <aside class="notes">
+              <p>3번이 9주차 평가로 이어지는 다리다. “하이브리드가 좋다더라”가 아니라 “우리 문서셋에서 몇 점 올랐다”로 말하게 만드는 것이 목표라고 먼저 선언한다.</p>
+            </aside>
+          </section>
+
+          <!-- 3 -->
+          <section class="slide" data-title="질문으로 시작: 2l4">
+            <h2>내선 번호 “2l4”를 검색하면?</h2>
+            <p class="big-quote">… 문의 : 학 생 지 원 팀 (내선 2l4)</p>
+            <table>
+              <thead><tr><th>순위</th><th>벡터 검색 (e5-small)</th></tr></thead>
+              <tbody>
+                <tr><td>1</td><td>FAQ 푸터 “Copyright © …”</td></tr>
+                <tr><td>2 · 3</td><td>시간표(표 깨짐) 청크들</td></tr>
+                <tr><td>4</td><td><strong>장학금 #2 ✓</strong></td></tr>
+              </tbody>
+            </table>
+            <p class="muted">BM25는 결과가 딱 하나 — 바로 그 청크</p>
+            <aside class="notes">
+              <p><strong>발문:</strong> “7주차에 만든 RAG에 이 질문을 넣으면 LLM은 무엇을 받게 되나?” → 푸터와 시간표를 받고 내선 번호를 모른다고 하거나 지어낸다.</p>
+              <p>2l4는 OCR이 214를 잘못 읽은 문자열이다(3주차 문서). 사용자는 문서에 적힌 그대로 복사해 검색하는 경우가 많다는 점을 짚는다. 수치는 사전 계산 데이터(<code>assets/data/w08/hybrid.json</code>) 기준이며 브라우저에서 순위가 한 칸 정도 다를 수 있다.</p>
+            </aside>
+          </section>
+
+          <!-- 4 -->
+          <section class="slide" data-title="반대 방향의 실패">
+            <h2>반대로, BM25가 실패하는 질문</h2>
+            <p class="big-quote">“모델이 없는 사실을 지어내는 현상”</p>
+            <div class="cols">
+              <div>
+                <h3>BM25 → 7위</h3>
+                <p>문서: “…그럴듯한 거짓을 만들어 낸다. 이를 환각이라 한다”</p>
+                <p class="muted">“지어내는”, “현상”이 문서에 없다</p>
+              </div>
+              <div>
+                <h3>벡터 → 1위</h3>
+                <p>뜻이 같으면 단어가 달라도 가깝다</p>
+                <p class="muted">사각지대가 서로 겹치지 않는다 → 둘 다 쓴다</p>
+              </div>
+            </div>
+            <aside class="notes">
+              <p>두 실패를 칠판 양쪽에 적는다: 왼쪽 “글자는 같은데 뜻이 없음(코드·번호)”, 오른쪽 “뜻은 같은데 글자가 다름(바꿔 말하기)”. 오늘 내내 이 두 칸을 가리킨다.</p>
+              <p><strong>발문:</strong> “우리 학과 문서에서 코드처럼 생긴 검색어는 또 뭐가 있을까?” (강의실 305호, 과목 코드, 학번, 에러 코드 등)</p>
+            </aside>
+          </section>
+
+          <!-- 5 -->
+          <section class="slide" data-title="BM25 직관">
+            <h2>BM25: 드문 단어가 여러 번, 짧은 청크에</h2>
+            <table>
+              <tbody>
+                <tr><td>TF</td><td>많이 나올수록 ↑, 하지만 포화된다 (k1 = 1.5)</td></tr>
+                <tr><td>IDF</td><td>“검색” 17/37개 청크 → 0.78 · “2l4” 1/37 → <strong>3.23</strong></td></tr>
+                <tr><td>길이</td><td>긴 청크는 깎는다 (b = 0.75, 평균 74.6 토큰)</td></tr>
+              </tbody>
+            </table>
+            <pre><code>IDF = ln(1 + (37 − 1 + 0.5)/(1 + 0.5)) = 3.232
+TF  = 2.5 / (1 + 1.5·(0.25 + 0.75·41/74.6)) = 1.254
+BM25("2l4", 장학금#2) = 3.232 × 1.254 ≈ 4.05</code></pre>
+            <aside class="notes">
+              <p>식은 보여 주기만 하고, 세 요소의 직관을 먼저 말로 확인한다. “흔한 단어가 많이 나오는 긴 문서”가 불리하다는 문장으로 요약한다.</p>
+              <p>위젯 BM25 열의 4.05와 이 계산이 정확히 일치함을 데모 때 보여 준다. TF 포화: f가 1→2→3이면 TF 부분이 1.25→1.67→1.88 정도로 늘어난다(같은 길이일 때)는 점을 말로 덧붙인다.</p>
+            </aside>
+          </section>
+
+          <!-- 6 -->
+          <section class="slide" data-title="한국어 바이그램">
+            <h2>한국어는 왜 바이그램을 더하나</h2>
+            <pre><code>"305호"          → 305호 · 30 · 05 · 5호
+"305호와 306호를" → 305호와 · 30 · 05 · 5호 · 호와 · 306호를 · …</code></pre>
+            <ul>
+              <li>조사가 붙어 공백 토큰이 안 맞는다 → 두 글자 조각으로 부분 일치</li>
+              <li>대가 1: “인덱스의” → “인덱” 같은 조각이 엉뚱한 청크에도 걸린다</li>
+              <li>대가 2: “MRR은” → <code>mrr은 · mr · rr · r은</code> — <code>mrr</code>이 없다</li>
+            </ul>
+            <p class="muted">실무: 형태소 분석기(Nori, Mecab-ko)로 조사를 떼어 낸다</p>
+            <aside class="notes">
+              <p>바이그램을 끄면 “305호”는 BM25로 아예 못 찾는다(x03). 반대로 “HNSW 인덱스의 단점은?”(q09)은 바이그램 때문에 4위로 밀리고, 끄면 1위다. C3에서 학생이 직접 확인한다.</p>
+              <p>“MRR”로 검색하면 BM25 결과가 0개다. core 토크나이저가 영문+한글이 붙은 어절을 나누지 않기 때문이다. 토론 D-3의 재료.</p>
+            </aside>
+          </section>
+
+          <!-- 7 -->
+          <section class="slide" data-title="RRF">
+            <h2>점수가 아니라 순위를 더한다: RRF</h2>
+            <p>BM25 36.8 ~ 3.1 &nbsp;vs&nbsp; 코사인 0.90 ~ 0.81 → 그대로 더하면 BM25 독식</p>
+            <pre><code>RRF(d) = Σ 1 / (k + rᵢ(d))        k = 60
+
+RAG란 #0 : BM25 7위 · 벡터 1위 → 1/67 + 1/61 = 0.0313
+임베딩 #2 : BM25 1위 · 벡터 7위 → 1/61 + 1/67 = 0.0313</code></pre>
+            <p class="muted">순위만 쓰니 교정이 필요 없다. 대신 동점이 흔하다</p>
+            <aside class="notes">
+              <p><strong>발문:</strong> “점수 스케일이 다른 두 시험(100점 만점, 5점 만점)을 합쳐 1등을 뽑으려면?” → 석차를 쓰자는 답을 끌어낸다. 그게 RRF다.</p>
+              <p>위의 동점은 실제 위젯 첫 화면(① 바꿔 말하기)에서 그대로 보인다. 동점일 때 core <code>rrf</code>는 먼저 넣은 목록(BM25)의 항목을 앞에 둔다(안정 정렬).</p>
+            </aside>
+          </section>
+
+          <!-- 8 -->
+          <section class="slide" data-title="k와 가중 융합">
+            <h2>k의 의미, 그리고 가중 융합</h2>
+            <div class="cols">
+              <div>
+                <h3>RRF의 k</h3>
+                <p>A: BM25 1위만 · D: 양쪽 4위</p>
+                <pre><code>k=1  : A 0.500 &gt; D 0.400
+k=60 : D 0.031 &gt; A 0.016</code></pre>
+                <p class="muted">k가 크면 “양쪽에 다 있는” 청크가 이긴다</p>
+              </div>
+              <div>
+                <h3>가중합</h3>
+                <pre><code>α·norm(cos) + (1−α)·norm(BM25)</code></pre>
+                <p>점수 차이 정보를 살린다</p>
+                <p class="muted">min-max는 꼴찌를 0으로 만든다 · α는 측정으로 고른다</p>
+              </div>
+            </div>
+            <aside class="notes">
+              <p>왼쪽 예시는 C1의 목록 그대로다(bm25 = A B C D, vector = C E F D). k=1이면 A가 D보다 위, k=60이면 뒤집힌다.</p>
+              <p>C4 결과를 미리 살짝 흘린다: 이 문서셋 22문항에서는 가중합(α=0.5)이 hit@3 0.95로 RRF(0.86)보다 높았다. “RRF가 항상 정답은 아니다, 측정해서 고른다.”</p>
+            </aside>
+          </section>
+
+          <!-- 9 -->
+          <section class="slide" data-title="리랭킹">
+            <h2>리랭킹: 비싼 모델은 후보에게만</h2>
+            <table>
+              <thead><tr><th></th><th>바이 인코더</th><th>크로스 인코더</th></tr></thead>
+              <tbody>
+                <tr><td>입력</td><td>질문, 청크 따로</td><td>질문 + 청크 한꺼번에</td></tr>
+                <tr><td>미리 계산</td><td>청크 벡터 O</td><td>X (질문마다)</td></tr>
+                <tr><td>비용</td><td>임베딩 1번 + 내적</td><td>후보 수 × 추론</td></tr>
+                <tr><td>정확도</td><td>보통</td><td>높음</td></tr>
+              </tbody>
+            </table>
+            <p class="muted">하이브리드 상위 20~100개 → 크로스 인코더 → 상위 3~5개를 LLM에</p>
+            <aside class="notes">
+              <p>리랭커는 후보에 없는 청크를 되살리지 못한다. 그래서 1차 검색의 재현율(recall)이 먼저다.</p>
+              <p>브라우저에서 돌릴 만한 크로스 인코더가 없어 위젯의 리랭커는 장난감이다: 0.5 × 키워드 커버리지 + 0.5 × “문서 제목: 청크” 임베딩과의 코사인(후보 안에서 min-max). 4주차 C5(제목 붙이기)와 연결된다. 실제 제품 예: bge-reranker 계열, Cohere Rerank.</p>
+            </aside>
+          </section>
+
+          <!-- 10 -->
+          <section class="slide slide--demo" data-title="데모: BM25 vs 벡터 vs 하이브리드">
+            <h2>데모 · BM25 vs 벡터 vs 하이브리드</h2>
+            <div id="deck-w08-widget"></div>
+            <aside class="notes">
+              <p><strong>시연 순서</strong> (결과는 오른쪽 실행 결과 창에 실시간으로 나온다)</p>
+              <ol>
+                <li>첫 화면 ① 바꿔 말하기: 모델 로딩 중에도 BM25 열이 먼저 뜬다. 근거 7위, 빨간 판정</li>
+                <li>모델 준비 후: 벡터 1위(✓), 하이브리드 1~2위. 0.0313 동점 줄을 가리킨다</li>
+                <li>② 2l4: 벡터 1위가 FAQ 푸터(NEW). 하이브리드에서 장학금 #2가 1위로 올라온다</li>
+                <li>③ 양쪽 모두 중간: BM25 3위 · 벡터 2~4위 → 하이브리드 1위</li>
+                <li>④ 표 깨짐: k, α를 끝까지 움직여도 3위 안에 못 든다 → 3주차 파싱 문제</li>
+                <li>융합 방식을 가중합으로 바꾸고 α를 0과 1로 → BM25 열, 벡터 열과 같아짐을 보인다</li>
+              </ol>
+            </aside>
+          </section>
+
+          <!-- 11 -->
+          <section class="slide" data-title="관찰 질문">
+            <h2>관찰 질문</h2>
+            <ol>
+              <li>BM25 1위 청크는 질문의 어떤 조각 때문에 뽑혔나?</li>
+              <li>0.0313 동점을 1/(60+r)로 설명한다</li>
+              <li>2l4의 벡터 1위는? 짧은 청크가 자꾸 뜨는 이유는?</li>
+              <li>표 깨짐 문서는 어떤 설정으로도 살릴 수 있나?</li>
+              <li>x10에서 RRF와 가중합, 어느 쪽이 나은가?</li>
+              <li>리랭커가 좋아지게/나빠지게 만든 질문 하나씩</li>
+            </ol>
+            <aside class="notes">
+              <p>1~4는 짝 활동 15분, 5~6은 휴식 후 전체 토론.</p>
+              <p>1번 기대 답: “모델이 없는 사실을 지어내는 현상”의 BM25 1위는 임베딩 #2다. “모델”과 바이그램 “델이”가 일치한다(상세 보기의 노란 표시). 뜻과는 무관한 일치다.</p>
+              <p>3번: FAQ 푸터(broken-mixed#2)는 짧고 일반적인 문장이라 많은 질문 벡터와 두루 가깝다(허브 현상). 이런 청크는 색인 전에 걸러야 한다 → 3주차 정제.</p>
+              <p>5번: x10은 BM25 결과가 모두 엉뚱한 청크라 RRF에서 그 청크들이 점수를 나눠 가진다(RRF 6위). 가중합은 BM25 점수가 전반적으로 낮은 정보를 반영해 3위.</p>
+            </aside>
+          </section>
+
+          <!-- 12 -->
+          <section class="slide" data-title="코드로 확인: RRF">
+            <h2>코드로 확인하기</h2>
+            <pre data-run="deck-rrf" data-title="2l4를 RRF로 합치기"><code class="language-javascript">import { chunk } from '/assets/js/core/chunker.js';
+import { BM25 } from '/assets/js/core/bm25.js';
+import { rrf } from '/assets/js/core/rerank.js';
+const corpus = await (await fetch('/assets/data/corpus/corpus.json')).json();
+const data = await (await fetch('/assets/data/w08/hybrid.json')).json();
+const chunks = corpus.documents.flatMap((d) =&gt;
+  chunk(d.text, data.chunking).map((c) =&gt; ({ id: `${d.id}#${c.index}`, text: c.text.trim() })));
+const bm25 = new BM25().add(chunks);
+
+const q = data.extra.find((x) =&gt; x.id === 'x01');   // "2l4"
+const b = bm25.search(q.question, 10);
+const v = data.vector[q.id];                         // e5-small로 미리 계산
+console.log('BM25 :', b.map((r) =&gt; r.id).join(', '));
+console.log('벡터 :', v.slice(0, 5).map((r) =&gt; r.id).join(', '));
+console.table(rrf([b, v], { k: 60, topK: 5 }).map((r) =&gt; ({
+  id: r.id, rrf: r.score.toFixed(4), bm25: r.ranks[0] ?? '-', vector: r.ranks[1] ?? '-' })));</code></pre>
+            <aside class="notes">
+              <p>▶ 실행 결과: BM25는 broken-scan#2 하나만 찾고, 벡터 상위는 broken-mixed#2, broken-table#0, broken-table#1, broken-scan#2 순이다. RRF 1위는 broken-scan#2 (0.0320 = 1/61 + 1/64), 2위 broken-mixed#2 (0.0164).</p>
+              <p><code>x01</code>을 <code>x05</code>로 바꿔 다시 실행해 보인다. 벡터 결과는 모델 없이 미리 계산한 값이라 워커 안에서도 바로 돈다.</p>
+            </aside>
+          </section>
+
+          <!-- 13 -->
+          <section class="slide" data-title="Challenge 안내">
+            <h2>Challenge</h2>
+            <table>
+              <tbody>
+                <tr><td>C1 ★</td><td>RRF 직접 구현 · core와 비교 · k=1 vs 60</td></tr>
+                <tr><td>C2 ★★</td><td>min-max 가중 융합 · α 바꿔 보기</td></tr>
+                <tr><td>C3 ★★</td><td>바이그램 유무가 BM25에 주는 효과</td></tr>
+                <tr><td>C4 ★★★</td><td>22문항 hit@3: BM25 · 벡터 · RRF · 가중합</td></tr>
+                <tr><td>C5 ★★★★</td><td>키워드 커버리지 장난감 리랭커 (과제)</td></tr>
+              </tbody>
+            </table>
+            <p class="muted">학생용 페이지의 코드 상자에서 바로 ▶ 실행한다</p>
+            <aside class="notes">
+              <p>C1~C3은 수업 중 모두 끝낸다. C4 결과 표를 캡처해 제출하게 한다. C5는 과제로 내고 다음 주 첫 10분에 결과를 공유한다. 정답은 부록 B.</p>
+            </aside>
+          </section>
+
+          <!-- 14 -->
+          <section class="slide" data-title="정리 & 다음 주">
+            <h2>정리</h2>
+            <ul>
+              <li>BM25는 글자, 벡터는 뜻 — <strong>사각지대가 다르다</strong></li>
+              <li>점수 스케일이 달라 RRF(순위, k=60) 또는 min-max + α</li>
+              <li>크로스 인코더 리랭커는 정확하지만 후보에게만 쓴다</li>
+              <li>망가진 근거는 어떤 융합으로도 못 살린다</li>
+            </ul>
+            <h3>다음 주 · 평가 데이터셋 &amp; 측정</h3>
+            <p class="muted">오늘의 hit@3을 Recall@k · MRR · nDCG 점수판으로 확장하고, 설정을 바꿀 때마다 같은 골든셋으로 다시 잰다</p>
+            <aside class="notes">
+              <p>C4에서 “골든셋 12문항만 보면 벡터 = RRF = 가중합(0.92)인데, extra를 넣으면 차이가 난다”는 점을 다시 강조한다. 평가 데이터가 무엇을 담느냐가 결론을 바꾼다 → 9주차 주제.</p>
+            </aside>
+          </section>
+
+          <!-- Appendix -->
+          <section class="slide" data-title="부록 A · 강의안" data-appendix>
+            <h2>부록 A · 강의안</h2>
+            <table>
+              <thead><tr><th>시간</th><th>활동</th><th>산출물</th></tr></thead>
+              <tbody>
+                <tr><td>15분</td><td>도입 · 7주차 복습 · 2l4 실패</td><td>—</td></tr>
+                <tr><td>40분</td><td>개념: BM25 · 바이그램 · RRF · 가중합</td><td>BM25 손계산 1문제</td></tr>
+                <tr><td>35분</td><td>위젯 실습 · 관찰 질문 1~4</td><td>짝 활동 메모</td></tr>
+                <tr><td>10분</td><td>휴식</td><td>—</td></tr>
+                <tr><td>20분</td><td>관찰 5~6 · 리랭킹</td><td>—</td></tr>
+                <tr><td>50분</td><td>Challenge C1~C4</td><td>C4 결과 표</td></tr>
+                <tr><td>10분</td><td>정리 · 예고</td><td>—</td></tr>
+              </tbody>
+            </table>
+          </section>
+
+          <section class="slide" data-title="부록 B · C1 정답" data-appendix>
+            <h2>부록 B · C1 정답</h2>
+            <pre data-run="ans-c1" data-title="C1 정답"><code class="language-javascript">import { rrf } from '/assets/js/core/rerank.js';
+
+const bm25 = ['A', 'B', 'C', 'D'];
+const vector = ['C', 'E', 'F', 'D'];
+
+function myRrf(lists, k = 60) {
+  const scores = new Map();
+  for (const list of lists) {
+    list.forEach((id, i) =&gt; scores.set(id, (scores.get(id) ?? 0) + 1 / (k + i + 1)));
+  }
+  return [...scores].map(([id, score]) =&gt; ({ id, score })).sort((a, b) =&gt; b.score - a.score);
+}
+
+const mine = myRrf([bm25, vector]);
+const core = rrf([bm25, vector].map((l) =&gt; l.map((id) =&gt; ({ id }))), { k: 60 });
+console.table(mine.map((m, i) =&gt; ({
+  id: m.id, mine: m.score.toFixed(5), core: core[i].score.toFixed(5),
+  same: m.id === core[i].id &amp;&amp; Math.abs(m.score - core[i].score) &lt; 1e-12,
+})));
+for (const k of [1, 60]) console.log(`k=${k}:`, myRrf([bm25, vector], k).map((r) =&gt; `${r.id}(${r.score.toFixed(3)})`).join(' '));</code></pre>
+            <aside class="notes">
+              <p><strong>기대 출력:</strong> C 0.03227 · D 0.03125 · A 0.01639 · B 0.01613 · E 0.01613 · F 0.01587, core와 모두 same = true. k=1: C 0.750, A 0.500, D 0.400 / k=60: C, D, A 순.</p>
+              <p><strong>왜:</strong> 순위는 1부터 센다(<code>i + 1</code>). 0부터 세면 k=60에서는 차이가 작아 눈치채기 어렵지만 k=1에서 1위가 1/1이 되어 크게 틀린다. k가 작으면 한 목록의 1위가 독주하고, k가 크면 두 목록에 모두 나온 D가 A를 이긴다.</p>
+            </aside>
+          </section>
+
+          <section class="slide" data-title="부록 B · C2 정답" data-appendix>
+            <h2>부록 B · C2 정답</h2>
+            <pre data-run="ans-c2" data-title="C2 정답"><code class="language-javascript">import { weightedFusion } from '/assets/js/core/rerank.js';
+
+const bm25 = [{ id: 'A', score: 12.4 }, { id: 'B', score: 7.9 }, { id: 'C', score: 2.1 }];
+const vector = [{ id: 'C', score: 0.871 }, { id: 'D', score: 0.866 }, { id: 'A', score: 0.812 }];
+
+// 1) raw sum: BM25 scores are ~10x larger, so they decide everything
+const raw = new Map();
+for (const r of [...bm25, ...vector]) raw.set(r.id, (raw.get(r.id) ?? 0) + r.score);
+console.log('단순합:', [...raw].sort((a, b) =&gt; b[1] - a[1]).map(([id, s]) =&gt; `${id}(${s.toFixed(3)})`).join(' '));
+
+// 2) min-max
+function minMax(list) {
+  const xs = list.map((r) =&gt; r.score);
+  const lo = Math.min(...xs), hi = Math.max(...xs);
+  return list.map((r) =&gt; ({ id: r.id, score: hi === lo ? 1 : (r.score - lo) / (hi - lo) }));
+}
+
+// 3) weighted fusion; a missing item contributes 0 from that list
+function fuse(vec, kw, alpha) {
+  const out = new Map();
+  for (const r of minMax(vec)) out.set(r.id, alpha * r.score);
+  for (const r of minMax(kw)) out.set(r.id, (out.get(r.id) ?? 0) + (1 - alpha) * r.score);
+  return [...out].map(([id, score]) =&gt; ({ id, score })).sort((a, b) =&gt; b.score - a.score);
+}
+
+// 4) alpha sweep vs core
+const rows = [0, 0.3, 0.5, 0.7, 1].map((alpha) =&gt; {
+  const mine = fuse(vector, bm25, alpha);
+  const core = weightedFusion(vector, bm25, { alpha });
+  return {
+    alpha,
+    mine: mine.map((r) =&gt; `${r.id}:${r.score.toFixed(2)}`).join(' '),
+    core: core.map((r) =&gt; `${r.id}:${r.score.toFixed(2)}`).join(' '),
+    same: mine.every((r, i) =&gt; r.id === core[i].id &amp;&amp; Math.abs(r.score - core[i].score) &lt; 1e-9),
+  };
+});
+console.table(rows);</code></pre>
+            <aside class="notes">
+              <p><strong>기대 출력:</strong> 단순합 A(13.212) B(7.900) C(2.971) D(0.866) — 벡터 1위 C가 3위, D는 꼴찌. α=0: A 1.00, B 0.56 / α=0.3: A 0.70 / α=0.5: C 0.50 = A 0.50 동점 / α=0.7: C 0.70, D 0.64 / α=1: C, D. 모든 α에서 core와 same = true.</p>
+              <p><strong>왜:</strong> A의 코사인 0.812는 벡터 목록의 꼴찌라서 min-max 뒤 0이 된다. 정규화는 목록 안에서의 상대 위치만 남긴다. 결과가 한 개뿐인 목록은 그 하나가 1이 되므로(“2l4”의 BM25) 과대평가될 수 있다는 점도 짚는다.</p>
+            </aside>
+          </section>
+
+          <section class="slide" data-title="부록 B · C3 정답" data-appendix>
+            <h2>부록 B · C3 정답</h2>
+            <pre data-run="ans-c3" data-title="C3 정답"><code class="language-javascript">import { chunk } from '/assets/js/core/chunker.js';
+import { BM25, tokenize } from '/assets/js/core/bm25.js';
+import { hitAtK, reciprocalRank } from '/assets/js/core/metrics.js';
+const corpus = await (await fetch('/assets/data/corpus/corpus.json')).json();
+const golden = await (await fetch('/assets/data/golden/golden.json')).json();
+const data = await (await fetch('/assets/data/w08/hybrid.json')).json();
+const chunks = corpus.documents.flatMap((d) =&gt;
+  chunk(d.text, data.chunking).map((c) =&gt; ({ id: `${d.id}#${c.index}`, doc: d.id, text: c.text.trim() })));
+const relevant = (it) =&gt;
+  chunks.filter((c) =&gt; it.evidence.some((e) =&gt; e.doc === c.doc &amp;&amp; c.text.includes(e.quote))).map((c) =&gt; c.id);
+
+const withBi = new BM25().add(chunks);
+const noBi = new BM25({ tokenizer: (t) =&gt; tokenize(t, { bigrams: false }) }).add(chunks);
+const ids = (index, it) =&gt; index.search(it.question, 10).map((r) =&gt; r.id);
+
+function score(index, items, k = 3) {
+  let hit = 0, mrr = 0;
+  for (const it of items) {
+    hit += hitAtK(ids(index, it), relevant(it), k);
+    mrr += reciprocalRank(ids(index, it), relevant(it));
+  }
+  return { hit: `${hit}/${items.length}`, mrr: +(mrr / items.length).toFixed(3) };
+}
+console.table([['golden', golden.items], ['extra', data.extra]].map(([name, items]) =&gt; {
+  const [a, b] = [score(withBi, items), score(noBi, items)];
+  return { set: name, bigram_hit3: a.hit, bigram_mrr: a.mrr, plain_hit3: b.hit, plain_mrr: b.mrr };
+}));
+
+const rank = (index, it) =&gt; ids(index, it).findIndex((id) =&gt; relevant(it).includes(id)) + 1 || '-';
+console.table([...golden.items, ...data.extra]
+  .map((it) =&gt; ({ id: it.id, q: it.question, bigram: rank(withBi, it), plain: rank(noBi, it) }))
+  .filter((r) =&gt; r.bigram !== r.plain));</code></pre>
+            <aside class="notes">
+              <p><strong>기대 출력:</strong> 골든셋 바이그램 hit@3 10/12 · MRR 0.854, 공백만 11/12 · 0.875. extra 바이그램 5/10 · 0.418, 공백만 3/10 · 0.300.</p>
+              <p>순위가 바뀐 질문: q04 1→2, q09 4→1, x03 1→없음, x05 7→없음, x06 5→1, x07 3→없음, x08 2→없음 (바이그램→공백만).</p>
+              <p><strong>해석:</strong> 골든셋은 문서 문장을 거의 그대로 옮긴 질문이라 공백 토큰만으로도 잘 맞는다. 바이그램은 조사가 붙은 어절(305호와, 출석률)을 살리지만, 조각이 엉뚱한 청크에도 걸려 순위를 흐린다: “등록금”의 “등록”이 실습실 규정의 “등록해야”에 걸리고(x06), “인덱스의”의 “인덱·덱스”가 Flat 인덱스 청크에 걸린다(q09). “골든셋만 보면 바이그램이 손해”라는 결론이 평가 데이터 편향에서 나온다는 점이 핵심이다.</p>
+            </aside>
+          </section>
+
+          <section class="slide" data-title="부록 B · C4 정답" data-appendix>
+            <h2>부록 B · C4 정답</h2>
+            <pre data-run="ans-c4" data-title="C4 정답"><code class="language-javascript">import { chunk } from '/assets/js/core/chunker.js';
+import { BM25 } from '/assets/js/core/bm25.js';
+import { rrf, weightedFusion } from '/assets/js/core/rerank.js';
+import { hitAtK } from '/assets/js/core/metrics.js';
+const corpus = await (await fetch('/assets/data/corpus/corpus.json')).json();
+const golden = await (await fetch('/assets/data/golden/golden.json')).json();
+const data = await (await fetch('/assets/data/w08/hybrid.json')).json();
+const chunks = corpus.documents.flatMap((d) =&gt;
+  chunk(d.text, data.chunking).map((c) =&gt; ({ id: `${d.id}#${c.index}`, doc: d.id, text: c.text.trim() })));
+const relevant = (it) =&gt;
+  chunks.filter((c) =&gt; it.evidence.some((e) =&gt; e.doc === c.doc &amp;&amp; c.text.includes(e.quote))).map((c) =&gt; c.id);
+const bm25 = new BM25().add(chunks);
+
+const methods = {
+  bm25: (it) =&gt; bm25.search(it.question, 10),
+  vector: (it) =&gt; data.vector[it.id],
+  rrf: (it) =&gt; rrf([bm25.search(it.question, 10), data.vector[it.id]], { k: 60, topK: 10 }),
+  weighted: (it) =&gt; weightedFusion(data.vector[it.id], bm25.search(it.question, 10), { alpha: 0.5 }),
+};
+const groups = {
+  golden: golden.items,
+  exact: data.extra.filter((x) =&gt; x.kind === 'exact'),
+  paraphrase: data.extra.filter((x) =&gt; x.kind === 'paraphrase'),
+};
+groups.all = [...groups.golden, ...groups.exact, ...groups.paraphrase];
+
+console.table(Object.entries(groups).map(([name, items]) =&gt; ({
+  set: `${name} (${items.length})`,
+  ...Object.fromEntries(Object.entries(methods).map(([m, run]) =&gt; [m,
+    +(items.reduce((s, it) =&gt; s + hitAtK(run(it).map((r) =&gt; r.id), relevant(it), 3), 0) / items.length).toFixed(2)])),
+})));
+const rk = (list, it) =&gt; list.findIndex((r) =&gt; relevant(it).includes(r.id)) + 1 || '-';
+console.table(data.extra.map((it) =&gt; ({ id: it.id, q: it.question,
+  ...Object.fromEntries(Object.entries(methods).map(([m, run]) =&gt; [m, rk(run(it), it)])) })));</code></pre>
+            <aside class="notes">
+              <p><strong>기대 출력 (hit@3):</strong> golden(12) BM25 0.83 · 벡터 0.92 · RRF 0.92 · 가중 0.92 / exact(4) 0.75 · 0.50 · 1.00 · 1.00 / paraphrase(6) 0.33 · 1.00 · 0.67 · 1.00 / 전체(22) 0.68 · 0.86 · 0.86 · 0.95.</p>
+              <p>extra 근거 순위: x01 2l4 1·4·1·1, x05 7·1·2·2, x09 없음·2·4·3, x10 없음·2·6·3 (BM25·벡터·RRF·가중).</p>
+              <p><strong>해석:</strong> 골든셋만 보면 벡터 하나로 충분해 보인다. exact를 넣으면 벡터가 무너지고, 두 융합 모두 1.0으로 복구한다. RRF는 x09·x10처럼 BM25가 엉뚱한 청크만 내놓을 때 그 청크들에게 점수를 나눠 줘 손해를 본다. 가중합은 BM25 점수가 낮다는 정보를 살려 버틴다. 22문항은 작다 — 한 문항이 0.05다.</p>
+            </aside>
+          </section>
+
+          <section class="slide" data-title="부록 B · C5 정답" data-appendix>
+            <h2>부록 B · C5 정답</h2>
+            <pre data-run="ans-c5" data-title="C5 정답"><code class="language-javascript">import { chunk } from '/assets/js/core/chunker.js';
+import { BM25, tokenize } from '/assets/js/core/bm25.js';
+import { rrf, rerank } from '/assets/js/core/rerank.js';
+import { reciprocalRank } from '/assets/js/core/metrics.js';
+const corpus = await (await fetch('/assets/data/corpus/corpus.json')).json();
+const golden = await (await fetch('/assets/data/golden/golden.json')).json();
+const data = await (await fetch('/assets/data/w08/hybrid.json')).json();
+const chunks = corpus.documents.flatMap((d) =&gt;
+  chunk(d.text, data.chunking).map((c) =&gt; ({ id: `${d.id}#${c.index}`, doc: d.id, text: c.text.trim() })));
+const byId = new Map(chunks.map((c) =&gt; [c.id, c]));
+const relevant = (it) =&gt;
+  chunks.filter((c) =&gt; it.evidence.some((e) =&gt; e.doc === c.doc &amp;&amp; c.text.includes(e.quote))).map((c) =&gt; c.id);
+const bm25 = new BM25().add(chunks);
+
+function coverage(query, text) {
+  const q = [...new Set(tokenize(query))];
+  const t = new Set(tokenize(text));
+  return q.length ? q.filter((x) =&gt; t.has(x)).length / q.length : 0;
+}
+const cov = (q, c) =&gt; coverage(q, byId.get(c.id).text);
+
+const items = [...golden.items, ...data.extra];
+const sum = { before: 0, coverOnly: 0, mixed: 0 };
+const changed = [];
+for (const it of items) {
+  const cands = rrf([bm25.search(it.question, 10), data.vector[it.id]], { k: 60, topK: 10 })
+    .map((c, i) =&gt; ({ ...c, prior: 1 - i / 10 }));
+  const lists = {
+    before: cands,
+    coverOnly: await rerank(it.question, cands, cov, { topK: 10 }),
+    mixed: await rerank(it.question, cands, (q, c) =&gt; 0.5 * cov(q, c) + 0.5 * c.prior, { topK: 10 }),
+  };
+  const rr = Object.fromEntries(Object.entries(lists).map(([k, l]) =&gt; [k, reciprocalRank(l.map((r) =&gt; r.id), relevant(it))]));
+  for (const k in sum) sum[k] += rr[k];
+  if (rr.coverOnly !== rr.before || rr.mixed !== rr.before) changed.push({ id: it.id, ...rr });
+}
+console.table(changed.map((r) =&gt; ({ ...r, before: 1 / r.before, coverOnly: 1 / r.coverOnly, mixed: 1 / r.mixed })));
+console.log('MRR', Object.fromEntries(Object.entries(sum).map(([k, v]) =&gt; [k, +(v / items.length).toFixed(3)])));</code></pre>
+            <aside class="notes">
+              <p><strong>기대 출력:</strong> MRR 리랭킹 전 0.796 → 커버리지만 0.726 → 커버리지 50% + 순위 50% 0.789. 바뀐 질문: q09 2→3→3, x05 2→3→2, x06 2→3→2, x07 1→2→1, x08 1→2→1, x10 6→8→6 (전→커버리지만→혼합).</p>
+              <p><strong>핵심:</strong> 키워드 커버리지는 BM25와 같은 정보를 더 거칠게 본 것이라 1차 검색보다 약하다. 약한 리랭커는 순위를 망친다. 리랭커는 1차 검색이 못 보는 것을 보는, 더 강한 모델(크로스 인코더)이어야 의미가 있다. 좋아진 질문이 하나도 없다는 결과를 숨기지 말고 토론 재료로 쓴다.</p>
+            </aside>
+          </section>
+
+          <section class="slide" data-title="부록 C · 자주 막히는 지점" data-appendix>
+            <h2>부록 C · 학생이 자주 막히는 지점</h2>
+            <table>
+              <thead><tr><th>증상</th><th>원인</th><th>대응</th></tr></thead>
+              <tbody>
+                <tr><td>벡터 열이 계속 “준비 중”</td><td>모델 다운로드 차단 · 느린 네트워크</td><td>BM25 열로 먼저 진행, 5주차 캐시 확인</td></tr>
+                <tr><td>C1 점수가 core와 다름</td><td>순위를 0부터 셈</td><td><code>1/(k + i + 1)</code></td></tr>
+                <tr><td>C2에서 NaN</td><td>max = min일 때 0으로 나눔</td><td>그 경우 1로 둔다</td></tr>
+                <tr><td>C4 hit이 전부 0</td><td>결과 객체를 id로 안 바꿈</td><td><code>.map((r) =&gt; r.id)</code></td></tr>
+                <tr><td>“MRR”이 BM25에서 0건</td><td>토크나이저가 “MRR은”을 안 쪼갬</td><td>버그 아님 — 한계로 토론</td></tr>
+                <tr><td>브라우저와 순위가 조금 다름</td><td>WebGPU(fp32)와 사전 계산(q8) 차이</td><td>순위 한 칸 차이는 정상</td></tr>
+              </tbody>
+            </table>
+          </section>
+
+          <section class="slide" data-title="부록 D · 토론 주제" data-appendix>
+            <h2>부록 D · 토론 주제</h2>
+            <ol>
+              <li>RRF가 가중합보다 나쁜 질문(x09, x10)이 있는데도 RRF가 기본값으로 널리 쓰이는 이유는?</li>
+              <li>FAQ 푸터처럼 여러 질문에서 벡터 상위로 떠오르는 청크는 검색 단계에서 막아야 하나, 색인 전에 지워야 하나?</li>
+              <li>“MRR은” 문제를 고치려면 토크나이저를 어떻게 바꾸겠는가? 그 변경이 한글 검색에는 어떤 영향을 줄까?</li>
+              <li>크로스 인코더를 붙이면 질문당 비용이 얼마나 늘까? 후보를 20개와 100개로 할 때를 비교한다.</li>
+            </ol>
+          </section>
+
+          <section class="slide" data-title="부록 E · 평가 루브릭" data-appendix>
+            <h2>부록 E · 평가 루브릭</h2>
+            <table>
+              <thead><tr><th>항목</th><th>우수 (3)</th><th>보통 (2)</th><th>미흡 (1)</th></tr></thead>
+              <tbody>
+                <tr><td>구현 (C1·C2)</td><td>core와 일치, 경계 조건(0 나눗셈) 처리</td><td>동작하나 경계 조건 누락</td><td>동작하지 않음</td></tr>
+                <tr><td>측정 (C3·C4)</td><td>표 + 그룹별 차이를 원인과 연결</td><td>표만 제시</td><td>일부 방법만</td></tr>
+                <tr><td>비판적 해석 (C5)</td><td>리랭커가 나빠진 이유를 설명</td><td>수치만 보고</td><td>미제출</td></tr>
+                <tr><td>관찰·토론</td><td>실패를 검색기 유형 · 파싱 문제로 구분</td><td>현상만 서술</td><td>참여 없음</td></tr>
+              </tbody>
+            </table>
+          </section>
+
+        </div>
+          </div>
+        </div>
+        <section class="notes-pane" aria-label="교사 노트">
+          <button type="button" class="notes-head"><span>🧑‍🏫 교사 노트</span><span class="spacer"></span><span class="notes-next"></span><span class="notes-toggle">▾ 접기</span></button>
+          <div class="notes-body"></div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <script type="module">
+    import { initDeck } from '../../assets/js/site/slides.js';
+    import { initRunners } from '../../assets/js/site/runner.js';
+    import { mount } from '../../assets/js/widgets/w08-hybrid.js';
+    initRunners(document.querySelector('.deck-stage'));
+    initDeck();
+    mount(document.getElementById('deck-w08-widget'), { outputTitle: 'BM25 vs 벡터 vs 하이브리드 (데모 슬라이드)' });
+  </script>
+</body>
+</html>

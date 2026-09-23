@@ -1,0 +1,320 @@
+/* w11 인용 하이라이트 데모 — chat-style Q&A + sources panel. Tokens only. */
+
+.w11-chat {
+  display: grid;
+  gap: var(--space-2);
+  margin: var(--space-2) 0 var(--space-3);
+}
+
+.w11-msg {
+  max-width: 100%;
+  padding: 10px 14px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  line-height: 1.9;
+  overflow-wrap: anywhere;
+}
+
+.w11-msg--user {
+  justify-self: end;
+  max-width: min(100%, 520px);
+  border-color: transparent;
+  border-bottom-right-radius: var(--radius-sm);
+  background: var(--color-accent-soft);
+  font-weight: var(--weight-medium);
+}
+
+.w11-msg--bot {
+  justify-self: start;
+  width: 100%;
+  border-bottom-left-radius: var(--radius-sm);
+  background: var(--color-bg);
+}
+
+.w11-msg__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  margin-bottom: var(--space-1);
+}
+
+.w11-msg__meta:empty {
+  display: none;
+}
+
+.w11-answer {
+  white-space: pre-wrap;
+}
+
+.w11-answer.is-streaming::after {
+  content: "▍";
+  margin-left: 1px;
+  color: var(--color-accent);
+  animation: w11-blink 0.9s steps(1) infinite;
+}
+
+@keyframes w11-blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+/* Sentence status */
+.w11-sent {
+  padding: 1px 0;
+  border-radius: 3px;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+
+.w11-sent--fail {
+  background: var(--color-danger-soft);
+  text-decoration: underline wavy var(--color-danger);
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 4px;
+}
+
+.w11-sent--warn {
+  background: var(--color-warning-soft);
+  text-decoration: underline dotted var(--color-warning);
+  text-underline-offset: 4px;
+}
+
+.w11-sent--refusal {
+  color: var(--color-text-muted);
+  font-style: italic;
+}
+
+.w11-sent.is-active {
+  box-shadow: 0 0 0 2px var(--color-accent2);
+}
+
+.w11-flag {
+  display: inline-block;
+  margin-left: 4px;
+  padding: 0 7px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: var(--weight-bold);
+  line-height: 1.6;
+  text-decoration: none;
+  vertical-align: 1px;
+  white-space: nowrap;
+}
+
+.w11-flag--invalid,
+.w11-flag--uncited,
+.w11-flag--unsupported {
+  background: var(--color-danger);
+  color: var(--color-pane);
+}
+
+.w11-flag--weak {
+  background: var(--color-warning-soft);
+  color: var(--color-warning);
+  border: 1px solid var(--color-warning);
+}
+
+/* Citation buttons */
+.w11-cite {
+  display: inline-flex;
+  align-items: center;
+  min-width: 28px;
+  min-height: 24px;
+  margin: 0 1px;
+  padding: 0 5px;
+  border: 1px solid var(--color-accent);
+  border-radius: 6px;
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+  cursor: pointer;
+  font: 700 12px var(--font-mono);
+  line-height: 1.4;
+  vertical-align: 1px;
+}
+
+.w11-cite:hover,
+.w11-cite.is-active,
+.w11-cite[aria-pressed="true"] {
+  background: var(--color-accent);
+  color: var(--color-accent-contrast);
+}
+
+.w11-cite.is-bad {
+  border-color: var(--color-danger);
+  background: var(--color-danger-soft);
+  color: var(--color-danger);
+  text-decoration: line-through;
+}
+
+.w11-cite.is-bad.is-active,
+.w11-cite.is-bad[aria-pressed="true"] {
+  background: var(--color-danger);
+  color: var(--color-pane);
+}
+
+.w11-feedback {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+  padding-top: var(--space-2);
+  border-top: 1px dashed var(--color-border);
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
+}
+
+.w11-feedback .btn[aria-pressed="true"] {
+  border-color: var(--color-accent);
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+}
+
+.w11-fbnote {
+  flex-basis: 100%;
+}
+
+.w11-fbnote:empty {
+  display: none;
+}
+
+/* Question form */
+.w11-ask {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--space-2);
+}
+
+.w11-ask .field {
+  flex: 1 1 220px;
+}
+
+.w11-mode {
+  color: var(--color-text-muted);
+  font-weight: var(--weight-regular);
+}
+
+.w11-llm {
+  margin-top: var(--space-3);
+}
+
+.w11-check {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+.w11-keynote {
+  margin: var(--space-2) 0 0;
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+/* Output: verdict + sources */
+.w11-out h4 {
+  margin: 12px 0 6px;
+  font-size: var(--text-sm);
+}
+
+.w11-out .callout {
+  margin: 0 0 8px;
+  padding: 8px 12px;
+  font-size: 13px;
+}
+
+.w11-issues {
+  margin: 4px 0 0;
+  padding-left: 18px;
+}
+
+.w11-hint {
+  min-height: 1.6em;
+  margin: 6px 0;
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+.w11-bad {
+  color: var(--color-danger);
+  font-weight: var(--weight-bold);
+}
+
+.w11-note {
+  margin: 4px 0 8px;
+  font-size: var(--text-xs);
+  color: var(--color-warning);
+}
+
+.w11-sources {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.w11-src {
+  margin: 0;
+  padding: 8px 10px;
+  border: 1px solid var(--color-border);
+  border-left: 5px solid var(--color-border-strong);
+  border-radius: 8px;
+  background: var(--color-surface);
+  font-size: 13px;
+  transition: border-color var(--dur-fast);
+}
+
+.w11-src.is-active {
+  border-color: var(--color-accent2);
+  box-shadow: var(--shadow-sm);
+}
+
+.w11-src__head {
+  margin-bottom: 4px;
+}
+
+.w11-src__head b {
+  color: var(--color-accent);
+  font-family: var(--font-mono);
+}
+
+.w11-src__text {
+  margin-top: 4px;
+  line-height: 1.85;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.w11-mark {
+  padding: 1px 0;
+  border-radius: 3px;
+  background: transparent;
+  color: inherit;
+  text-decoration: underline dotted var(--color-accent);
+  text-underline-offset: 3px;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+
+.w11-mark.is-active {
+  background: var(--color-accent2-soft);
+  outline: 2px solid var(--color-accent2);
+  text-decoration: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .w11-answer.is-streaming::after {
+    animation: none;
+  }
+}
+
+/* Long preset labels must wrap at 375px */
+.w11 [data-slot="presets"] .btn {
+  white-space: normal;
+  text-align: left;
+}

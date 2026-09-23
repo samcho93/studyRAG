@@ -1,0 +1,399 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>8주차 하이브리드 검색 + 리랭킹 · RAG Lab</title>
+  <meta name="description" content="하이브리드 검색과 리랭킹: BM25와 벡터 검색이 각각 실패하는 질문을 확인하고, RRF와 가중 융합으로 두 결과를 합친다.">
+  <script>try{var t=JSON.parse(localStorage.getItem('raglab:theme'));if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+  <link rel="stylesheet" crossorigin="anonymous" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&display=swap">
+  <link rel="stylesheet" href="../../assets/css/tokens.css">
+  <link rel="stylesheet" href="../../assets/css/base.css">
+  <link rel="stylesheet" href="../../assets/css/components.css">
+  <link rel="stylesheet" href="../../assets/css/w08.css">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%232450c4'/%3E%3Ccircle cx='14' cy='14' r='6' fill='none' stroke='white' stroke-width='3'/%3E%3Cpath d='M19 19l6 6' stroke='white' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E">
+  <script type="module" src="../../assets/js/site/site.js"></script>
+</head>
+<body>
+  <div class="layout" data-layout data-role="student" data-week="8" data-crumb="PART 3 · RAG 완성과 고도화 › <b>8주차 · 하이브리드 검색 + 리랭킹</b>">
+    <main class="pane center" id="main">
+      <div class="content" tabindex="-1">
+        <article class="doc">
+      <span class="chapter-badge">⚖️ 8주차 · 하이브리드 검색 + 리랭킹</span>
+      <h1>키워드와 의미, 두 검색을 합친다</h1>
+      <p class="lead">벡터 검색은 뜻을 찾고 키워드 검색은 글자를 찾는다. 둘은 서로 다른 질문에서 실패한다. 이번 주는 두 결과를 섞어 양쪽의 사각지대를 함께 메운다.</p>
+      <div class="meta-row">
+        <span class="chip">⏱ 180분</span>
+        <span class="chip accent">▶ 체험: BM25 vs 벡터 vs 하이브리드</span>
+        <span class="chip">🧪 Challenge 5개</span>
+        <span class="chip ok">🔑 LLM API 키 필요 없음</span>
+      </div>
+      <div class="flow" aria-label="RAG 파이프라인에서 이번 주의 위치">
+        <div>문서 파싱</div><div>청킹</div><div>임베딩</div><div>벡터스토어</div><div><b>검색</b></div><div>생성</div><div>평가</div>
+      </div>
+
+      <section id="goals">
+        <h2><span class="section-num">1</span>학습 목표</h2>
+        <div class="goals">
+        <b>이번 주가 끝나면</b>
+        <ul>
+          <li>BM25와 벡터 검색이 각각 실패하는 질문 유형을 실제 예로 설명할 수 있다.</li>
+          <li>RRF와 가중 융합으로 두 검색 결과를 합치고, k와 α가 순위에 주는 영향을 계산할 수 있다.</li>
+          <li>골든셋으로 hit@3을 측정해 BM25 · 벡터 · 하이브리드 검색을 비교하는 코드를 작성할 수 있다.</li>
+        </ul>
+        </div>
+      </section>
+
+      <section id="why">
+        <h2><span class="section-num">2</span>왜 필요한가</h2>
+        <p>7주차의 최소 RAG는 벡터 검색 하나로 근거를 찾았다. 장학금 안내 문서 끝에는 “문의 : 학생지원팀 (내선 2l4)”라는 줄이 있다. 누군가 내선 번호 <code>2l4</code>를 검색창에 그대로 넣으면 어떻게 될까.</p>
+        <div class="callout callout--danger">
+          <span class="callout__title">벡터 검색의 실패: 뜻이 없는 토큰</span>
+          <p>multilingual-e5-small로 37개 청크를 검색하면 <code>2l4</code>가 들어 있는 청크는 <strong>4위</strong>다. 1위는 “Copyright © 한국폴리텍대학…”으로 끝나는 FAQ 페이지의 푸터다. 임베딩 모델에게 <code>2l4</code>는 의미가 없는 글자 조각이라 어느 청크와도 특별히 가깝지 않다.</p>
+        </div>
+        <p>그렇다면 글자를 그대로 맞추는 키워드 검색으로 바꾸면 될까. 이번에는 반대 방향에서 실패한다.</p>
+        <div class="callout callout--danger">
+          <span class="callout__title">키워드 검색의 실패: 같은 뜻, 다른 단어</span>
+          <p>“모델이 없는 사실을 지어내는 현상”을 BM25로 검색하면 정답 청크(“…그럴듯한 거짓을 만들어 낸다. 이를 환각이라 한다”)는 <strong>7위</strong>다. 질문의 “지어내는”, “현상”이 문서에는 한 번도 나오지 않는다. 같은 질문을 벡터 검색은 1위로 찾는다.</p>
+        </div>
+        <p>두 검색기의 사각지대는 겹치지 않는다. 그래서 둘 다 돌리고 결과를 합친다. 이것이 <strong>하이브리드 검색(hybrid search)</strong>이다. 문제는 “어떻게 합치는가”다. BM25 점수는 0에서 40 가까이까지 나오고 코사인 유사도는 대부분 0.8~0.9 사이에 몰려 있어서 그대로 더하면 BM25가 결과를 독차지한다.</p>
+      </section>
+
+      <section id="concept">
+        <h2><span class="section-num">3</span>개념</h2>
+
+        <h3>하이브리드 검색의 흐름</h3>
+        <figure class="figure">
+          <svg viewBox="0 0 640 250" role="img" aria-labelledby="hy-fig-title" style="width: 100%">
+            <title id="hy-fig-title">질문이 BM25와 벡터 검색으로 나뉘어 두 순위 목록을 만들고, RRF로 합친 뒤 리랭커를 거쳐 컨텍스트가 되는 흐름</title>
+            <style>
+              .bx { fill: var(--color-surface-2); stroke: var(--color-border-strong); }
+              .bx-a { fill: var(--color-accent-soft); stroke: var(--color-accent); }
+              .bx-b { fill: var(--color-accent2-soft); stroke: var(--color-accent2); }
+              .t { font: 600 13px var(--font-sans); fill: var(--color-text); }
+              .s { font: 11.5px var(--font-sans); fill: var(--color-text-muted); }
+              .m { font: 11.5px var(--font-mono); fill: var(--color-text); }
+              .ar { stroke: var(--color-text-muted); stroke-width: 1.6; fill: none; marker-end: url(#hy-arrow); }
+              .ok { fill: var(--color-success); font: 700 12px var(--font-sans); }
+            </style>
+            <defs>
+              <marker id="hy-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+                <path d="M0 0L10 5L0 10z" fill="var(--color-text-muted)"/>
+              </marker>
+            </defs>
+            <rect class="bx" x="4" y="100" width="92" height="46" rx="8"/>
+            <text class="t" x="50" y="121" text-anchor="middle">질문</text>
+            <text class="s" x="50" y="137" text-anchor="middle">“2l4”</text>
+
+            <path class="ar" d="M96 115 C 120 115, 120 50, 140 50"/>
+            <path class="ar" d="M96 131 C 120 131, 120 196, 140 196"/>
+
+            <rect class="bx-b" x="140" y="22" width="150" height="58" rx="8"/>
+            <text class="t" x="215" y="44" text-anchor="middle">BM25 (키워드)</text>
+            <text class="s" x="215" y="62" text-anchor="middle">토큰 일치 · TF · IDF</text>
+            <rect class="bx-a" x="140" y="168" width="150" height="58" rx="8"/>
+            <text class="t" x="215" y="190" text-anchor="middle">벡터 (의미)</text>
+            <text class="s" x="215" y="208" text-anchor="middle">임베딩 · 코사인</text>
+
+            <path class="ar" d="M290 51 L 318 51"/>
+            <path class="ar" d="M290 197 L 318 197"/>
+            <rect class="bx" x="318" y="14" width="112" height="74" rx="8"/>
+            <text class="m" x="328" y="34">1 장학금#2 <tspan class="ok">✓</tspan></text>
+            <text class="m" x="328" y="52">  4.05</text>
+            <text class="s" x="328" y="74">결과 1개뿐</text>
+            <rect class="bx" x="318" y="160" width="112" height="74" rx="8"/>
+            <text class="m" x="328" y="180">1 FAQ#2</text>
+            <text class="m" x="328" y="198">2 시간표#0</text>
+            <text class="m" x="328" y="216">… 4 장학금#2 <tspan class="ok">✓</tspan></text>
+
+            <path class="ar" d="M430 51 C 450 51, 450 112, 466 112"/>
+            <path class="ar" d="M430 197 C 450 197, 450 136, 466 136"/>
+            <rect class="bx-a" x="466" y="96" width="78" height="56" rx="8"/>
+            <text class="t" x="505" y="119" text-anchor="middle">RRF</text>
+            <text class="s" x="505" y="137" text-anchor="middle">순위만 사용</text>
+            <path class="ar" d="M544 124 L 560 124"/>
+            <rect class="bx-b" x="560" y="96" width="76" height="56" rx="8"/>
+            <text class="t" x="598" y="119" text-anchor="middle">리랭커</text>
+            <text class="s" x="598" y="137" text-anchor="middle">후보만 재정렬</text>
+            <text class="s" x="505" y="176" text-anchor="middle">장학금#2 → 1위 ✓</text>
+          </svg>
+          <figcaption>두 검색기는 따로 순위 목록을 만든다. 융합 단계는 점수가 아니라 순위를 합치고, 리랭커는 그중 상위 후보만 다시 줄 세운다.</figcaption>
+        </figure>
+
+        <h3>BM25: 드문 단어가 여러 번, 짧은 청크에</h3>
+        <p>BM25는 질문의 토큰이 청크에 몇 번, 얼마나 드물게 나오는지로 점수를 매기는 키워드 검색 방식이다. 직관은 세 가지다.</p>
+        <table>
+          <thead><tr><th>요소</th><th>직관</th><th>이 문서셋의 예</th></tr></thead>
+          <tbody>
+            <tr><td>TF (단어 빈도)</td><td>질문 토큰이 청크에 많이 나올수록 관련이 높다. 단, 한없이 커지지 않고 포화된다</td><td>“청킹”이 세 번 나온 청크가 한 번 나온 청크보다 높지만 세 배는 아니다</td></tr>
+            <tr><td>IDF (역문서 빈도)</td><td>여러 청크에 흔한 토큰은 변별력이 없다. 드문 토큰일수록 가치가 크다</td><td>“검색”은 37개 중 17개 청크에 있어 IDF 0.78, <code>2l4</code>는 1개에만 있어 IDF 3.23</td></tr>
+            <tr><td>길이 정규화</td><td>긴 청크는 우연히 단어가 걸릴 확률이 높으므로 점수를 깎는다</td><td>토큰 41개인 장학금 청크는 평균(74.6개)보다 짧아 이득을 본다</td></tr>
+          </tbody>
+        </table>
+        <p>직관을 식으로 쓰면 다음과 같다. <code>f</code>는 청크 안에서 토큰의 빈도, <code>|d|</code>는 청크의 토큰 수, <code>avgdl</code>은 평균 청크 길이, <code>N</code>은 청크 수, <code>n</code>은 그 토큰이 들어 있는 청크 수다. <code>core/bm25.js</code>는 k1 = 1.5, b = 0.75를 쓴다.</p>
+        <pre><code class="language-text">BM25(q, d) = Σ  IDF(t) × f·(k1 + 1) / ( f + k1·(1 − b + b·|d|/avgdl) )
+            t∈q
+IDF(t)     = ln( 1 + (N − n + 0.5) / (n + 0.5) )
+
+예) 질문 "2l4", 장학금 청크 #2:  N=37, n=1, f=1, |d|=41, avgdl=74.6
+    IDF = ln(1 + 36.5/1.5) = 3.232
+    TF  = 2.5 / (1 + 1.5·(0.25 + 0.75·41/74.6)) = 1.254
+    점수 = 3.232 × 1.254 ≈ 4.05</code></pre>
+
+        <h3>한국어는 왜 바이그램을 더하나</h3>
+        <p>영어는 공백으로 단어가 나뉘지만 한국어는 조사와 어미가 붙는다. 문서에는 “305호와”, 질문에는 “305호”라고 쓰면 공백 기준 토큰은 서로 다른 문자열이라 한 번도 일치하지 않는다. <code>core/bm25.js</code>는 한글이 들어간 어절에 대해 두 글자씩 자른 바이그램(bigram)을 함께 색인한다.</p>
+        <pre><code class="language-text">tokenize("305호")        → 305호 · 30 · 05 · 5호
+tokenize("305호와 306호를") → 305호와 · 30 · 05 · 5호 · 호와 · 306호를 · 30 · 06 · 6호 · 호를
+                                           ↑ "30", "05", "5호"가 겹쳐서 일치한다</code></pre>
+        <p>대가도 있다. 바이그램은 “인덱스의” 속 “인덱”처럼 관련 없는 청크에서도 걸리는 조각을 늘려 순위를 흐린다. 또 이 토크나이저는 “MRR은”처럼 영문과 한글이 붙은 어절을 통째로 두 글자씩 자르므로 <code>mrr</code>이라는 토큰이 생기지 않는다. 그래서 “MRR”로 검색하면 BM25는 평가 청크를 찾지 못한다. 실무에서는 형태소 분석기(예: Elasticsearch의 Nori)로 조사를 떼어 낸다. Challenge C3에서 바이그램이 얻는 것과 잃는 것을 직접 잰다.</p>
+
+        <h3>벡터 검색의 강점과 약점</h3>
+        <table>
+          <thead><tr><th></th><th>잘하는 것</th><th>못하는 것</th></tr></thead>
+          <tbody>
+            <tr><td>벡터</td><td>바꿔 말한 질문(“졸업하려면 출석을 얼마나…” → “수료 요건은 출석률 80% 이상”)</td><td>코드·번호·고유명사(<code>2l4</code>, <code>3분위</code>), 뜻이 비슷하지만 숫자만 다른 문장, 짧고 내용 없는 청크가 여러 질문에서 상위로 떠오르는 현상</td></tr>
+            <tr><td>BM25</td><td>정확히 같은 토큰, 드문 용어, 오타까지 그대로 쓴 OCR 문자열</td><td>동의어·바꿔 말하기, 토크나이저가 쪼개지 못한 어절</td></tr>
+          </tbody>
+        </table>
+
+        <h3>점수 스케일이 달라서 순위를 합친다: RRF</h3>
+        <p>질문 “실습실에서 GPU 서버를…”의 BM25 상위 10개 점수는 36.8에서 3.1까지 퍼져 있다. 같은 질문의 코사인 유사도는 0.90에서 0.81 사이에 몰려 있다. 두 값을 더하면 코사인 차이는 반올림 오차 수준이 된다. <strong>RRF(Reciprocal Rank Fusion)</strong>는 점수를 버리고 순위만 쓴다.</p>
+        <pre><code class="language-text">RRF(d) = Σ  1 / (k + r_i(d))        r_i(d): i번째 목록에서 d의 순위 (없으면 그 항은 0)
+         i
+
+예) "모델이 없는 사실을 지어내는 현상", k = 60
+    RAG란 #0   : BM25 7위, 벡터 1위 → 1/67 + 1/61 = 0.0313
+    임베딩 #2   : BM25 1위, 벡터 7위 → 1/61 + 1/67 = 0.0313   ← 완전히 같은 점수</code></pre>
+        <p>k는 1위와 아래 순위의 차이를 조절한다. k = 1이면 1위가 1/2, 2위가 1/3으로 1위의 몫이 크다. k = 60이면 1/61과 1/62로 거의 같아져서 “한쪽 목록의 1위”보다 “양쪽 목록에 모두 있는 청크”가 이긴다. 원 논문(Cormack 외, 2009)이 실험으로 고른 60이 사실상 기본값이다. 순위만 쓰므로 위의 예처럼 동점이 흔하다는 점도 기억한다.</p>
+
+        <h3>가중 융합: 정규화한 점수를 α로 섞는다</h3>
+        <p>점수를 살리고 싶다면 각 목록을 min-max로 0~1에 맞춘 뒤 가중합한다.</p>
+        <pre><code class="language-text">norm(s) = (s − min) / (max − min)
+score(d) = α · norm(코사인) + (1 − α) · norm(BM25)      α = 0 → BM25만, α = 1 → 벡터만</code></pre>
+        <p>“BM25 1위가 압도적인가, 근소한가”라는 정보가 남는 것이 장점이다. 반대로 min-max는 목록의 꼴찌를 무조건 0으로 만들고, 결과가 하나뿐인 목록은 그 하나를 1로 만든다. α는 문서셋마다 다르므로 9주차 평가 데이터로 골라야 한다.</p>
+
+        <h3>리랭킹: 비싼 모델은 후보에게만</h3>
+        <p>리랭킹(reranking)은 1차 검색이 뽑은 후보를 더 정교한 모델로 다시 줄 세우는 단계다. 지금까지의 벡터 검색은 질문과 청크를 <em>따로</em> 임베딩하는 바이 인코더(bi-encoder)다. 청크 벡터를 미리 계산해 둘 수 있어 빠르지만, 질문과 청크의 단어가 서로를 직접 보지 못한다. <strong>크로스 인코더(cross-encoder)</strong>는 “질문 + 청크”를 한 입력으로 넣어 관련도 하나를 출력한다. 두 텍스트의 토큰이 어텐션으로 서로를 보므로 정확하다.</p>
+        <table>
+          <thead><tr><th></th><th>바이 인코더 (1차 검색)</th><th>크로스 인코더 (리랭커)</th></tr></thead>
+          <tbody>
+            <tr><td>입력</td><td>질문, 청크를 각각</td><td>질문과 청크를 한꺼번에</td></tr>
+            <tr><td>미리 계산</td><td>청크 벡터를 색인 때 한 번</td><td>불가능 — 질문이 올 때마다 계산</td></tr>
+            <tr><td>질문 하나의 비용</td><td>질문 임베딩 1번 + 벡터 비교</td><td>후보 수만큼 모델 추론 (후보 50개면 50번)</td></tr>
+          </tbody>
+        </table>
+        <p>그래서 크로스 인코더는 전체 청크가 아니라 하이브리드 검색이 뽑은 상위 20~100개에만 적용한다. 리랭커는 1차 검색이 후보에 넣지 못한 청크를 되살릴 수 없다는 점에 주의한다. 이 사이트는 브라우저에서 돌릴 크로스 인코더를 쓰지 않으므로, 실습 위젯의 리랭커는 원리만 흉내 낸 <strong>장난감</strong>이다(키워드 커버리지 50% + 문서 제목을 붙인 청크와의 코사인 50%).</p>
+      </section>
+
+      <section id="lab">
+        <h2><span class="section-num">4</span>실습</h2>
+        <p>아래 위젯은 문서셋 12개를 재귀 분할(200자)로 자른 37개 청크를 BM25와 벡터로 동시에 검색한다. BM25 결과는 바로 나오고, 벡터 결과는 임베딩 모델(약 118MB, 최초 1회 다운로드)이 준비되면 채워진다. 초록 테두리와 ✓는 정답 근거가 든 청크다. 항목을 누르면 청크 원문과 질문 토큰이 일치한 부분이 아래에 표시된다. 결과는 오른쪽 <b>실행 결과</b> 창에 나온다.</p>
+      </section>
+
+      <div id="w08-widget"></div>
+
+      <section aria-labelledby="observe-title">
+        <h3 id="observe-title">관찰 질문</h3>
+        <ol>
+          <li>처음 화면(① 바꿔 말하기)에서 모델이 준비되기 전, BM25 1위 청크를 눌러 노란 표시를 본다. BM25는 질문의 어떤 조각 때문에 이 청크를 1위로 골랐나?</li>
+          <li>모델이 준비되면 하이브리드 열에 RRF 점수가 0.0313으로 같은 청크가 여럿 보인다. 두 청크의 B·V 순위를 읽고 <code>1/(60+r)</code> 계산으로 왜 같은지 설명한다.</li>
+          <li>② 코드 토큰 <code>2l4</code>를 누른다. 벡터 1위는 어떤 청크인가? 짧고 내용 없는 청크가 여러 질문에서 벡터 상위에 오르는 이유를 추측한다.</li>
+          <li>④ 표 깨짐을 누르고 k와 α를 끝까지 움직여 본다. 근거가 3위 안에 들어오는 설정이 있는가? 이 실패는 어느 주차의 단계에서 고쳐야 하나?</li>
+          <li>질문 목록에서 x10 “글을 자를 때 겹치게 하면 손해는?”을 고른다. RRF(k=60)와 가중합(α=0.5)에서 근거 순위를 비교한다. 어느 쪽이 나은지, BM25 열의 결과와 연결해 설명한다.</li>
+          <li>장난감 리랭커를 켜고 여러 질문을 바꿔 본다. ▲로 좋아진 질문과 ▼로 나빠진 질문을 하나씩 찾는다. 리랭커가 항상 좋아지게 만들려면 어떤 조건이 필요할까?</li>
+        </ol>
+      </section>
+
+      <section id="challenge">
+        <h2><span class="section-num">5</span>Challenge</h2>
+        <p>난이도 순서다. 코드 상자는 직접 고칠 수 있고, <strong>▶ 실행</strong>(또는 Ctrl+Enter)을 누르면 결과가 오른쪽 <b>실행 결과</b> 창에 나온다(휴대폰에서는 코드 바로 아래). 워커 안에서는 임베딩 모델을 불러오지 않는다. 벡터 검색 결과는 같은 모델로 미리 계산해 둔 <code>/assets/data/w08/hybrid.json</code>의 <code>vector</code>를 쓴다. 이 파일의 <code>extra</code>에는 골든셋에 없는 질문 10개(정확한 토큰 4개, 바꿔 말하기 6개)가 들어 있다.</p>
+
+        <div class="practice">
+          <div class="practice-head"><b>C1. RRF 직접 구현하기</b><span class="level" aria-label="난이도 1">★</span></div>
+          <div class="practice-body">
+          <p>두 순위 목록을 RRF로 합치는 <code>myRrf</code>를 작성하고 <code>core/rerank.js</code>의 <code>rrf</code>와 순서·점수가 같은지 확인한다. 그다음 k = 1과 k = 60에서 A와 D의 순서가 뒤집히는 이유를 설명한다.</p>
+          <pre data-run="c1" data-title="C1 RRF 직접 구현"><code class="language-javascript">import { rrf } from '/assets/js/core/rerank.js';
+
+const bm25 = ['A', 'B', 'C', 'D'];   // 좋은 순서대로
+const vector = ['C', 'E', 'F', 'D'];
+
+function myRrf(lists, k = 60) {
+  const scores = new Map();
+  // TODO: 각 목록의 각 id에 1 / (k + rank)를 더한다 (rank는 1부터)
+  // TODO: 점수 내림차순으로 정렬한 [{ id, score }]를 돌려준다
+  return [];
+}
+
+console.table(myRrf([bm25, vector]));
+const core = rrf([bm25, vector].map((l) => l.map((id) => ({ id }))), { k: 60 });
+console.table(core.map(({ id, score }) => ({ id, score })));
+// TODO: k = 1일 때 myRrf 결과도 출력해 비교한다</code></pre>
+          </div>
+        </div>
+
+        <div class="practice">
+          <div class="practice-head"><b>C2. min-max 가중 융합</b><span class="level" aria-label="난이도 2">★★</span></div>
+          <div class="practice-body">
+          <p>점수를 그대로 더하면 왜 BM25가 독차지하는지 확인하고, <code>minMax</code>와 가중 융합 <code>fuse</code>를 직접 작성한다. α를 0, 0.3, 0.5, 0.7, 1로 바꿔 가며 1위가 어떻게 바뀌는지 표로 출력하고 <code>weightedFusion</code>과 비교한다. A의 코사인 0.812는 나쁜 값이 아닌데 왜 정규화 뒤 0이 되는가?</p>
+          <pre data-run="c2" data-title="C2 가중 융합"><code class="language-javascript">import { weightedFusion } from '/assets/js/core/rerank.js';
+
+const bm25 = [{ id: 'A', score: 12.4 }, { id: 'B', score: 7.9 }, { id: 'C', score: 2.1 }];
+const vector = [{ id: 'C', score: 0.871 }, { id: 'D', score: 0.866 }, { id: 'A', score: 0.812 }];
+
+// TODO 1: 점수를 그대로 더한 순위를 출력한다
+
+function minMax(list) {
+  // TODO 2: 최고 점수 → 1, 최저 점수 → 0 (모두 같으면 1)
+  return list;
+}
+
+function fuse(vec, kw, alpha) {
+  // TODO 3: alpha·norm(vec) + (1 − alpha)·norm(kw), 한쪽에 없는 id는 그쪽 점수 0
+  return [];
+}
+
+for (const alpha of [0, 0.3, 0.5, 0.7, 1]) {
+  // TODO 4: fuse와 weightedFusion(vector, bm25, { alpha })의 결과를 나란히 출력
+}</code></pre>
+          </div>
+        </div>
+
+        <div class="practice">
+          <div class="practice-head"><b>C3. 바이그램이 얻는 것과 잃는 것</b><span class="level" aria-label="난이도 2">★★</span></div>
+          <div class="practice-body">
+          <p>같은 청크로 BM25 인덱스를 두 개 만든다. 하나는 기본 토크나이저(한글 바이그램 포함), 하나는 <code>tokenize(t, { bigrams: false })</code>다. 골든셋 12문항과 extra 10문항 각각에서 hit@3과 MRR을 비교하고, 두 인덱스의 순위가 달라지는 질문을 모두 찾아 이유를 적는다.</p>
+          <pre data-run="c3" data-title="C3 토크나이저 효과"><code class="language-javascript">import { chunk } from '/assets/js/core/chunker.js';
+import { BM25, tokenize } from '/assets/js/core/bm25.js';
+import { hitAtK, reciprocalRank } from '/assets/js/core/metrics.js';
+
+const corpus = await (await fetch('/assets/data/corpus/corpus.json')).json();
+const golden = await (await fetch('/assets/data/golden/golden.json')).json();
+const data = await (await fetch('/assets/data/w08/hybrid.json')).json();
+
+const chunks = corpus.documents.flatMap((d) =>
+  chunk(d.text, data.chunking).map((c) => ({ id: `${d.id}#${c.index}`, doc: d.id, text: c.text.trim() })));
+const relevant = (item) =>
+  chunks.filter((c) => item.evidence.some((e) => e.doc === c.doc && c.text.includes(e.quote))).map((c) => c.id);
+
+console.log(tokenize('305호와 306호를'), tokenize('305호와 306호를', { bigrams: false }));
+
+const withBi = new BM25().add(chunks);
+// TODO: 바이그램 없는 인덱스 noBi를 만든다 (BM25 생성자의 tokenizer 옵션)
+
+function score(index, items, k = 3) {
+  // TODO: 각 질문을 index.search(question, 10)으로 검색해 hit@k와 MRR의 평균을 돌려준다
+  return { hit: 0, mrr: 0 };
+}
+
+// TODO: golden.items, data.extra 각각에 대해 두 인덱스의 결과를 console.table로 출력
+console.log(score(withBi, golden.items));</code></pre>
+          </div>
+        </div>
+
+        <div class="practice">
+          <div class="practice-head"><b>C4. 22문항 hit@3 대결</b><span class="level" aria-label="난이도 3">★★★</span></div>
+          <div class="practice-body">
+          <p>BM25, 벡터(미리 계산한 순위), RRF(k=60), 가중합(α=0.5) 네 방법의 hit@3을 골든셋 · 정확한 토큰(exact) · 바꿔 말하기(paraphrase) · 전체로 나눠 표로 만든다. 골든셋만 봤을 때와 전체를 봤을 때 결론이 어떻게 달라지는지 두세 문장으로 쓴다.</p>
+          <pre data-run="c4" data-title="C4 hit@3 비교"><code class="language-javascript">import { chunk } from '/assets/js/core/chunker.js';
+import { BM25 } from '/assets/js/core/bm25.js';
+import { rrf, weightedFusion } from '/assets/js/core/rerank.js';
+import { hitAtK } from '/assets/js/core/metrics.js';
+
+const corpus = await (await fetch('/assets/data/corpus/corpus.json')).json();
+const golden = await (await fetch('/assets/data/golden/golden.json')).json();
+const data = await (await fetch('/assets/data/w08/hybrid.json')).json();
+
+const chunks = corpus.documents.flatMap((d) =>
+  chunk(d.text, data.chunking).map((c) => ({ id: `${d.id}#${c.index}`, doc: d.id, text: c.text.trim() })));
+const relevant = (item) =>
+  chunks.filter((c) => item.evidence.some((e) => e.doc === c.doc && c.text.includes(e.quote))).map((c) => c.id);
+const bm25 = new BM25().add(chunks);
+
+// 각 방법은 질문 item을 받아 [{ id, score }] 순위 목록(최대 10개)을 돌려준다
+const methods = {
+  bm25: (it) => bm25.search(it.question, 10),
+  vector: (it) => data.vector[it.id],   // 미리 계산한 벡터 검색 상위 10개
+  // TODO: rrf — 두 목록을 k = 60으로 융합
+  // TODO: weighted — weightedFusion(vector, bm25, { alpha: 0.5 })
+};
+
+const groups = {
+  golden: golden.items,
+  exact: data.extra.filter((x) => x.kind === 'exact'),
+  paraphrase: data.extra.filter((x) => x.kind === 'paraphrase'),
+};
+// TODO: 그룹 × 방법별 hit@3 평균을 console.table로 출력
+// TODO(선택): extra 10문항의 방법별 근거 순위를 표로 출력</code></pre>
+          </div>
+        </div>
+
+        <div class="practice">
+          <div class="practice-head"><b>C5. 키워드 커버리지 장난감 리랭커</b><span class="level" aria-label="난이도 4">★★★★</span></div>
+          <div class="practice-body">
+          <p>RRF 상위 10개 후보를 “질문 토큰 중 청크에 들어 있는 비율(커버리지)”로 다시 정렬하는 리랭커를 만든다. <code>core/rerank.js</code>의 <code>rerank(query, candidates, scoreFn)</code>를 쓴다. 두 가지를 비교한다: (a) 커버리지만 쓰기, (b) 커버리지 50% + 원래 순위 점수 50%. 22문항의 MRR이 리랭킹 전보다 좋아졌는가? 결과를 보고 “리랭커가 1차 검색보다 약하면 어떻게 되는가”를 설명한다.</p>
+          <pre data-run="c5" data-title="C5 장난감 리랭커"><code class="language-javascript">import { chunk } from '/assets/js/core/chunker.js';
+import { BM25, tokenize } from '/assets/js/core/bm25.js';
+import { rrf, rerank } from '/assets/js/core/rerank.js';
+import { reciprocalRank } from '/assets/js/core/metrics.js';
+
+const corpus = await (await fetch('/assets/data/corpus/corpus.json')).json();
+const golden = await (await fetch('/assets/data/golden/golden.json')).json();
+const data = await (await fetch('/assets/data/w08/hybrid.json')).json();
+
+const chunks = corpus.documents.flatMap((d) =>
+  chunk(d.text, data.chunking).map((c) => ({ id: `${d.id}#${c.index}`, doc: d.id, text: c.text.trim() })));
+const byId = new Map(chunks.map((c) => [c.id, c]));
+const relevant = (item) =>
+  chunks.filter((c) => item.evidence.some((e) => e.doc === c.doc && c.text.includes(e.quote))).map((c) => c.id);
+const bm25 = new BM25().add(chunks);
+
+function coverage(query, text) {
+  // TODO: 질문의 고유 토큰(tokenize) 중 청크 토큰에도 있는 비율 (0~1)
+  return 0;
+}
+
+const items = [...golden.items, ...data.extra];
+let before = 0, after = 0;
+for (const it of items) {
+  const cands = rrf([bm25.search(it.question, 10), data.vector[it.id]], { k: 60, topK: 10 })
+    .map((c, i) => ({ ...c, prior: 1 - i / 10 }));   // 원래 순위 점수: 1위 1.0 … 10위 0.1
+  // TODO: rerank(it.question, cands, (q, c) => ..., { topK: 10 })로 다시 정렬
+  // TODO: 리랭킹 전후의 reciprocalRank를 before, after에 더한다
+}
+console.log('MRR 전', (before / items.length).toFixed(3), '후', (after / items.length).toFixed(3));</code></pre>
+          </div>
+        </div>
+      </section>
+
+      <section id="wrap">
+        <h2><span class="section-num">6</span>정리 &amp; 다음 주 예고</h2>
+        <ul>
+          <li>BM25는 글자가 같아야 찾고, 벡터 검색은 뜻이 가까워야 찾는다. 코드·번호에는 BM25, 바꿔 말한 질문에는 벡터가 강하다.</li>
+          <li>BM25 점수와 코사인 유사도는 스케일이 달라 그대로 더할 수 없다. RRF는 순위만 써서 이 문제를 피하고, k = 60이 기본값이다.</li>
+          <li>가중 융합은 min-max로 점수를 맞춘 뒤 α로 섞는다. α는 문서셋마다 측정해서 고른다.</li>
+          <li>크로스 인코더 리랭커는 정확하지만 후보마다 추론하므로 1차 검색의 상위 후보에만 쓴다. 약한 리랭커는 오히려 순위를 망친다.</li>
+          <li>근거 청크가 망가져 있으면(표 깨짐) 어떤 융합도 고치지 못한다.</li>
+        </ul>
+        <p><strong>다음 주(9주차 평가 데이터셋 &amp; 측정)</strong>에는 이번 주에 22문항으로 잰 hit@3을 제대로 된 점수판으로 확장한다. 골든셋을 만드는 방법, Recall@k · MRR · nDCG의 차이를 배우고, 청크 크기 · 임베딩 모델 · 융합 방식을 바꿀 때마다 같은 골든셋으로 다시 측정해 “좋아졌다”를 숫자로 말한다.</p>
+      </section>
+
+      <div class="section-end">
+        <label class="done-toggle">
+          <input type="checkbox" data-done-toggle="8"> ✅ 8주차 학습 완료로 표시
+        </label>
+      </div>
+      <nav class="week-nav" data-week-nav="8" aria-label="주차 이동"></nav>
+        </article>
+      </div>
+    </main>
+  </div>
+
+  <script type="module">
+    import { mount } from '../../assets/js/widgets/w08-hybrid.js';
+    import { initRunners } from '../../assets/js/site/runner.js';
+    mount(document.getElementById('w08-widget'));
+    initRunners(document.getElementById('challenge'));
+  </script>
+</body>
+</html>

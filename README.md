@@ -16,40 +16,44 @@
 - 기존 강좌 사이트([studyMLBasic](https://samcho93.github.io/studyMLBasic/))와 같은 화면 구성 · 디자인입니다. 경계선을 끌어 각 단의 너비를 바꿀 수 있습니다.
 - 860px 미만(휴대폰)에서는 한 단으로 바뀌고, 목차는 ☰로 열며, 결과는 위젯 · 코드 바로 아래에 표시됩니다.
 - Challenge 코드는 페이지 안에서 바로 고치고 실행합니다. Web Worker에서 돌아가므로 무한 루프도 10초 뒤 자동으로 멈춥니다.
-- 임베딩은 [Transformers.js](https://huggingface.co/docs/transformers.js)로 브라우저 안에서 실행합니다(5주차부터, 모델 최초 1회 다운로드).
+- 임베딩은 [Transformers.js](https://huggingface.co/docs/transformers.js)로 브라우저 안에서 실행합니다(5주차부터, WASM · 8비트 모델 약 120MB를 최초 1회만 다운로드).
 - LLM이 필요한 주차는 학생 본인의 API 키를 쓰며, 키는 `sessionStorage`에만 저장됩니다.
 
 교사용 슬라이드 단축키: `←` `→` 이동 · `F` 전체 화면 · `N` 교사 노트 · `B` 화면 가리기 · `T` 타이머 · `P` 발표자 창 · 코드 `Ctrl+Enter` 실행
 판서: `D` 펜 · `H` 형광펜 · `L` 레이저 · `E` 지우개 · `Z` 되돌리기 · `C` 이 슬라이드 지우기 · `Esc` 끄기 (색 5 · 굵기 3, 슬라이드별 보존)
 
-## 커리큘럼 (12주)
+## 커리큘럼 (12주 · 전 주차 공개)
 
-| 주차 | 주제 | 실습 위젯 | 상태 |
+| 주차 | 주제 | 실습 위젯 (▶ 체험) | LLM 키 |
 |---|---|---|---|
-| 01 | LLM 기초 & RAG 필요성 | 토큰 카운터, 환각 체험 | 준비 중 |
-| 02 | 프롬프트 엔지니어링 | 프롬프트 A/B 비교 | 준비 중 |
-| 03 | 문서 로딩 & 파싱 | PDF 텍스트 추출 뷰어 | 준비 중 |
-| 04 | 청킹 전략 | **청킹 플레이그라운드** | ✅ 공개 |
-| 05 | 임베딩 & 유사도 | 유사도 히트맵 + 2D 투영 | 준비 중 |
-| 06 | 벡터DB & 인덱스 | Flat vs HNSW 속도 비교 | 준비 중 |
-| 07 | 최소 RAG 완성 | 전체 파이프라인 실행 | 준비 중 |
-| 08 | 하이브리드 검색 + 리랭킹 | BM25 vs 벡터 vs 하이브리드 | 준비 중 |
-| 09 | 평가 데이터셋 & 측정 | 점수판(Recall@k, nDCG) | 준비 중 |
-| 10 | 프레임워크 리팩터링 | 코드 비교 뷰어 | 준비 중 |
-| 11 | 웹 UI + 인용 표기 | 인용 하이라이트 데모 | 준비 중 |
-| 12 | 팀 프로젝트 발표 | 팀별 결과 업로드 | 준비 중 |
+| 01 | LLM 기초 & RAG 필요성 | 토큰 카운터(실제 토크나이저) · 환각 체험 | 선택 |
+| 02 | 프롬프트 엔지니어링 | 프롬프트 A/B 비교 (거절 지시 · 인용 · 프롬프트 인젝션) | 필요* |
+| 03 | 문서 로딩 & 파싱 | 파싱 정제 뷰어 (OCR 오류 · 깨진 표 · 머리글, 내 파일 불러오기) | — |
+| 04 | 청킹 전략 | **청킹 플레이그라운드** | — |
+| 05 | 임베딩 & 유사도 | **유사도 히트맵 + 2D 투영(PCA)** · 영어 전용 모델 실패 비교 | — |
+| 06 | 벡터DB & 인덱스 | Flat vs HNSW 속도 · Recall 비교 (HNSW 직접 구현) | — |
+| 07 | 최소 RAG 완성 | 전체 파이프라인 단계별 실행 | 필요* |
+| 08 | 하이브리드 검색 + 리랭킹 | **BM25 vs 벡터 vs 하이브리드(RRF · 가중 융합)** | — |
+| 09 | 평가 데이터셋 & 측정 | **점수판 (Recall@k · MRR · nDCG · Faithfulness)** | 선택 |
+| 10 | 프레임워크 리팩터링 | 코드 비교 뷰어 (JS 직접 구현 · LangChain · LlamaIndex, 숨은 기본값) | — |
+| 11 | 웹 UI + 인용 표기 | 인용 하이라이트 + 인용 검증기 | 필요* |
+| 12 | 팀 프로젝트 발표 | 팀별 결과 JSON 업로드 → 팀 점수판 | — |
+
+\* 키가 없어도 “수업용 작성 예시” 응답으로 모든 관찰 질문을 진행할 수 있습니다. 이론 보충: `theory/embedding-models.html` (한국어 임베딩 모델 비교).
 
 ## 폴더 구조
 
 ```
 index.html · student.html · teacher.html   랜딩 / 학생용·교사용 진입점
-weeks/wNN/index.html · teacher.html         주차별 학생용 문서 / 교사용 슬라이드
+weeks/w01~w12/index.html · teacher.html     주차별 학생용 문서 / 교사용 슬라이드
+theory/embedding-models.html                이론 보충: 한국어 임베딩 모델 비교
 teacher/index.html                          교사용 허브
 assets/css/                                 tokens(디자인 토큰) · base · components(3단 레이아웃) · slides
 assets/js/core/                             chunker · embed · bm25 · vectorstore · rerank · metrics · llm
 assets/js/widgets/                          주차별 실습 위젯 (위젯 하나 = 파일 하나)
 assets/js/site/                             목차·진도·테마 · 슬라이드 엔진 · 실습 결과 창 · 코드 실행기
 assets/data/corpus/ · golden/               전 과정 공통 문서셋 / 평가용 골든셋
+assets/data/wNN/                            주차별 보조 데이터 (예시 응답 · 사전 계산 순위 · 예시 팀 결과 등)
 CLAUDE.md                                   작업 규칙
 ```
 

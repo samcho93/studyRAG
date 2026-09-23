@@ -1,0 +1,213 @@
+/* w03 파싱 정제 뷰어 — widget-specific styles (tokens only) */
+
+.w03-source,
+.w03-note {
+  margin: 0 0 var(--space-2);
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
+}
+
+.w03-steps {
+  display: grid;
+  gap: 2px;
+  margin: 0 0 var(--space-3);
+  padding: var(--space-2) var(--space-2) var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  min-width: 0;
+}
+
+.w03-steps legend {
+  padding: 0 var(--space-1);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-bold);
+}
+
+.w03-step {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: start;
+  gap: 0 var(--space-2);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-sm);
+  cursor: pointer;
+}
+
+.w03-step:hover {
+  background: var(--color-surface-2);
+}
+
+.w03-step:focus-within {
+  box-shadow: var(--focus-ring);
+}
+
+.w03-step input {
+  width: 16px;
+  height: 16px;
+  margin: 3px 0 0;
+  accent-color: var(--color-accent);
+}
+
+.w03-step input:focus-visible {
+  outline: none;
+}
+
+.w03-step__name {
+  font-weight: var(--weight-bold);
+}
+
+.w03-step__count {
+  color: var(--color-text-muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  white-space: nowrap;
+}
+
+.w03-step__desc {
+  grid-column: 2 / -1;
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
+}
+
+.w03-step--warn .w03-step__name {
+  color: var(--color-danger);
+}
+
+.w03-file {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+}
+
+.w03-file label:focus-within {
+  box-shadow: var(--focus-ring);
+}
+
+.w03-out h4 {
+  margin: var(--space-3) 0 6px;
+  font-size: var(--text-sm);
+}
+
+.w03-out .callout {
+  margin: 0 0 var(--space-2);
+  padding: 8px 12px;
+  font-size: 13px;
+}
+
+.w03-checks {
+  display: grid;
+  gap: 4px;
+  margin: 0 0 var(--space-2);
+  padding: 0;
+  list-style: none;
+}
+
+.w03-checks li {
+  display: grid;
+  grid-template-columns: 1.2em 1fr;
+  gap: 0 var(--space-2);
+  margin: 0;
+  padding: 6px 10px;
+  border: 1px solid var(--color-border);
+  border-left-width: 4px;
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  font-size: 13px;
+}
+
+.w03-checks li.is-ok {
+  border-left-color: var(--color-success);
+}
+
+.w03-checks li.is-fail {
+  border-left-color: var(--color-danger);
+}
+
+.w03-checks li.w03-check--note {
+  border-left-color: var(--color-accent2);
+  background: var(--color-surface-2);
+}
+
+.w03-check__mark {
+  font-weight: var(--weight-heavy);
+}
+
+.is-ok .w03-check__mark {
+  color: var(--color-success);
+}
+
+.is-fail .w03-check__mark {
+  color: var(--color-danger);
+}
+
+.w03-check__src {
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--color-surface-2);
+  color: var(--color-text-muted);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: var(--weight-regular);
+}
+
+.w03-check__why {
+  grid-column: 2;
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
+}
+
+.w03-cols {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+  gap: var(--space-3);
+}
+
+.w03-cols h4 {
+  margin-top: var(--space-2);
+}
+
+.w03-pane {
+  max-height: 360px;
+  overflow-y: auto;
+  padding: 10px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-bg);
+  font-size: var(--text-sm);
+  line-height: 1.8;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.w03-pane del {
+  border-radius: 2px;
+  background: var(--color-danger-soft);
+  color: var(--color-danger);
+  text-decoration: line-through;
+  text-decoration-thickness: 1.5px;
+}
+
+.w03-pane ins {
+  border-radius: 2px;
+  background: var(--color-success-soft);
+  color: var(--color-success);
+  text-decoration: none;
+  box-shadow: inset 0 -2px 0 var(--color-success);
+}
+
+.w03-sw {
+  border: 1px solid transparent;
+}
+
+.w03-sw--del {
+  border-color: var(--color-danger);
+  background: var(--color-danger-soft);
+}
+
+.w03-sw--ins {
+  border-color: var(--color-success);
+  background: var(--color-success-soft);
+}

@@ -1,6 +1,6 @@
 // Transformers.js wrapper: model loading (with progress), caching and embedding.
 // The model is downloaded once from the Hugging Face CDN and then served from
-// the browser cache. WebGPU is used when available, otherwise WASM.
+// the browser cache. Inference runs on WASM (see pickDevice for why not WebGPU).
 
 const TRANSFORMERS_URL = 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.8.1';
 
@@ -43,12 +43,12 @@ async function getLib() {
   return lib;
 }
 
+// WebGPU is intentionally not used: with the q8 weights it returns wrong
+// vectors (measured 2026-09 with Transformers.js 3.8.1 — unrelated Korean
+// sentences scored 0.93, above paraphrases), and fp16 on WebGPU is correct but
+// doubles the download (~235MB). WASM + q8 is correct, ~118MB and fast enough
+// for this course's corpus.
 async function pickDevice() {
-  try {
-    if ('gpu' in navigator && (await navigator.gpu.requestAdapter())) return 'webgpu';
-  } catch {
-    /* fall through to WASM */
-  }
   return 'wasm';
 }
 
@@ -72,7 +72,7 @@ export async function loadModel(modelId = DEFAULT_MODEL, onProgress = () => {}) 
 
   const task = (async () => {
     const { pipeline } = await getLib();
-    let device = await pickDevice();
+    const device = await pickDevice();
     const files = new Map();
     const report = (status, file) => {
       let loaded = 0;
@@ -96,24 +96,7 @@ export async function loadModel(modelId = DEFAULT_MODEL, onProgress = () => {}) 
     };
 
     onProgress({ status: 'init', progress: 0 });
-    let extractor;
-    try {
-      extractor = await pipeline('feature-extraction', modelId, {
-        device,
-        dtype: device === 'webgpu' ? 'fp32' : 'q8',
-        progress_callback,
-      });
-    } catch (err) {
-      if (device !== 'webgpu') throw err;
-      // Some GPUs advertise WebGPU but fail at runtime — retry on WASM.
-      device = 'wasm';
-      files.clear();
-      extractor = await pipeline('feature-extraction', modelId, {
-        device,
-        dtype: 'q8',
-        progress_callback,
-      });
-    }
+    const extractor = await pipeline('feature-extraction', modelId, { device, dtype: 'q8', progress_callback });
 
     if (current.extractor?.dispose) await current.extractor.dispose();
     current = { id: modelId, extractor, device };
@@ -174,9 +157,9 @@ export async function loadModelWithUI(el, modelId = DEFAULT_MODEL) {
       <span class="spinner" aria-hidden="true"></span>
       <span data-msg>모델 준비 중… (${info.sizeMB ?? '?'}MB, 최초 1회만 다운로드)</span>
     </div>
-    <div class="progress" aria-hidden="true"><div class="progress__bar"></div></div>`;
+    <div class="bar-progress" aria-hidden="true"><div class="bar-progress__fill"></div></div>`;
   const msg = el.querySelector('[data-msg]');
-  const bar = el.querySelector('.progress__bar');
+  const bar = el.querySelector('.bar-progress__fill');
   try {
     const state = await loadModel(modelId, ({ status, progress, loaded, total }) => {
       bar.style.width = `${Math.round(progress * 100)}%`;
@@ -184,7 +167,7 @@ export async function loadModelWithUI(el, modelId = DEFAULT_MODEL) {
         msg.textContent = `다운로드 중 ${(loaded / 1e6).toFixed(1)} / ${(total / 1e6).toFixed(1)}MB`;
       }
     });
-    el.innerHTML = `<div class="widget__status"><span class="badge badge--ok">준비됨</span>
+    el.innerHTML = `<div class="widget__status"><span class="badge-ok">준비됨</span>
       ${info.id} · ${state.device === 'webgpu' ? 'WebGPU' : 'WASM'}</div>`;
     return state;
   } catch (err) {

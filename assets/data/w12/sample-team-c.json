@@ -1,0 +1,195 @@
+{
+  "team": "예시 팀 C · BM25 단독",
+  "members": [
+    "예시 학생 C1",
+    "예시 학생 C2",
+    "예시 학생 C3"
+  ],
+  "system": {
+    "chunking": "sentence 150",
+    "embedding": "(사용 안 함)",
+    "retriever": "bm25",
+    "k": 5,
+    "reranker": null,
+    "llm": "claude-haiku-4-5-20251001"
+  },
+  "golden": [
+    {
+      "id": "q01",
+      "question": "실습실에서 GPU 서버를 한 사람이 연속으로 쓸 수 있는 최대 시간은?",
+      "retrieved": [
+        "facility-rules#1",
+        "facility-rules#0",
+        "dept-overview#2",
+        "broken-scan#2",
+        "course-rag-syllabus#3"
+      ],
+      "answer": "최대 12시간이다.",
+      "citations": [
+        "facility-rules#1"
+      ]
+    },
+    {
+      "id": "q02",
+      "question": "RAG 교과목의 팀 프로젝트는 성적에서 몇 퍼센트를 차지하나?",
+      "retrieved": [
+        "course-rag-syllabus#2",
+        "course-rag-syllabus#1",
+        "dept-overview#3",
+        "broken-table#0",
+        "rag-intro#0"
+      ],
+      "answer": "40%다.",
+      "citations": [
+        "course-rag-syllabus#2"
+      ]
+    },
+    {
+      "id": "q03",
+      "question": "수료 요건은 무엇인가?",
+      "retrieved": [
+        "dept-overview#3",
+        "course-rag-syllabus#1",
+        "broken-mixed#0",
+        "facility-rules#2",
+        "broken-scan#0"
+      ],
+      "answer": "출석률 80% 이상과 팀 프로젝트 최종 발표 통과다.",
+      "citations": [
+        "dept-overview#3"
+      ]
+    },
+    {
+      "id": "q04",
+      "question": "오버랩을 두면 어떤 비용이 늘어나나?",
+      "retrieved": [
+        "rag-embedding#1",
+        "rag-chunking#2",
+        "rag-chunking#1",
+        "rag-vectordb#1",
+        "rag-hybrid#1"
+      ],
+      "answer": "저장 공간과 임베딩 비용이 겹친 비율만큼 늘어난다.",
+      "citations": [
+        "rag-chunking#2"
+      ]
+    },
+    {
+      "id": "q05",
+      "question": "고정 길이 청킹에서 문장이 잘리면 어떤 문제가 생기나?",
+      "retrieved": [
+        "rag-chunking#1",
+        "rag-chunking#0",
+        "rag-chunking#4",
+        "rag-intro#2",
+        "rag-embedding#2"
+      ],
+      "answer": "답에 필요한 정보가 두 청크로 나뉘어 검색되지 않을 수 있다.",
+      "citations": [
+        "rag-chunking#1"
+      ]
+    },
+    {
+      "id": "q06",
+      "question": "e5 계열 임베딩 모델을 쓸 때 주의할 점은?",
+      "retrieved": [
+        "rag-embedding#3",
+        "rag-embedding#0",
+        "rag-chunking#0",
+        "rag-intro#1",
+        "rag-vectordb#0"
+      ],
+      "answer": "질문에는 \"query: \", 문서에는 \"passage: \"를 붙인다.",
+      "citations": [
+        "rag-embedding#3"
+      ]
+    },
+    {
+      "id": "q07",
+      "question": "RRF에서 k 값은 보통 얼마를 쓰나?",
+      "retrieved": [
+        "rag-hybrid#1",
+        "rag-hybrid#0",
+        "rag-hybrid#2",
+        "rag-evaluation#3",
+        "rag-chunking#2"
+      ],
+      "answer": "보통 60을 쓴다.",
+      "citations": [
+        "rag-hybrid#1"
+      ]
+    },
+    {
+      "id": "q08",
+      "question": "Faithfulness는 무엇을 측정하나?",
+      "retrieved": [
+        "rag-intro#3",
+        "rag-embedding#2",
+        "rag-evaluation#2",
+        "rag-evaluation#0",
+        "rag-hybrid#2"
+      ],
+      "answer": "답변의 각 주장이 검색된 근거로 뒷받침되는지 측정한다.",
+      "citations": [
+        "rag-evaluation#2"
+      ]
+    },
+    {
+      "id": "q09",
+      "question": "HNSW 인덱스의 단점은?",
+      "retrieved": [
+        "rag-hybrid#2",
+        "rag-vectordb#2",
+        "rag-vectordb#3",
+        "rag-hybrid#0",
+        "rag-evaluation#1"
+      ],
+      "answer": "가끔 가장 가까운 이웃을 놓치는 근사 검색이다.",
+      "citations": [
+        "rag-vectordb#2"
+      ]
+    },
+    {
+      "id": "q10",
+      "question": "RAG 수업은 무슨 요일 몇 교시이고 어느 강의실인가?",
+      "retrieved": [
+        "course-rag-syllabus#0",
+        "dept-overview#1",
+        "course-rag-syllabus#1",
+        "rag-intro#2",
+        "facility-rules#0"
+      ],
+      "answer": "문서에서 찾을 수 없다.",
+      "citations": []
+    },
+    {
+      "id": "q11",
+      "question": "성적 우수 장학금 지급액은?",
+      "retrieved": [
+        "dept-overview#3",
+        "course-rag-syllabus#2",
+        "facility-rules#0",
+        "broken-scan#1",
+        "rag-intro#0"
+      ],
+      "answer": "수업료의 5O%다.",
+      "citations": [
+        "broken-scan#1"
+      ]
+    },
+    {
+      "id": "q12",
+      "question": "결석하면 실습 과제는 어떻게 하나?",
+      "retrieved": [
+        "facility-rules#0",
+        "dept-overview#3",
+        "course-rag-syllabus#3",
+        "course-rag-syllabus#2",
+        "rag-evaluation#3"
+      ],
+      "answer": "문서에서 찾을 수 없다.",
+      "citations": []
+    }
+  ],
+  "notes": "키워드가 겹치는 질문은 잘 찾지만 \"결석하면\"과 \"결석한 주의\"처럼 표현이 다르면 놓친다. q11은 OCR 오류(5O%)를 그대로 인용했다."
+}

@@ -1,0 +1,641 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>10주차 프레임워크 리팩터링 · 교사용 · RAG Lab</title>
+  <meta name="description" content="10주차 프레임워크 리팩터링 교사용 슬라이드: 강의 흐름, 교사 노트, Challenge 정답, 자주 막히는 지점, 토론 주제, 평가 루브릭.">
+  <script>try{var t=JSON.parse(localStorage.getItem('raglab:theme'));if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+  <link rel="stylesheet" crossorigin="anonymous" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&display=swap">
+  <link rel="stylesheet" href="../../assets/css/tokens.css">
+  <link rel="stylesheet" href="../../assets/css/base.css">
+  <link rel="stylesheet" href="../../assets/css/components.css">
+  <link rel="stylesheet" href="../../assets/css/slides.css">
+  <link rel="stylesheet" href="../../assets/css/w10.css">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%232450c4'/%3E%3Ccircle cx='14' cy='14' r='6' fill='none' stroke='white' stroke-width='3'/%3E%3Cpath d='M19 19l6 6' stroke='white' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E">
+  <script type="module" src="../../assets/js/site/site.js"></script>
+</head>
+<body>
+  <div class="layout" data-layout data-role="teacher" data-week="10" data-crumb="🧑‍🏫 교사용 › <b>10주차 · 프레임워크 리팩터링</b>">
+    <main class="pane center" id="main">
+      <div class="slide-view" data-deck data-deck-title="10주차 · 프레임워크 리팩터링">
+        <div class="deck-bar"><div class="deck-row" data-deck-controls></div></div>
+        <div class="deck-progress"><i></i></div>
+        <div class="deck-wrap">
+          <div class="deck-viewport">
+        <div class="deck-stage">
+
+          <!-- 1 -->
+          <section class="slide slide--title" data-title="표지">
+            <div class="kicker">검색증강생성(RAG) 시스템 구축 · 10주차</div>
+            <h1>프레임워크 리팩터링</h1>
+            <p>프레임워크가 대신 정해 준 것들</p>
+            <div class="deco" aria-hidden="true">🧰</div>
+            <aside class="notes">
+              <p><strong>오늘 흐름 (180분)</strong></p>
+              <table>
+                <tr><td>0:00–0:15</td><td>도입 · “프레임워크로 옮기면 뭐가 좋아지나?” 발문</td></tr>
+                <tr><td>0:15–0:45</td><td>대응표 · 이득과 비용 · 버전 주의</td></tr>
+                <tr><td>0:45–1:25</td><td>코드 비교 뷰어 데모 + 관찰 질문 1~3</td></tr>
+                <tr><td>1:25–1:35</td><td>휴식</td></tr>
+                <tr><td>1:35–1:55</td><td>관찰 4~5 · 회귀 테스트 개념</td></tr>
+                <tr><td>1:55–2:50</td><td>Challenge C1~C3 (C4는 과제)</td></tr>
+                <tr><td>2:50–3:00</td><td>정리 · 11주차 예고</td></tr>
+              </table>
+              <p>오늘은 LLM 키가 필요 없다. 파이썬 설치도 요구하지 않는다(프레임워크 코드는 읽기 자료, 실습은 JS).</p>
+            </aside>
+          </section>
+
+          <!-- 2 -->
+          <section class="slide" data-title="학습 목표">
+            <h2>오늘 할 수 있게 되는 것</h2>
+            <ol>
+              <li>우리 파이프라인의 각 단계를 LangChain · LlamaIndex API에 대응시킨다</li>
+              <li>결과를 바꾸는 숨은 기본값을 찾아 설정 객체에 명시한다</li>
+              <li>리팩터링 전후 hit@3이 <strong>질문 단위로</strong> 같은지 테스트한다</li>
+            </ol>
+            <aside class="notes">
+              <p>“프레임워크를 배운다”가 아니라 “프레임워크를 써도 결과를 책임진다”가 오늘의 태도라고 먼저 말한다. 12주차 팀 프로젝트에서 프레임워크를 쓰는 팀이 많으므로 오늘 만든 회귀 테스트를 그대로 가져가게 한다.</p>
+            </aside>
+          </section>
+
+          <!-- 3 -->
+          <section class="slide" data-title="질문으로 시작">
+            <h2>LangChain으로 옮겼더니…</h2>
+            <p class="big-quote">오류 0개, 경고 0개<br>그런데 숫자가 바뀌었다</p>
+            <table>
+              <thead><tr><th></th><th>청크 수</th><th>hit@k</th><th>컨텍스트/질문</th></tr></thead>
+              <tbody>
+                <tr><td>우리 설정 (150/20, k=3)</td><td>45</td><td>0.917</td><td>305자</td></tr>
+                <tr><td>LangChain 인자 생략</td><td><strong>12</strong></td><td>1.000 (k=4)</td><td><strong>1,392자</strong></td></tr>
+                <tr><td>구분자만 기본값</td><td>45</td><td><strong>0.750</strong></td><td>308자</td></tr>
+              </tbody>
+            </table>
+            <aside class="notes">
+              <p><strong>발문:</strong> “hit가 1.000으로 올랐다. 좋아진 건가?” 손을 들게 한 뒤 청크 수 12 = 문서 수 12를 짚는다. 청킹이 사라졌고 컨텍스트가 4.6배다.</p>
+              <p>숫자는 BM25(모델 없이) + 근거 문장 포함 청크 기준 실측값이다. 9주차 점수판 숫자와 정의가 다를 수 있음을 미리 말해 둔다.</p>
+            </aside>
+          </section>
+
+          <!-- 4 -->
+          <section class="slide" data-title="대응표">
+            <h2>같은 파이프라인, 다른 이름</h2>
+            <table>
+              <thead><tr><th>단계</th><th>우리 코드</th><th>LangChain</th><th>LlamaIndex</th></tr></thead>
+              <tbody>
+                <tr><td>청킹</td><td><code>chunk()</code> 문자</td><td><code>RecursiveCharacterTextSplitter</code></td><td><code>SentenceSplitter</code> 토큰</td></tr>
+                <tr><td>임베딩</td><td><code>embedBatch()</code></td><td><code>HuggingFaceEmbeddings</code></td><td><code>Settings.embed_model</code></td></tr>
+                <tr><td>저장</td><td><code>VectorStore</code></td><td><code>InMemoryVectorStore</code></td><td rowspan="2"><code>VectorStoreIndex</code></td></tr>
+                <tr><td>검색</td><td><code>search(q, k)</code></td><td><code>as_retriever()</code></td></tr>
+                <tr><td>프롬프트·생성</td><td><code>ragPrompt</code> + <code>generate</code></td><td><code>prompt | llm</code></td><td><code>as_query_engine()</code></td></tr>
+                <tr><td>평가</td><td><code>metrics.js</code></td><td>직접</td><td>직접 / <code>RetrieverEvaluator</code></td></tr>
+              </tbody>
+            </table>
+            <aside class="notes">
+              <p>4주차에 “LangChain의 RecursiveCharacterTextSplitter가 재귀 분할의 대표 구현”이라고 예고했던 것을 회수한다.</p>
+              <p>강조: LlamaIndex <code>chunk_size</code>는 토큰 단위다. 숫자를 그대로 옮기면 크기가 달라진다.</p>
+            </aside>
+          </section>
+
+          <!-- 5 -->
+          <section class="slide" data-title="이득과 비용">
+            <h2>프레임워크의 이득과 비용</h2>
+            <div class="cols">
+              <div>
+                <h3>이득</h3>
+                <ul>
+                  <li>교체 가능한 부품 (retriever, 벡터 DB)</li>
+                  <li>로더 · DB · LLM 연동이 이미 있다</li>
+                  <li>팀원이 같은 어휘를 쓴다</li>
+                </ul>
+              </div>
+              <div>
+                <h3>비용</h3>
+                <ul>
+                  <li>추상화: 한 줄이 세 단계를 삼킨다</li>
+                  <li>기본값: 생략한 인자는 남이 정한다</li>
+                  <li>디버깅: 깊은 스택, 안 보이는 프롬프트</li>
+                  <li>버전: 6개월이면 import가 깨진다</li>
+                </ul>
+              </div>
+            </div>
+            <aside class="notes">
+              <p><strong>발문:</strong> “직접 구현한 우리 코드에는 숨은 기본값이 없을까?” → 있다. <code>chunker.js</code>는 overlap ≥ size면 조용히 size−1로 줄인다. 위젯에서 크기 150, 오버랩 200을 고르면 보인다. LangChain은 이 경우 오류를 낸다.</p>
+            </aside>
+          </section>
+
+          <!-- 6 -->
+          <section class="slide" data-title="숨은 기본값">
+            <h2>결과를 바꾸는 숨은 기본값</h2>
+            <table>
+              <thead><tr><th>인자</th><th>LangChain</th><th>LlamaIndex</th><th>우리</th></tr></thead>
+              <tbody>
+                <tr><td>청크 크기</td><td>4000자</td><td>1024토큰</td><td>150자</td></tr>
+                <tr><td>오버랩</td><td>200자</td><td>200토큰</td><td>20자</td></tr>
+                <tr><td>구분자</td><td>문단 · 줄 · 공백</td><td>문장 단위</td><td>+ 문장 경계</td></tr>
+                <tr><td>top-k</td><td>4</td><td>2</td><td>3</td></tr>
+                <tr><td>임베딩</td><td>영어 중심 모델</td><td>OpenAI</td><td>multilingual-e5</td></tr>
+                <tr><td>QA 프롬프트</td><td>(직접 작성)</td><td>영어 기본</td><td>한국어 + 인용</td></tr>
+              </tbody>
+            </table>
+            <p class="muted">버전마다 달라질 수 있다 → 설치 버전과 공식 문서로 확인한다</p>
+            <aside class="notes">
+              <p>기본값 수치는 작성 시점 공개 API 기준이다. 수업 전에 강의실 PC에 설치된 버전으로 한 번 확인한다(<code>pip show langchain-text-splitters llama-index-core</code>).</p>
+              <p>임베딩 기본값이 가장 치명적이다. 5주차에 본 영어 전용 모델의 한국어 실패가 오류 없이 재현된다.</p>
+            </aside>
+          </section>
+
+          <!-- 7 -->
+          <section class="slide slide--demo" data-title="데모: 코드 비교 뷰어">
+            <h2>데모 · 코드 비교 뷰어</h2>
+            <div id="deck-w10-widget"></div>
+            <aside class="notes">
+              <p><strong>시연 순서</strong> (설명과 실험 결과는 오른쪽 실행 결과 창에 나온다)</p>
+              <ol>
+                <li>처음 화면: 청킹 단계 강조. 세 코드에서 청크 크기가 어디 적혀 있는지 짚는다</li>
+                <li>“저장” 단계 → LlamaIndex는 한 줄. 그 한 줄이 청킹·임베딩·저장을 다 한다</li>
+                <li>“프롬프트” 단계 → LlamaIndex 기본 프롬프트가 영어라는 설명을 읽는다</li>
+                <li>숨은 기본값 실험: 처음 값(LangChain 기본) → 청크 12개, 컨텍스트 1,392자, 빨간 판정</li>
+                <li>“실패 재현: 구분자만 기본값” → hit@3 0.917 → 0.750, 달라진 질문 q07, q09</li>
+                <li>“우리 설정”으로 돌아와 k를 1로 → q06이 빠져 0.833</li>
+              </ol>
+            </aside>
+          </section>
+
+          <!-- 8 -->
+          <section class="slide" data-title="관찰 질문">
+            <h2>관찰 질문</h2>
+            <ol>
+              <li>LlamaIndex “저장” 한 줄은 우리 코드의 어느 단계들인가?</li>
+              <li>hit가 올랐는데 왜 빨간 판정인가?</li>
+              <li>구분자만 바꿨을 때 달라진 두 질문은? 어디서 잘렸나?</li>
+              <li>k를 줄이면 처음 놓치는 질문은 몇 번 k에서?</li>
+              <li>기본값을 다 적은 프레임워크 코드는 정말 짧은가?</li>
+            </ol>
+            <aside class="notes">
+              <p>1~3 짝 활동 15분, 4~5는 휴식 후 전체.</p>
+              <p>기대 답: 1) 청킹 + 임베딩 + 저장. 2) 청크 12개 = 문서 12개, 컨텍스트 305 → 1,392자, 근거 비율 13.4% → 2.7%. 3) q07(RRF k=60), q09(HNSW 단점) — 공백에서 잘려 근거 문장이 두 청크로 나뉜다. 4) k=2까지는 0.917 유지, k=1에서 q06(근거가 2위)이 빠져 0.833. 5) 주석·빈 줄 제외 우리 45줄, LangChain 50줄, LlamaIndex 37줄 — 기본값을 명시하면 짧아지는 폭이 작다.</p>
+            </aside>
+          </section>
+
+          <!-- 9 -->
+          <section class="slide" data-title="리팩터링은 평가로 끝난다">
+            <h2>리팩터링은 평가로 끝난다</h2>
+            <pre><code>전  [1,1,1,1,1,1,1,1,1,0,1,1]  0.917
+후  [1,1,1,1,1,1,1,1,1,0,1,1]  0.917  ✓ 12문항 동일
+후' [1,1,1,1,1,1,0,1,0,0,1,1]  0.750  ✗ q07, q09</code></pre>
+            <ul>
+              <li>평균이 아니라 <strong>질문 단위</strong>로 비교한다</li>
+              <li>모든 검색기는 <code>search(query, k)</code> 하나로 맞춘다</li>
+              <li>설정은 한 곳에: <code>DEFAULTS</code> + <code>makeConfig()</code></li>
+            </ul>
+            <aside class="notes">
+              <p><strong>발문:</strong> “A 질문이 새로 맞고 B 질문이 새로 틀리면 평균은?” → 그대로. 그래서 평균만 보는 테스트는 리팩터링을 보증하지 못한다.</p>
+              <p>C2~C4가 이 슬라이드의 세 줄을 하나씩 구현한다고 연결한다.</p>
+            </aside>
+          </section>
+
+          <!-- 10 -->
+          <section class="slide" data-title="코드로 확인: 기본값 비교">
+            <h2>코드로 확인하기</h2>
+            <pre data-run="deck-defaults" data-title="숨은 기본값 비교 (BM25)"><code class="language-javascript">import { chunk } from '/assets/js/core/chunker.js';
+import { BM25 } from '/assets/js/core/bm25.js';
+const corpus = await (await fetch('/assets/data/corpus/corpus.json')).json();
+const golden = await (await fetch('/assets/data/golden/golden.json')).json();
+const LC_SEPS = ['\n\n', '\n', ' ', ''];
+
+function run({ size, overlap, separators, k }) {
+  const chunks = corpus.documents.flatMap((d) =&gt; chunk(d.text, { size, overlap, separators })
+    .map((c) =&gt; ({ id: `${d.id}#${c.index}`, text: c.text })));
+  const bm25 = new BM25().add(chunks);
+  let hit = 0, ctx = 0;
+  for (const it of golden.items) {
+    const found = bm25.search(it.question, k);
+    if (found.some((h) =&gt; it.evidence.some((e) =&gt; h.text.includes(e.quote)))) hit++;
+    ctx += found.reduce((s, h) =&gt; s + h.text.length, 0);
+  }
+  return { chunks: chunks.length, 'hit@k': (hit / 12).toFixed(3), k, ctx: Math.round(ctx / 12) };
+}
+
+console.table([
+  { name: '우리 설정', ...run({ size: 150, overlap: 20, k: 3 }) },
+  { name: 'LangChain 기본', ...run({ size: 4000, overlap: 200, separators: LC_SEPS, k: 4 }) },
+  { name: 'LlamaIndex 기본(근사)', ...run({ size: 1024, overlap: 200, k: 2 }) },
+  { name: '구분자만 기본', ...run({ size: 150, overlap: 20, separators: LC_SEPS, k: 3 }) },
+]);</code></pre>
+            <aside class="notes">
+              <p>▶ 실행 결과(실측): 우리 설정 45청크 · 0.917 · 305자 / LangChain 기본 12 · 1.000 · 1,392자 / LlamaIndex 기본(근사) 12 · 1.000 · 755자 / 구분자만 기본 45 · 0.750 · 308자.</p>
+              <p>LlamaIndex 1024는 토큰 단위라 문자로 근사했다. 이 코퍼스 문서는 모두 550자 이하라 어느 쪽이든 문서 전체가 한 청크다.</p>
+            </aside>
+          </section>
+
+          <!-- 11 -->
+          <section class="slide" data-title="Challenge 안내">
+            <h2>Challenge</h2>
+            <table>
+              <tbody>
+                <tr><td>C1 ★</td><td>프레임워크 인자 이름 → 우리 옵션 (기본값 채우기)</td></tr>
+                <tr><td>C2 ★★</td><td>지저분한 파이프라인을 작은 함수로 (결과 동일)</td></tr>
+                <tr><td>C3 ★★★</td><td>BM25 · 벡터 · 하이브리드를 <code>search(query, k)</code> 하나로</td></tr>
+                <tr><td>C4 ★★★★</td><td>설정 객체 + 질문 단위 회귀 테스트 (과제)</td></tr>
+              </tbody>
+            </table>
+            <p class="muted">모두 JS로 푼다. 파이썬 설치는 필요 없다</p>
+            <aside class="notes">
+              <p>C1~C2는 모두 끝내야 한다. C3는 어댑터 개념이 핵심이니 막히면 <code>pick</code> 함수 힌트를 준다. 정답은 부록 B.</p>
+            </aside>
+          </section>
+
+          <!-- 12 -->
+          <section class="slide" data-title="정리 & 다음 주">
+            <h2>정리</h2>
+            <ul>
+              <li>프레임워크 API = 우리가 만든 단계의 묶음. <strong>넓은 상자일수록 숨은 결정이 많다</strong></li>
+              <li>생략한 인자는 기본값: 크기 · 구분자 · top-k · 프롬프트</li>
+              <li>설정은 명시하고, 잘못된 값은 오류로 알린다</li>
+              <li>리팩터링은 질문 단위 hit@3이 같을 때 끝난다</li>
+            </ul>
+            <h3>다음 주 · 웹 UI + 인용 표기</h3>
+            <p class="muted">답변의 [1]을 누르면 원문 근거가 하이라이트되는 화면을 만든다</p>
+            <aside class="notes">
+              <p>11주차는 LLM 키가 필요하다. 키가 없는 학생은 저장된 예시 응답으로 실습할 수 있다고 공지한다.</p>
+              <p>청크의 <code>start/end</code>를 보존해 온 이유가 다음 주에 드러난다고 예고한다.</p>
+            </aside>
+          </section>
+
+          <!-- Appendix -->
+          <section class="slide" data-title="부록 A · 강의안" data-appendix>
+            <h2>부록 A · 강의안</h2>
+            <table>
+              <thead><tr><th>시간</th><th>활동</th><th>산출물</th></tr></thead>
+              <tbody>
+                <tr><td>15분</td><td>도입 · 숫자가 바뀐 사례</td><td>—</td></tr>
+                <tr><td>30분</td><td>대응표 · 이득/비용 · 숨은 기본값 · 버전</td><td>대응표 빈칸 채우기</td></tr>
+                <tr><td>40분</td><td>위젯 데모 · 관찰 질문 1~3</td><td>짝 활동 메모</td></tr>
+                <tr><td>10분</td><td>휴식</td><td>—</td></tr>
+                <tr><td>20분</td><td>관찰 4~5 · 회귀 테스트 개념</td><td>—</td></tr>
+                <tr><td>55분</td><td>Challenge C1~C3</td><td>C2 “전체 동일: true” 캡처</td></tr>
+                <tr><td>10분</td><td>정리 · 예고</td><td>—</td></tr>
+              </tbody>
+            </table>
+          </section>
+
+          <section class="slide" data-title="부록 B · C1 정답" data-appendix>
+            <h2>부록 B · C1 정답</h2>
+            <pre data-run="ans-c1" data-title="C1 정답"><code class="language-javascript">import { chunk } from '/assets/js/core/chunker.js';
+
+const LC_DEFAULTS = { chunk_size: 4000, chunk_overlap: 200, separators: ['\n\n', '\n', ' ', ''], k: 4 };
+const LI_DEFAULTS = { chunk_size: 1024, chunk_overlap: 200, similarity_top_k: 2 };
+
+function fromLangChain(splitterArgs = {}, searchKwargs = {}) {
+  const a = { ...LC_DEFAULTS, ...splitterArgs };
+  return { size: a.chunk_size, overlap: a.chunk_overlap, separators: a.separators,
+    k: searchKwargs.k ?? LC_DEFAULTS.k, unit: 'char' };
+}
+
+function fromLlamaIndex(splitterArgs = {}, retrieverArgs = {}, charsPerToken = 1) {
+  const a = { ...LI_DEFAULTS, ...splitterArgs };
+  return { size: Math.round(a.chunk_size * charsPerToken),
+    overlap: Math.round(a.chunk_overlap * charsPerToken), separators: undefined,
+    k: retrieverArgs.similarity_top_k ?? LI_DEFAULTS.similarity_top_k, unit: 'token→char' };
+}
+
+const corpus = await (await fetch('/assets/data/corpus/corpus.json')).json();
+const doc = corpus.documents.find((d) =&gt; d.id === 'rag-hybrid');
+const configs = {
+  ours: { size: 150, overlap: 20, separators: undefined, k: 3, unit: 'char' },
+  langchainDefault: fromLangChain(),
+  langchainTuned: fromLangChain({ chunk_size: 150, chunk_overlap: 20 }, { k: 3 }),
+  llamaindexDefault: fromLlamaIndex(),
+};
+console.table(Object.entries(configs).map(([name, c]) =&gt; ({
+  name, size: c.size, overlap: c.overlap, k: c.k, unit: c.unit,
+  separators: JSON.stringify(c.separators ?? '(chunker.js 기본)'),
+  chunks: chunk(doc.text, { strategy: 'recursive', ...c }).length,
+})));
+const same = (a, b) =&gt; JSON.stringify(chunk(doc.text, a)) === JSON.stringify(chunk(doc.text, b));
+console.log('langchainTuned와 ours의 청크가 같은가?', same(configs.ours, configs.langchainTuned));</code></pre>
+            <aside class="notes">
+              <p><strong>실행 결과(rag-hybrid 문서):</strong> ours 150/20/k3 → 4청크, langchainDefault 4000/200/k4 → 1청크, langchainTuned 150/20/k3 → <b>3청크</b>, llamaindexDefault 1024/200/k2 → 1청크. 마지막 줄 “같은가?” → false.</p>
+              <p><strong>왜:</strong> 크기와 오버랩을 맞춰도 구분자 기본값이 달라 경계가 달라진다. “인자 이름만 옮기면 같은 결과”라는 가정이 깨지는 지점이다. LlamaIndex는 단위(토큰)까지 바꿔야 해서 <code>charsPerToken</code>을 인자로 뺐다.</p>
+            </aside>
+          </section>
+
+          <section class="slide" data-title="부록 B · C2 정답 (1/2)" data-appendix>
+            <h2>부록 B · C2 정답 (1/2)</h2>
+            <pre data-run="ans-c2" data-title="C2 정답 (전체 실행)"><code class="language-javascript">import { chunk } from '/assets/js/core/chunker.js';
+import { BM25 } from '/assets/js/core/bm25.js';
+
+const corpus = await (await fetch('/assets/data/corpus/corpus.json')).json();
+const golden = await (await fetch('/assets/data/golden/golden.json')).json();
+
+function messyRun(q) {
+  let all = [];
+  for (let i = 0; i &lt; corpus.documents.length; i++) {
+    const d = corpus.documents[i];
+    const cs = chunk(d.text, { strategy: 'recursive', size: 150, overlap: 20 });
+    for (let j = 0; j &lt; cs.length; j++) all.push({ id: d.id + '#' + j, text: cs[j].text });
+  }
+  const bm = new BM25();
+  bm.add(all);
+  const r = bm.search(q, 3);
+  let ctx = '';
+  for (let i = 0; i &lt; r.length; i++) ctx += '[' + (i + 1) + '] ' + r[i].text + '\n\n';
+  return { ids: r.map((x) =&gt; x.id), prompt: '근거 문서:\n' + ctx + '질문: ' + q };
+}
+
+function splitAll(docs, { size, overlap }) {
+  return docs.flatMap((d) =&gt; chunk(d.text, { strategy: 'recursive', size, overlap })
+    .map((c) =&gt; ({ id: `${d.id}#${c.index}`, text: c.text })));
+}
+
+function bm25Retriever(chunks) {
+  const index = new BM25().add(chunks); // built once
+  return {
+    search: (query, k) =&gt; index.search(query, k).map(({ id, score, text }) =&gt; ({ id, score, text })),
+  };
+}
+
+const formatContext = (hits) =&gt; hits.map((h, i) =&gt; `[${i + 1}] ${h.text}\n\n`).join('');
+const buildPrompt = (question, hits) =&gt; `근거 문서:\n${formatContext(hits)}질문: ${question}`;
+
+const retriever = bm25Retriever(splitAll(corpus.documents, { size: 150, overlap: 20 }));
+const same = (a, b) =&gt; JSON.stringify(a) === JSON.stringify(b);
+
+let t = performance.now();
+const before = golden.items.map((it) =&gt; messyRun(it.question));
+const tBefore = performance.now() - t;
+t = performance.now();
+const after = golden.items.map((it) =&gt; {
+  const hits = retriever.search(it.question, 3);
+  return { ids: hits.map((h) =&gt; h.id), prompt: buildPrompt(it.question, hits) };
+});
+const tAfter = performance.now() - t;
+
+console.table(golden.items.map((it, i) =&gt; ({ id: it.id, same: same(before[i], after[i]) })));
+console.log(`전체 동일: ${before.every((b, i) =&gt; same(b, after[i]))}`);
+console.log(`시간: 전 ${tBefore.toFixed(1)}ms → 후 ${tAfter.toFixed(1)}ms`);</code></pre>
+            <aside class="notes">
+              <p>이 상자는 전체 코드다(▶ 실행 가능). 핵심 함수는 다음 슬라이드에 크게 보인다.</p>
+              <p><strong>실행 결과:</strong> 12문항 모두 same=true, “전체 동일: true”. 시간은 Node 실측 약 18ms → 1ms(브라우저에서는 기기마다 다르다). 질문마다 색인을 다시 만들던 비용이 사라진다.</p>
+            </aside>
+          </section>
+
+          <section class="slide" data-title="부록 B · C2 정답 (2/2)" data-appendix>
+            <h2>부록 B · C2 핵심 함수</h2>
+            <pre><code>function splitAll(docs, { size, overlap }) {
+  return docs.flatMap((d) => chunk(d.text, { strategy: 'recursive', size, overlap })
+    .map((c) => ({ id: `${d.id}#${c.index}`, text: c.text })));
+}
+function bm25Retriever(chunks) {
+  const index = new BM25().add(chunks); // built once
+  return { search: (query, k) =>
+    index.search(query, k).map(({ id, score, text }) => ({ id, score, text })) };
+}
+const formatContext = (hits) =>
+  hits.map((h, i) => `[${i + 1}] ${h.text}\n\n`).join('');
+const buildPrompt = (question, hits) =>
+  `근거 문서:\n${formatContext(hits)}질문: ${question}`;</code></pre>
+            <aside class="notes">
+              <p><strong>왜 이렇게:</strong> 원본의 <code>d.id + '#' + j</code>는 <code>chunk()</code>가 빈 청크를 거른 뒤 매긴 <code>c.index</code>와 같다. 이 사실을 확인하지 않고 다른 ID 규칙을 쓰면 비교가 전부 false가 된다.</p>
+              <p>프롬프트 끝의 <code>\n\n</code> 위치까지 같아야 한다. “글자 하나까지 같게”가 리팩터링의 기준임을 강조한다.</p>
+            </aside>
+          </section>
+
+          <section class="slide" data-title="부록 B · C3 정답" data-appendix>
+            <h2>부록 B · C3 정답</h2>
+            <pre data-run="ans-c3" data-title="C3 정답"><code class="language-javascript">import { chunk } from '/assets/js/core/chunker.js';
+import { BM25 } from '/assets/js/core/bm25.js';
+import { VectorStore } from '/assets/js/core/vectorstore.js';
+import { rrf } from '/assets/js/core/rerank.js';
+
+const corpus = await (await fetch('/assets/data/corpus/corpus.json')).json();
+const golden = await (await fetch('/assets/data/golden/golden.json')).json();
+const chunks = corpus.documents.flatMap((d) =&gt; chunk(d.text, { strategy: 'recursive', size: 150, overlap: 20 })
+  .map((c) =&gt; ({ id: `${d.id}#${c.index}`, text: c.text })));
+
+function toyEmbed(text, dim = 256) {
+  const v = new Float32Array(dim);
+  const s = text.replace(/\s+/g, ' ');
+  for (let i = 0; i &lt; s.length - 1; i++) {
+    let h = 0;
+    for (const ch of s.slice(i, i + 2)) h = (h * 31 + ch.codePointAt(0)) &gt;&gt;&gt; 0;
+    v[h % dim] += 1;
+  }
+  return v;
+}
+
+const pick = ({ id, score, text }) =&gt; ({ id, score, text });
+
+function bm25Adapter(chunks) {
+  const index = new BM25().add(chunks);
+  return { search: (query, k) =&gt; index.search(query, k).map(pick) };
+}
+
+function vectorAdapter(chunks, embedFn) {
+  const store = new VectorStore();
+  for (const c of chunks) store.add(c.id, embedFn(c.text), { text: c.text });
+  return {
+    search: (query, k) =&gt; store.search(embedFn(query), k)
+      .map((h) =&gt; ({ id: h.id, score: h.score, text: h.meta.text })),
+  };
+}
+
+function hybridAdapter(retrievers, { pool = 10 } = {}) {
+  return {
+    search: (query, k) =&gt; rrf(retrievers.map((r) =&gt; r.search(query, pool)), { topK: k }).map(pick),
+  };
+}
+
+function hitAt3(retriever) {
+  let hit = 0;
+  for (const it of golden.items) {
+    const found = retriever.search(it.question, 3);
+    if (found.some((h) =&gt; it.evidence.some((e) =&gt; h.text?.includes(e.quote)))) hit++;
+  }
+  return hit / golden.items.length;
+}
+
+const bm25 = bm25Adapter(chunks);
+const vector = vectorAdapter(chunks, toyEmbed);
+const retrievers = { bm25, vector, hybrid: hybridAdapter([bm25, vector]) };
+console.table(Object.entries(retrievers).map(([name, r]) =&gt; {
+  const out = r.search('RRF에서 k 값은 보통 얼마를 쓰나?', 3);
+  const shapeOk = out.length === 3 &amp;&amp; out.every((h) =&gt;
+    typeof h.id === 'string' &amp;&amp; typeof h.score === 'number' &amp;&amp; typeof h.text === 'string');
+  return { name, shapeOk, top1: out[0]?.id ?? '-', 'hit@3': hitAt3(r) };
+}));</code></pre>
+            <aside class="notes">
+              <p><strong>실행 결과:</strong> 세 검색기 모두 shapeOk=true. top1: bm25 rag-hybrid#2, vector rag-embedding#1, hybrid rag-hybrid#2. hit@3: bm25 0.917, vector(toyEmbed) 0.583, hybrid 0.833.</p>
+              <p><strong>왜:</strong> 어댑터는 “안쪽 API는 그대로, 바깥 모양만 맞춘다”. 평가 함수 <code>hitAt3</code>가 세 검색기에 그대로 쓰이는 것이 이득이다. LangChain retriever의 <code>invoke(query)</code>가 같은 발상이다.</p>
+              <p>toyEmbed는 의미를 모르는 글자 해시라 벡터 점수가 낮다. 실제 임베딩(5주차)이면 달라진다는 점을 짚는다. 하이브리드가 BM25보다 낮은 것도 약한 벡터 탓이다.</p>
+            </aside>
+          </section>
+
+          <section class="slide" data-title="부록 B · C3 핵심" data-appendix>
+            <h2>부록 B · C3 핵심 함수</h2>
+            <pre><code>const pick = ({ id, score, text }) => ({ id, score, text });
+function bm25Adapter(chunks) {
+  const index = new BM25().add(chunks);
+  return { search: (query, k) => index.search(query, k).map(pick) };
+}
+function vectorAdapter(chunks, embedFn) {
+  const store = new VectorStore();
+  for (const c of chunks) store.add(c.id, embedFn(c.text), { text: c.text });
+  return { search: (query, k) => store.search(embedFn(query), k)
+    .map((h) => ({ id: h.id, score: h.score, text: h.meta.text })) };
+}
+function hybridAdapter(retrievers, { pool = 10 } = {}) {
+  return { search: (query, k) =>
+    rrf(retrievers.map((r) => r.search(query, pool)), { topK: k }).map(pick) };
+}</code></pre>
+            <aside class="notes">
+              <p>하이브리드 검색기도 같은 모양을 반환하므로 하이브리드를 다시 다른 하이브리드에 넣을 수도 있다(합성 가능). 이것이 인터페이스를 맞추는 진짜 이득이다.</p>
+              <p><code>rrf()</code>는 첫 목록의 항목을 복사하고 <code>ranks</code>를 붙이므로, <code>pick</code>으로 다시 모양을 맞추지 않으면 인터페이스가 새어 나간다.</p>
+            </aside>
+          </section>
+
+          <section class="slide" data-title="부록 B · C4 정답" data-appendix>
+            <h2>부록 B · C4 정답</h2>
+            <pre data-run="ans-c4" data-title="C4 정답"><code class="language-javascript">import { chunk } from '/assets/js/core/chunker.js';
+import { BM25 } from '/assets/js/core/bm25.js';
+import { hitAtK } from '/assets/js/core/metrics.js';
+
+const corpus = await (await fetch('/assets/data/corpus/corpus.json')).json();
+const golden = await (await fetch('/assets/data/golden/golden.json')).json();
+const BEFORE = [1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1];
+const DEFAULTS = Object.freeze({ strategy: 'recursive', size: 150, overlap: 20, k: 3 });
+
+function makeConfig(overrides = {}) {
+  const unknown = Object.keys(overrides).filter((key) =&gt; !(key in DEFAULTS));
+  if (unknown.length) throw new Error(`알 수 없는 설정: ${unknown.join(', ')}`);
+  const cfg = { ...DEFAULTS, ...overrides };
+  if (cfg.overlap &gt;= cfg.size) throw new Error(`overlap(${cfg.overlap}) ≥ size(${cfg.size})`);
+  if (!(cfg.k &gt;= 1)) throw new Error(`k는 1 이상이어야 한다: ${cfg.k}`);
+  return Object.freeze(cfg);
+}
+
+function buildPipeline(docs, config) {
+  const chunks = docs.flatMap((d) =&gt; chunk(d.text, config)
+    .map((c) =&gt; ({ id: `${d.id}#${c.index}`, text: c.text })));
+  const index = new BM25().add(chunks);
+  return { chunks, search: (q, k = config.k) =&gt; index.search(q, k) };
+}
+
+function hitsPerQuestion(pipeline, k) {
+  return golden.items.map((it) =&gt; {
+    const relevant = pipeline.chunks
+      .filter((c) =&gt; it.evidence.some((e) =&gt; c.text.includes(e.quote)))
+      .map((c) =&gt; c.id);
+    const ids = pipeline.search(it.question, k).map((h) =&gt; h.id);
+    return hitAtK(ids, relevant, k);
+  });
+}
+
+function regressionTest(name, config) {
+  const after = hitsPerQuestion(buildPipeline(corpus.documents, config), 3);
+  const diff = golden.items.filter((_, i) =&gt; after[i] !== BEFORE[i]).map((it) =&gt; it.id);
+  const mean = (a) =&gt; (a.reduce((s, x) =&gt; s + x, 0) / a.length).toFixed(3);
+  console.log(`${diff.length ? '✗' : '✓'} ${name}: hit@3 ${mean(BEFORE)} → ${mean(after)}`,
+    diff.length ? `달라진 질문 ${diff.join(', ')}` : '');
+}
+
+regressionTest('기본 설정', makeConfig());
+regressionTest('LangChain 기본 크기로 바꾸면', makeConfig({ size: 4000, overlap: 200 }));
+for (const bad of [{ chunk_size: 150 }, { size: 100, overlap: 100 }, { k: 0 }]) {
+  try {
+    makeConfig(bad);
+    console.warn('오류가 나야 하는데 통과했다:', bad);
+  } catch (err) {
+    console.log('잡았다:', err.message);
+  }
+}</code></pre>
+            <aside class="notes">
+              <p><strong>실행 결과:</strong> “✓ 기본 설정: hit@3 0.917 → 0.917”, “✗ LangChain 기본 크기로 바꾸면: hit@3 0.917 → 1.000 달라진 질문 q10”, 그리고 잘못된 설정 3개가 모두 “잡았다”로 나온다(알 수 없는 설정: chunk_size / overlap(100) ≥ size(100) / k는 1 이상).</p>
+              <p><strong>왜:</strong> 지표가 <em>올라도</em> 테스트는 실패해야 한다. 리팩터링의 약속은 “같다”이지 “좋아진다”가 아니다. q10(표가 깨진 시간표)은 문서 통째로 넣으면 우연히 맞는다 — 3주차 파싱 문제가 여전히 남아 있다.</p>
+            </aside>
+          </section>
+
+          <section class="slide" data-title="부록 B · C4 핵심" data-appendix>
+            <h2>부록 B · C4 핵심 함수</h2>
+            <pre><code>function makeConfig(overrides = {}) {
+  const unknown = Object.keys(overrides).filter((key) => !(key in DEFAULTS));
+  if (unknown.length) throw new Error(`알 수 없는 설정: ${unknown.join(', ')}`);
+  const cfg = { ...DEFAULTS, ...overrides };
+  if (cfg.overlap >= cfg.size) throw new Error(`overlap(${cfg.overlap}) ≥ size(${cfg.size})`);
+  if (!(cfg.k >= 1)) throw new Error(`k는 1 이상이어야 한다: ${cfg.k}`);
+  return Object.freeze(cfg);
+}
+function hitsPerQuestion(pipeline, k) {
+  return golden.items.map((it) => {
+    const relevant = pipeline.chunks
+      .filter((c) => it.evidence.some((e) => c.text.includes(e.quote)))
+      .map((c) => c.id);
+    return hitAtK(pipeline.search(it.question, k).map((h) => h.id), relevant, k);
+  });
+}</code></pre>
+            <aside class="notes">
+              <p>정답(relevant)을 청크 ID로 정의하므로 청킹 설정이 바뀌면 정답 목록도 다시 계산된다. 골든셋은 “근거 문장”으로 저장해 두고, 청크 ID는 매번 유도한다 — LlamaIndex <code>RetrieverEvaluator</code>가 노드 ID를 요구할 때 생기는 문제를 이렇게 피한다.</p>
+              <p><code>!(cfg.k >= 1)</code>은 <code>NaN</code>과 <code>undefined</code>까지 잡는다.</p>
+            </aside>
+          </section>
+
+          <section class="slide" data-title="부록 C · 자주 막히는 지점" data-appendix>
+            <h2>부록 C · 학생이 자주 막히는 지점</h2>
+            <table>
+              <thead><tr><th>증상</th><th>원인</th><th>대응</th></tr></thead>
+              <tbody>
+                <tr><td>C2 비교가 전부 false</td><td>ID 규칙이나 프롬프트 줄바꿈이 다름</td><td>한 문항의 두 문자열을 나란히 출력하게 한다</td></tr>
+                <tr><td>C3 hybrid의 text가 undefined</td><td>rrf 결과에서 필드를 안 옮김</td><td><code>pick</code>으로 모양을 다시 맞춘다</td></tr>
+                <tr><td>C4 BEFORE와 길이가 다름</td><td>hitsPerQuestion이 평균을 반환</td><td>질문별 배열을 반환하게 한다</td></tr>
+                <tr><td>“파이썬 코드를 실행해 보고 싶다”</td><td>로컬 환경 필요</td><td>venv + 버전 고정 안내, 과제로만</td></tr>
+                <tr><td>튜토리얼 import 오류</td><td>패키지 분리 · 버전 차이</td><td>설치 버전 확인 후 공식 문서 기준으로</td></tr>
+              </tbody>
+            </table>
+          </section>
+
+          <section class="slide" data-title="부록 D · 토론 주제" data-appendix>
+            <h2>부록 D · 토론 주제</h2>
+            <ol>
+              <li>팀 프로젝트에서 프레임워크를 쓸 것인가? 판단 기준 세 가지를 정한다면?</li>
+              <li>hit가 오른 리팩터링은 통과시켜야 하나, 실패로 봐야 하나?</li>
+              <li>프레임워크 기본값이 “대부분에 무난한 값”이라면, 한국어 문서에는 무엇이 무난하지 않은가?</li>
+              <li>우리 <code>chunker.js</code>가 overlap ≥ size를 조용히 고치는 것은 친절인가, 함정인가?</li>
+            </ol>
+          </section>
+
+          <section class="slide" data-title="부록 E · 평가 루브릭" data-appendix>
+            <h2>부록 E · 평가 루브릭</h2>
+            <table>
+              <thead><tr><th>항목</th><th>우수 (3)</th><th>보통 (2)</th><th>미흡 (1)</th></tr></thead>
+              <tbody>
+                <tr><td>대응 (C1)</td><td>기본값·단위 차이까지 설명</td><td>이름만 매핑</td><td>매핑 오류</td></tr>
+                <tr><td>구조 (C2·C3)</td><td>결과 동일 + 공통 인터페이스</td><td>동작하나 모양 불일치</td><td>동작하지 않음</td></tr>
+                <tr><td>검증 (C4)</td><td>질문 단위 비교 + 잘못된 설정 오류 처리</td><td>평균만 비교</td><td>테스트 없음</td></tr>
+                <tr><td>관찰·토론</td><td>지표 변화의 원인을 기본값으로 설명</td><td>현상만 서술</td><td>참여 없음</td></tr>
+              </tbody>
+            </table>
+          </section>
+
+        </div>
+          </div>
+        </div>
+        <section class="notes-pane" aria-label="교사 노트">
+          <button type="button" class="notes-head"><span>🧑‍🏫 교사 노트</span><span class="spacer"></span><span class="notes-next"></span><span class="notes-toggle">▾ 접기</span></button>
+          <div class="notes-body"></div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <script type="module">
+    import { initDeck } from '../../assets/js/site/slides.js';
+    import { initRunners } from '../../assets/js/site/runner.js';
+    import { mount } from '../../assets/js/widgets/w10-code-compare.js';
+    initRunners(document.querySelector('.deck-stage'));
+    initDeck();
+    mount(document.getElementById('deck-w10-widget'), { outputTitle: '코드 비교 · 숨은 기본값 (데모 슬라이드)' });
+  </script>
+</body>
+</html>

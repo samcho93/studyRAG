@@ -1,0 +1,521 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>11주차 웹 UI + 인용 표기 · 교사용 · RAG Lab</title>
+  <meta name="description" content="11주차 웹 UI + 인용 표기 교사용 슬라이드: 강의 흐름, 교사 노트, Challenge 정답, 자주 막히는 지점, 토론 주제, 평가 루브릭.">
+  <script>try{var t=JSON.parse(localStorage.getItem('raglab:theme'));if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+  <link rel="stylesheet" crossorigin="anonymous" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&display=swap">
+  <link rel="stylesheet" href="../../assets/css/tokens.css">
+  <link rel="stylesheet" href="../../assets/css/base.css">
+  <link rel="stylesheet" href="../../assets/css/components.css">
+  <link rel="stylesheet" href="../../assets/css/slides.css">
+  <link rel="stylesheet" href="../../assets/css/w11.css">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%232450c4'/%3E%3Ccircle cx='14' cy='14' r='6' fill='none' stroke='white' stroke-width='3'/%3E%3Cpath d='M19 19l6 6' stroke='white' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E">
+  <script type="module" src="../../assets/js/site/site.js"></script>
+</head>
+<body>
+  <div class="layout" data-layout data-role="teacher" data-week="11" data-crumb="🧑‍🏫 교사용 › <b>11주차 · 웹 UI + 인용 표기</b>">
+    <main class="pane center" id="main">
+      <div class="slide-view" data-deck data-deck-title="11주차 · 웹 UI + 인용 표기">
+        <div class="deck-bar"><div class="deck-row" data-deck-controls></div></div>
+        <div class="deck-progress"><i></i></div>
+        <div class="deck-wrap">
+          <div class="deck-viewport">
+        <div class="deck-stage">
+
+          <!-- 1 -->
+          <section class="slide slide--title" data-title="표지">
+            <div class="kicker">검색증강생성(RAG) 시스템 구축 · 11주차</div>
+            <h1>웹 UI + 인용 표기</h1>
+            <p>답변의 [1]은 원문의 어디를 가리키는가</p>
+            <div class="deco" aria-hidden="true">💬</div>
+            <aside class="notes">
+              <p><strong>오늘 흐름 (180분)</strong></p>
+              <table>
+                <tr><td>0:00–0:15</td><td>도입 · 7주차 최소 RAG 화면 다시 보기</td></tr>
+                <tr><td>0:15–0:55</td><td>화면 네 요소 · 인용 형식 · 문장-근거 정렬 · 위치 보존</td></tr>
+                <tr><td>0:55–1:30</td><td>위젯 실습 + 관찰 질문 1~4</td></tr>
+                <tr><td>1:30–1:40</td><td>휴식</td></tr>
+                <tr><td>1:40–2:00</td><td>관찰 5~6 · 스트리밍 · 오류/거절 · 키 보안</td></tr>
+                <tr><td>2:00–2:50</td><td>Challenge C1~C4 (C5는 과제)</td></tr>
+                <tr><td>2:50–3:00</td><td>정리 · 12주차 발표 안내</td></tr>
+              </table>
+              <p>T 키로 타이머를 시작한다. 키가 있는 학생은 LLM 설정을 미리 열어 두게 한다. 키가 없어도 수업은 전부 진행된다.</p>
+            </aside>
+          </section>
+
+          <!-- 2 -->
+          <section class="slide" data-title="학습 목표">
+            <h2>오늘 할 수 있게 되는 것</h2>
+            <ol>
+              <li>RAG 화면의 네 요소(입력·답변·출처·피드백)와 로딩·거절·오류 상태를 설계한다</li>
+              <li>인용 번호를 청크 위치(start/end)에 연결해 원문 근거를 하이라이트한다</li>
+              <li>인용 검증기를 만들고 인용 커버리지를 측정한다</li>
+            </ol>
+            <aside class="notes">
+              <p>12주차 발표 직전 주다. “발표 때 심사위원이 [1]을 눌러 본다”고 말해 동기를 준다.</p>
+              <p>3번은 9주차 평가(검색 지표)의 생성 쪽 짝이다.</p>
+            </aside>
+          </section>
+
+          <!-- 3 -->
+          <section class="slide" data-title="질문으로 시작">
+            <h2>“출처: 실습실 이용 규정”</h2>
+            <p class="big-quote">GPU 서버는 최대 12시간까지 쓸 수 있다.<br><span class="muted">출처: 실습실 이용 규정</span></p>
+            <p>→ 이 답을 확인하려면 무엇을 해야 하나?</p>
+            <p class="muted">문서 전체(284자)를 읽어야 한다 → 아무도 읽지 않는다 → 출처는 장식이 된다</p>
+            <aside class="notes">
+              <p><strong>발문:</strong> “검색 엔진 결과에서 출처 링크를 눌러 본 적이 마지막으로 언제인가?” 대부분 안 누른다.</p>
+              <p>사람은 출처가 “있다”는 사실만으로 신뢰한다. 그래서 출처는 누르기 쉬워야 하고, 누르면 바로 그 문장이 보여야 한다.</p>
+            </aside>
+          </section>
+
+          <!-- 4 -->
+          <section class="slide" data-title="인용처럼 보이는 거짓">
+            <h2>인용처럼 보이는 거짓</h2>
+            <div class="callout callout--danger">
+              <p>…최대 12시간까지 사용할 수 있다 [1]. 사용 전 캘린더에 등록해야 한다 <b>[4]</b>. 주말에는 누구나 자유롭게 이용할 수 있다<b>.</b> 장비 고장은 조교에게 알린다 <b>[2]</b>.</p>
+            </div>
+            <ul>
+              <li><b>[4]</b> — 출처는 3개뿐이다 (없는 번호)</li>
+              <li>세 번째 문장 — 인용이 없다, 게다가 사실과 반대</li>
+              <li><b>[2]</b> — FAQ 문서라 장비 고장 이야기가 없다 (엉뚱한 출처)</li>
+            </ul>
+            <p class="muted">틀린 인용은 인용이 없는 것보다 해롭다</p>
+            <aside class="notes">
+              <p>학생에게 30초 주고 “무엇이 틀렸나” 찾게 한다. 세 가지를 모두 찾는 학생은 드물다.</p>
+              <p>이 답변이 위젯의 “⚠ 실패 예시”다. 데모에서 다시 본다.</p>
+            </aside>
+          </section>
+
+          <!-- 5 -->
+          <section class="slide" data-title="화면의 네 요소">
+            <h2>RAG 서비스 화면의 네 요소</h2>
+            <table>
+              <thead><tr><th>요소</th><th>하는 일</th><th>설계 포인트</th></tr></thead>
+              <tbody>
+                <tr><td>① 입력</td><td>질문을 받는다</td><td>예시 질문으로 범위를 알려 준다</td></tr>
+                <tr><td>② 답변</td><td>문장마다 [n]</td><td>[n]은 키보드로 누를 수 있는 버튼</td></tr>
+                <tr><td>③ 출처</td><td>청크 + 근거 구간</td><td>문서 이름과 위치를 함께</td></tr>
+                <tr><td>④ 피드백</td><td>👍/👎 + 틀린 문장</td><td>모으면 골든셋이 된다</td></tr>
+              </tbody>
+            </table>
+            <p class="muted">상태: 로딩 · 정상 · 거절 · 오류 · 검증 경고</p>
+            <aside class="notes">
+              <p>“피드백을 받으면 무엇에 쓰나?” 발문. 기대 답: 틀린 답변을 모아 골든셋(9주차)에 넣고 다시 측정한다.</p>
+              <p>접근성: 인용 버튼에 <code>aria-describedby</code>로 출처 제목을 연결하면 스크린리더가 “[1] 실습실 이용 규정”으로 읽는다.</p>
+            </aside>
+          </section>
+
+          <!-- 6 -->
+          <section class="slide" data-title="인용 형식 설계">
+            <h2>인용 형식 설계</h2>
+            <table>
+              <thead><tr><th>형식</th><th>장점</th><th>약점</th></tr></thead>
+              <tbody>
+                <tr><td>번호 [1]</td><td>짧다, 정규식으로 파싱</td><td>목록과 어긋날 수 있다</td></tr>
+                <tr><td>문서 이름</td><td>사람이 읽기 좋다</td><td>이름 매칭이 어렵다</td></tr>
+                <tr><td>원문 인용 「…」</td><td>구간을 바로 찾는다</td><td>길고, 모델이 고쳐 쓴다</td></tr>
+              </tbody>
+            </table>
+            <p>규칙: 문장마다 · <code>[1][2]</code> 또는 <code>[1, 2]</code> · 근거 없으면 “문서에서 찾을 수 없다”</p>
+            <aside class="notes">
+              <p><code>ragPrompt()</code>의 시스템 프롬프트를 화면에 띄워 “문장마다 사용한 근거 번호를 [1]처럼 표기한다”를 보여 준다.</p>
+              <p>원문 인용 형식은 C4와 연결된다. 모델은 인용문의 띄어쓰기를 고쳐 쓰므로 원문에서 그대로 찾을 수 없다.</p>
+            </aside>
+          </section>
+
+          <!-- 7 -->
+          <section class="slide" data-title="문장-근거 정렬">
+            <h2>문장-근거 정렬</h2>
+            <ol>
+              <li>답변을 문장으로 나눈다 (“…다. [1]”의 [1]은 앞 문장)</li>
+              <li>문장마다 [n]을 뽑는다 — 출처 수보다 크면 <b>없는 번호</b></li>
+              <li>청크를 문장으로 나눠 핵심어가 가장 많이 겹치는 문장을 고른다</li>
+              <li><code>문서 위치 = chunk.start + 청크 안 위치</code></li>
+            </ol>
+            <p class="big-quote">289–320 = 213 + (76–107)</p>
+            <aside class="notes">
+              <p>Q04 오버랩 질문의 예. 청크 #1이 213에서 시작하므로 청크 안 76번째 글자는 문서 289번째다.</p>
+              <p>검증 규칙(위젯): 숫자는 그대로 있어야 한다. 한글 단어는 2-gram 하나라도 있으면 “있음”. 핵심어 60% 미만 → 근거 불일치, 일부 누락 → 확인 필요.</p>
+            </aside>
+          </section>
+
+          <!-- 8 -->
+          <section class="slide" data-title="위치를 청킹부터 유지하라">
+            <h2>위치를 청킹부터 유지해야 하는 이유</h2>
+            <p>위치가 없으면 <code>doc.text.indexOf(chunk.text)</code>로 찾아야 한다 → 세 경우에 틀린다</p>
+            <ul>
+              <li><strong>중복 문장</strong>: FAQ의 같은 Q&amp;A 두 개 → 늘 첫 번째를 가리킨다</li>
+              <li><strong>정규화</strong>: “평 점이” → “평점이”로 고쳐 저장하면 원문에 없다</li>
+              <li><strong>제목 붙이기</strong>: “[실습실 이용 규정] …”은 원문에 없다 (4주차 C5)</li>
+            </ul>
+            <p class="muted">벡터스토어 메타데이터에 { doc, start, end }를 함께 저장한다</p>
+            <aside class="notes">
+              <p>4주차 C5에서 “원문 위치는 제목을 붙이기 전 기준을 유지해야 11주차가 깨지지 않는다”고 했던 것을 회수한다.</p>
+              <p>C4 2단계가 중복 FAQ 사례를 직접 다룬다: 전체에서 찾으면 54–70, 두 번째 Q&amp;A 안에서 찾으면 141–157.</p>
+            </aside>
+          </section>
+
+          <!-- 9 -->
+          <section class="slide slide--demo" data-title="데모: 인용 하이라이트">
+            <h2>데모 · 인용 하이라이트</h2>
+            <div id="deck-w11-widget"></div>
+            <aside class="notes">
+              <p><strong>시연 순서</strong> (검증 결과와 출처는 오른쪽 실행 결과 창에 나온다)</p>
+              <ol>
+                <li>Q01: 첫 [1]에 마우스를 올린다 → 출처 [1]의 126–210이 빛난다. Tab으로도 이동해 키보드 접근을 보여 준다</li>
+                <li>Q04로 바꿔 청크 213–453 안의 289–320을 보여 준다 (슬라이드 7의 계산)</li>
+                <li>“⚠ 실패 예시”: 빨간 표시 3개, [4]를 누르면 “출처는 3개뿐”, 커버리지 50%</li>
+                <li>Q11: 맞는 답인데 실패 — 원문이 “5O%”(OCR 오류). 파싱 문제가 인용 검증까지 번진다</li>
+                <li>“🙅 거절” vs “⚠ 그럴듯한 거짓”: 거짓은 “기숙사” 한 단어만 경고(확인 필요)로 잡힌다</li>
+                <li>키가 있으면 직접 질문을 한 번 던져 LLM 답변이 검증되는 모습을 보여 준다</li>
+              </ol>
+            </aside>
+          </section>
+
+          <!-- 10 -->
+          <section class="slide" data-title="관찰 질문">
+            <h2>관찰 질문</h2>
+            <ol>
+              <li>하이라이트 위치와 청크 범위는 어떤 관계인가?</li>
+              <li>실패 예시의 빨간 표시 세 개는 각각 무엇을 잡았나?</li>
+              <li>Q11은 맞는 답인데 왜 실패인가? 인용 문제인가, 파싱 문제인가?</li>
+              <li>그럴듯한 거짓은 왜 “실패”가 아니라 “확인 필요”인가?</li>
+              <li>Q10 시간표의 하이라이트는 왜 표 한 줄 전체인가?</li>
+            </ol>
+            <aside class="notes">
+              <p>1~3은 짝 활동 10분, 4~5는 휴식 후 전체 토론.</p>
+              <p>4번 핵심: 어휘 검사는 “기숙사”가 출처에 없다는 것만 안다. 나머지 단어(신청, 이틀, 행정실)는 다 있다. 의미 판정은 LLM 판정자(Faithfulness)가 필요하다.</p>
+              <p>5번: 표가 깨져 문장 부호가 없고 줄 하나에 모든 칸이 붙었다. 정렬 단위(문장)가 파싱 품질에 달려 있다.</p>
+            </aside>
+          </section>
+
+          <!-- 11 -->
+          <section class="slide" data-title="스트리밍 · 오류 · 키 보안">
+            <h2>스트리밍 · 오류/거절 · 키 보안</h2>
+            <div class="cols">
+              <div>
+                <h3>화면</h3>
+                <p>스트리밍 중에는 <code>[1</code>이 반쯤 보인다 → 닫힌 괄호만 버튼으로, 검증은 끝난 뒤</p>
+                <p>거절은 정상 응답이다. 오류는 사람 말로, 출처는 유지</p>
+              </div>
+              <div>
+                <h3>키</h3>
+                <p><code>sessionStorage</code>에만, 출력 금지, 전부 이스케이프</p>
+                <p>실서비스는 <strong>서버 프록시</strong>가 키를 가진다 — 정적 사이트는 못 한다</p>
+              </div>
+            </div>
+            <aside class="notes">
+              <p><strong>발문:</strong> “이 사이트를 100명이 쓰는 서비스로 만든다면 키는 어디에 둬야 하나?” 기대 답: 서버. GitHub Pages는 서버 코드를 못 돌리므로 이 과정은 “학생 본인 키” 모델을 쓴다.</p>
+              <p>XSS가 있으면 sessionStorage의 키도 스크립트가 읽는다. C3(이스케이프)가 보안 과제라는 점을 강조한다.</p>
+            </aside>
+          </section>
+
+          <!-- 12 -->
+          <section class="slide" data-title="코드로 확인: 위치 보존">
+            <h2>코드로 확인하기</h2>
+            <pre data-run="deck-offsets" data-title="BM25 결과의 원문 위치"><code class="language-javascript">import { chunk } from '/assets/js/core/chunker.js';
+import { BM25 } from '/assets/js/core/bm25.js';
+
+const corpus = await (await fetch('/assets/data/corpus/corpus.json')).json();
+const chunks = corpus.documents.flatMap((d) =&gt;
+  chunk(d.text, { strategy: 'recursive', size: 300 }).map((c) =&gt; ({ ...c, doc: d })));
+const bm = new BM25().add(chunks.map((c, i) =&gt; ({ id: `${c.doc.id}#${c.index}`, text: c.text, i })));
+
+const q = '오버랩을 두면 어떤 비용이 늘어나나?';
+const hits = bm.search(q, 3);
+hits.forEach((r, n) =&gt; {
+  const c = chunks[r.meta.i];
+  console.log(`[${n + 1}] ${r.id}  ${c.start}–${c.end}  원문과 일치: ${c.doc.text.slice(c.start, c.end) === c.text}`);
+});
+
+const top = chunks[hits[0].meta.i];
+const quote = '대신 저장 공간과 임베딩 비용이 겹친 비율만큼 늘어난다.';
+const local = top.text.indexOf(quote);
+console.log(`근거: 청크 안 ${local}–${local + quote.length} → 문서 ${top.start + local}–${top.start + local + quote.length}`);</code></pre>
+            <aside class="notes">
+              <p>▶ 실행 결과: <code>[1] rag-chunking#1 213–453 원문과 일치: true</code>, <code>[2] rag-embedding#0 0–205</code>, <code>[3] rag-chunking#2 453–550</code>, 마지막 줄 <code>근거: 청크 안 76–107 → 문서 289–320</code>.</p>
+              <p>질문을 바꿔 다시 실행해 보인다. BM25 메타데이터에 청크 인덱스를 넣어 원문 위치를 되찾는 방식이다.</p>
+            </aside>
+          </section>
+
+          <!-- 13 -->
+          <section class="slide" data-title="Challenge 안내">
+            <h2>Challenge</h2>
+            <table>
+              <tbody>
+                <tr><td>C1 ★</td><td>답변에서 인용 번호 뽑기</td></tr>
+                <tr><td>C2 ★★</td><td>없는 번호와 인용 없는 문장 찾기</td></tr>
+                <tr><td>C3 ★★</td><td>하이라이트 HTML을 안전하게 만들기 (이스케이프)</td></tr>
+                <tr><td>C4 ★★★</td><td>인용문을 원문 위치로 되돌리기</td></tr>
+                <tr><td>C5 ★★★★</td><td>문장 단위 인용 커버리지 측정 (과제)</td></tr>
+              </tbody>
+            </table>
+            <p class="muted">LLM 호출 없이 학생용 페이지의 코드 상자에서 바로 ▶ 실행한다</p>
+            <aside class="notes">
+              <p>C1~C3은 모두 끝내야 한다. C3은 보안 과제이므로 이스케이프 순서(&amp;를 먼저)를 꼭 확인한다. 정답은 부록 B.</p>
+            </aside>
+          </section>
+
+          <!-- 14 -->
+          <section class="slide" data-title="정리 & 다음 주">
+            <h2>정리</h2>
+            <ul>
+              <li>화면 = 입력 · 답변 · 출처 · 피드백 + 상태. <strong>거절은 오류가 아니다</strong></li>
+              <li>[n] → 청크 → start/end → 원문 구간. 위치는 청킹부터 보존</li>
+              <li>보여 주기 전에 검증: 없는 번호 · 인용 없음 · 근거 불일치</li>
+              <li>키는 sessionStorage, 출력은 이스케이프, 실서비스는 프록시</li>
+            </ul>
+            <h3>다음 주 · 팀 프로젝트 발표</h3>
+            <p class="muted">Recall@k + 인용 커버리지를 제출하고, 인용 하이라이트 화면으로 시연한다</p>
+            <aside class="notes">
+              <p>발표 준비물 공지: 골든셋 점수표(9주차), C5 방식의 인용 커버리지, 실패 질문 1개와 원인 분석(파싱·청킹·검색·생성 중 어디).</p>
+            </aside>
+          </section>
+
+          <!-- Appendix -->
+          <section class="slide" data-title="부록 A · 강의안" data-appendix>
+            <h2>부록 A · 강의안</h2>
+            <table>
+              <thead><tr><th>시간</th><th>활동</th><th>산출물</th></tr></thead>
+              <tbody>
+                <tr><td>15분</td><td>도입 · 인용처럼 보이는 거짓 찾기</td><td>틀린 곳 3개</td></tr>
+                <tr><td>40분</td><td>개념: 화면 요소 · 인용 형식 · 정렬 · 위치 보존</td><td>위치 계산 1문제</td></tr>
+                <tr><td>35분</td><td>위젯 실습 · 관찰 질문 1~4</td><td>짝 활동 메모</td></tr>
+                <tr><td>10분</td><td>휴식</td><td>—</td></tr>
+                <tr><td>20분</td><td>관찰 5~6 · 스트리밍 · 오류/거절 · 키 보안</td><td>—</td></tr>
+                <tr><td>50분</td><td>Challenge C1~C4</td><td>C4 실행 결과</td></tr>
+                <tr><td>10분</td><td>정리 · 12주차 발표 안내</td><td>—</td></tr>
+              </tbody>
+            </table>
+          </section>
+
+          <section class="slide" data-title="부록 B · C1 정답" data-appendix>
+            <h2>부록 B · C1 정답</h2>
+            <pre data-run="ans-c1" data-title="C1 정답"><code class="language-javascript">const answer = '수료 요건은 출석률 80% 이상이다 [1]. 최종 발표도 통과해야 한다 [1][2]. 성적 비율은 [3, 4]를 본다.';
+
+function parseCitations(text) {
+  const nums = [];
+  for (const m of text.matchAll(/\[(\d+(?:\s*,\s*\d+)*)\]/g)) {
+    for (const part of m[1].split(',')) nums.push(Number(part.trim()));
+  }
+  return nums;
+}
+
+console.log(parseCitations(answer));
+console.log('인용된 출처 번호(중복 제거):', [...new Set(parseCitations(answer))]);
+console.log(parseCitations('인용 없음'), parseCitations('[12] 두 자리 [ 1 ]'));</code></pre>
+            <aside class="notes">
+              <p><strong>실행 결과:</strong> <code>[1, 1, 2, 3, 4]</code>, 중복 제거 <code>[1, 2, 3, 4]</code>, 마지막 줄 <code>[] [12]</code>.</p>
+              <p><strong>왜:</strong> <code>matchAll</code>은 괄호 그룹 하나에 여러 번호가 있는 <code>[3, 4]</code>를 한 번에 잡으므로 안에서 쉼표로 다시 나눈다. <code>[ 1 ]</code>처럼 괄호 안쪽에 공백이 있으면 인용으로 보지 않는다 — 형식을 엄격하게 정해야 파싱이 쉽다.</p>
+            </aside>
+          </section>
+
+          <section class="slide" data-title="부록 B · C2 정답" data-appendix>
+            <h2>부록 B · C2 정답</h2>
+            <pre data-run="ans-c2" data-title="C2 정답"><code class="language-javascript">const SOURCE_COUNT = 3;
+const answer =
+  'GPU 서버는 최대 12시간까지 쓸 수 있다 [1]. 사용 전에 캘린더에 등록한다 [4]. ' +
+  '주말에는 누구나 이용할 수 있다. 장비 고장은 조교에게 알린다 [2][0]. 문서에서 찾을 수 없다.';
+
+const parse = (t) =&gt; [...t.matchAll(/\[(\d+(?:\s*,\s*\d+)*)\]/g)].flatMap((m) =&gt; m[1].split(',').map(Number));
+const REFUSAL = /찾을 수 없|알 수 없|내용이 없/;
+
+function checkCitations(answer, sourceCount) {
+  const sentences = answer.split(/(?&lt;=[.!?])\s+/).filter(Boolean);
+  const invalid = [];
+  const uncited = [];
+  sentences.forEach((s, i) =&gt; {
+    const nums = parse(s);
+    for (const n of nums) if (!(n &gt;= 1 &amp;&amp; n &lt;= sourceCount)) invalid.push({ sentence: i + 1, n });
+    if (nums.length === 0 &amp;&amp; !REFUSAL.test(s)) uncited.push(i + 1);
+  });
+  return { sentences: sentences.length, invalid, uncited };
+}
+
+const r = checkCitations(answer, SOURCE_COUNT);
+console.log(r);
+console.log(`검증 통과: ${r.invalid.length === 0 &amp;&amp; r.uncited.length === 0}`);</code></pre>
+            <aside class="notes">
+              <p><strong>실행 결과:</strong> <code>sentences: 5</code>, <code>invalid: [{sentence:2,n:4},{sentence:4,n:0}]</code>, <code>uncited: [3]</code>, <code>검증 통과: false</code>. 5번째 “문서에서 찾을 수 없다.”는 거절이므로 uncited에 들어가지 않는다.</p>
+              <p><strong>왜:</strong> <code>[0]</code>도 없는 번호다(번호는 1부터). 거절 문장을 빼지 않으면 올바른 거절 답변이 “인용 없음”으로 벌점을 받는다.</p>
+            </aside>
+          </section>
+
+          <section class="slide" data-title="부록 B · C3 정답" data-appendix>
+            <h2>부록 B · C3 정답</h2>
+            <pre data-run="ans-c3" data-title="C3 정답"><code class="language-javascript">const text = '조건식 a &lt; b &amp;&amp; c &gt; d 는 참이다. 메모: &lt;img src=x onerror=alert(1)&gt; 는 문자일 뿐이다.';
+const spans = [
+  { start: text.indexOf('a &lt; b'), end: text.indexOf('a &lt; b') + 'a &lt; b &amp;&amp; c &gt; d'.length },
+  { start: text.indexOf('&lt;img'), end: text.indexOf('&gt; 는') + 1 },
+];
+
+function escapeHtml(s) {
+  return s.replace(/[&amp;&lt;&gt;"']/g, (c) =&gt; ({ '&amp;': '&amp;amp;', '&lt;': '&amp;lt;', '&gt;': '&amp;gt;', '"': '&amp;quot;', "'": '&amp;#39;' })[c]);
+}
+
+function highlight(text, spans) {
+  let html = '';
+  let last = 0;
+  for (const { start, end } of [...spans].sort((a, b) =&gt; a.start - b.start)) {
+    const s = Math.max(start, last); // overlapping spans: never go backwards
+    if (end &lt;= s) continue;
+    html += escapeHtml(text.slice(last, s));
+    html += `&lt;mark&gt;${escapeHtml(text.slice(s, end))}&lt;/mark&gt;`;
+    last = end;
+  }
+  return html + escapeHtml(text.slice(last));
+}
+
+const html = highlight(text, spans);
+console.log(html);
+console.log('태그로 해석될 &lt; 가 남았나:', /&lt;(?!\/?mark&gt;)/.test(html));</code></pre>
+            <aside class="notes">
+              <p><strong>실행 결과:</strong> <code>조건식 &lt;mark&gt;a &amp;lt; b &amp;amp;&amp;amp; c &amp;gt; d&lt;/mark&gt; 는 참이다. 메모: &lt;mark&gt;&amp;lt;img src=x onerror=alert(1)&amp;gt;&lt;/mark&gt; 는 문자일 뿐이다.</code> 그리고 <code>태그로 해석될 &lt; 가 남았나: false</code>.</p>
+              <p><strong>왜:</strong> &amp;를 나중에 바꾸면 이미 만든 <code>&amp;lt;</code>가 <code>&amp;amp;lt;</code>로 이중 변환된다. 한 번의 <code>replace</code>와 대응표로 처리하면 순서 문제가 사라진다. 겹치는 구간은 <code>Math.max(start, last)</code>로 뒤로 가지 않게 한다(위젯은 경계로 쪼개 겹침을 표현).</p>
+            </aside>
+          </section>
+
+          <section class="slide" data-title="부록 B · C4 정답" data-appendix>
+            <h2>부록 B · C4 정답</h2>
+            <pre data-run="ans-c4" data-title="C4 정답"><code class="language-javascript">const corpus = await (await fetch('/assets/data/corpus/corpus.json')).json();
+const doc = (id) =&gt; corpus.documents.find((d) =&gt; d.id === id).text;
+
+const scan = doc('broken-scan');
+const quote = '평균 평점이 4.0 이상인 학생에게 지급한다';
+console.log('indexOf:', scan.indexOf(quote));
+
+function findQuote(text, quote, from = 0, to = text.length) {
+  const map = [];
+  let compact = '';
+  for (let i = from; i &lt; to; i++) {
+    if (/\s/.test(text[i])) continue;
+    compact += text[i];
+    map.push(i);
+  }
+  const q = quote.replace(/\s+/g, '');
+  const k = q ? compact.indexOf(q) : -1;
+  if (k &lt; 0) return null;
+  return { start: map[k], end: map[k + q.length - 1] + 1 };
+}
+
+const hit = findQuote(scan, quote);
+console.log(hit, hit &amp;&amp; scan.slice(hit.start, hit.end));
+
+const faq = doc('broken-mixed');
+const q2 = '개인 노트북 사용이 가능합니다';
+const second = { start: faq.indexOf('Q.', faq.indexOf('Q.') + 1), end: faq.length };
+console.log('문서 전체에서:', findQuote(faq, q2), '두 번째 Q&amp;A 안에서:', findQuote(faq, q2, second.start, second.end));
+console.log('OCR 오류는 공백 정규화로 못 찾는다:', findQuote(scan, '수업료의 50%'));</code></pre>
+            <aside class="notes">
+              <p><strong>실행 결과:</strong> <code>indexOf: -1</code> → <code>{ start: 64, end: 90 }</code> “평균 평 점이 4.0 이상인 학생에게 지급한 다”, FAQ는 전체 <code>54–70</code>, 두 번째 Q&amp;A 안 <code>141–157</code>, 마지막 줄 <code>null</code>.</p>
+              <p><strong>왜:</strong> compact 문자열의 위치를 원문 위치로 되돌리는 <code>map</code> 배열이 핵심이다. 반환값은 원문 기준이라 원문을 그대로 잘라 하이라이트할 수 있다. 범위(<code>from</code>, <code>to</code>)를 청크 위치로 주면 중복 문장도 올바른 쪽을 가리킨다. 공백 정규화로는 “5O%” 같은 OCR 글자 오류는 못 찾는다 → 파싱(3주차)에서 고칠 일이다.</p>
+            </aside>
+          </section>
+
+          <section class="slide" data-title="부록 B · C5 정답" data-appendix>
+            <h2>부록 B · C5 정답</h2>
+            <pre data-run="ans-c5" data-title="C5 정답"><code class="language-javascript">import { chunk } from '/assets/js/core/chunker.js';
+
+const corpus = await (await fetch('/assets/data/corpus/corpus.json')).json();
+const saved = await (await fetch('/assets/data/w11/answers.json')).json();
+
+const chunks = new Map();
+for (const d of corpus.documents)
+  for (const c of chunk(d.text, saved.retrieval.chunk)) chunks.set(`${d.id}#${c.index}`, c.text);
+
+const CITE = /\[(\d+(?:\s*,\s*\d+)*)\]/g;
+const splitSentences = (t) =&gt; t.split(/(?&lt;=[.!?])\s+/).filter(Boolean);
+const parse = (t) =&gt; [...t.matchAll(CITE)].flatMap((m) =&gt; m[1].split(',').map(Number));
+const REFUSAL = /찾을 수 없|알 수 없|내용이 없/;
+const hasNumber = (src, n) =&gt; new RegExp(`(?&lt;![\d.])${n.replace('.', '\.')}(?!\d)`).test(src);
+
+function score(answer, sourceTexts) {
+  let claims = 0, cited = 0, grounded = 0;
+  for (const s of splitSentences(answer)) {
+    if (REFUSAL.test(s)) continue;
+    claims++;
+    const valid = parse(s).filter((n) =&gt; n &gt;= 1 &amp;&amp; n &lt;= sourceTexts.length);
+    if (valid.length === 0) continue;
+    cited++;
+    const evidence = valid.map((n) =&gt; sourceTexts[n - 1]).join('\n');
+    const numbers = s.replace(CITE, '').match(/\d+(?:\.\d+)?/g) ?? [];
+    if (numbers.every((n) =&gt; hasNumber(evidence, n))) grounded++;
+  }
+  return { claims, cited, coverage: claims ? cited / claims : null, grounded: claims ? grounded / claims : null };
+}
+
+const rows = saved.items.map((it) =&gt; ({ id: it.id, kind: it.kind, ...score(it.answer, it.sources.map((id) =&gt; chunks.get(id))) }));
+console.table(rows);
+const scored = rows.filter((r) =&gt; r.coverage !== null);
+const avg = (k) =&gt; scored.reduce((a, r) =&gt; a + r[k], 0) / scored.length;
+console.log(`매크로 평균 (${scored.length}문항) coverage=${avg('coverage').toFixed(3)} grounded=${avg('grounded').toFixed(3)}`);</code></pre>
+            <aside class="notes">
+              <p><strong>실행 결과:</strong> good 12문항은 coverage 1, grounded 1이고 Q11만 grounded 0.5(원문 “5O%”). bad-q01은 coverage 0.5, grounded 0.5, refuse-dorm은 null, bad-dorm은 coverage 1, grounded 1. 매크로 평균(14문항) <code>coverage=0.964 grounded=0.929</code>.</p>
+              <p><strong>토론:</strong> bad-dorm(기숙사 거짓)은 두 지표가 모두 1이다. 숫자가 없는 거짓은 숫자 검사로 못 잡는다. bad-q01의 “[2] 장비 고장”도 숫자가 없어 grounded로 잡히지 않는다. 지표는 필요조건일 뿐이다 → 핵심어 검사(위젯)와 LLM 판정(Faithfulness)을 겹쳐 쓴다.</p>
+            </aside>
+          </section>
+
+          <section class="slide" data-title="부록 C · 자주 막히는 지점" data-appendix>
+            <h2>부록 C · 학생이 자주 막히는 지점</h2>
+            <table>
+              <thead><tr><th>증상</th><th>원인</th><th>대응</th></tr></thead>
+              <tbody>
+                <tr><td>[3, 4]에서 3만 나온다</td><td>괄호 안을 쉼표로 안 나눔</td><td><code>m[1].split(',')</code></td></tr>
+                <tr><td>“…다. [1]”의 [1]이 다음 문장으로</td><td>마침표에서 먼저 자름</td><td>인용을 앞 문장에 붙이는 분리 규칙</td></tr>
+                <tr><td>&amp;lt;가 &amp;amp;lt;로 나온다</td><td>&amp;를 나중에 치환</td><td>대응표 한 번에 치환</td></tr>
+                <tr><td>C4 end가 한 글자 모자람</td><td>map 마지막 인덱스 + 1 누락</td><td>[start, end) 반열린 구간 복습</td></tr>
+                <tr><td>키를 넣었는데 401</td><td>공급자와 키가 다름</td><td>공급자 선택 확인, 키는 다시 입력</td></tr>
+                <tr><td>위젯이 안 뜬다</td><td><code>file://</code>로 열었다</td><td><code>python -m http.server</code></td></tr>
+              </tbody>
+            </table>
+          </section>
+
+          <section class="slide" data-title="부록 D · 토론 주제" data-appendix>
+            <h2>부록 D · 토론 주제</h2>
+            <ol>
+              <li>검증에 실패한 문장은 숨길까, 경고와 함께 보여 줄까? 사용자 입장과 운영자 입장에서 각각 답한다.</li>
+              <li>Q11처럼 “사실은 맞지만 출처로 확인되지 않는” 답은 맞은 답인가?</li>
+              <li>인용 커버리지 100%를 목표로 하면 모델은 어떻게 “꼼수”를 부릴 수 있나?</li>
+              <li>정적 사이트에서 학생 본인 키로 호출하는 방식의 위험과, 서버 프록시가 해결하는 것·못 하는 것은?</li>
+            </ol>
+          </section>
+
+          <section class="slide" data-title="부록 E · 평가 루브릭" data-appendix>
+            <h2>부록 E · 평가 루브릭</h2>
+            <table>
+              <thead><tr><th>항목</th><th>우수 (3)</th><th>보통 (2)</th><th>미흡 (1)</th></tr></thead>
+              <tbody>
+                <tr><td>파싱·검증 (C1·C2)</td><td>세 형식 + 거절 예외 처리</td><td>기본 형식만</td><td>동작하지 않음</td></tr>
+                <tr><td>안전한 렌더링 (C3)</td><td>이스케이프 순서·겹침 처리</td><td>이스케이프만</td><td>태그가 해석됨</td></tr>
+                <tr><td>위치 복원 (C4)</td><td>원문 위치 + 범위 제한</td><td>공백 정규화만</td><td>indexOf에 머묾</td></tr>
+                <tr><td>측정·해석 (C5)</td><td>표 + 지표의 한계 설명</td><td>표만 제시</td><td>일부만</td></tr>
+              </tbody>
+            </table>
+          </section>
+
+        </div>
+          </div>
+        </div>
+        <section class="notes-pane" aria-label="교사 노트">
+          <button type="button" class="notes-head"><span>🧑‍🏫 교사 노트</span><span class="spacer"></span><span class="notes-next"></span><span class="notes-toggle">▾ 접기</span></button>
+          <div class="notes-body"></div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <script type="module">
+    import { initDeck } from '../../assets/js/site/slides.js';
+    import { initRunners } from '../../assets/js/site/runner.js';
+    import { mount } from '../../assets/js/widgets/w11-citations.js';
+    initRunners(document.querySelector('.deck-stage'));
+    initDeck();
+    mount(document.getElementById('deck-w11-widget'), { outputTitle: '인용 검증 · 출처 (데모 슬라이드)' });
+  </script>
+</body>
+</html>

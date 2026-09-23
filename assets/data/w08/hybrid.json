@@ -1,0 +1,357 @@
+{
+  "version": 1,
+  "description": "8주차 Challenge용 데이터. extra는 골든셋에 없는 질문(exact: 정확한 코드·숫자 토큰, paraphrase: 문서와 단어가 거의 겹치지 않게 바꿔 말한 질문). vector는 골든셋+extra 각 질문에 대해 multilingual-e5-small(WASM q8, core/embed.js의 embedBatch·embed와 같은 경로, \"query: \"/\"passage: \" 접두어)로 미리 계산한 벡터 검색 상위 10개다. 청크 id는 `문서id#청크번호`이고 청킹은 chunk(text, { strategy: \"recursive\", size: 200 })이다. 브라우저에서 WebGPU(fp32)로 계산하면 점수가 소수 셋째 자리에서 조금 다를 수 있다.",
+  "model": "Xenova/multilingual-e5-small",
+  "chunking": {
+    "strategy": "recursive",
+    "size": 200
+  },
+  "extra": [
+    {
+      "id": "x01",
+      "question": "2l4",
+      "kind": "exact",
+      "evidence": [
+        { "doc": "broken-scan", "quote": "내선 2l4" }
+      ]
+    },
+    {
+      "id": "x02",
+      "question": "3분위",
+      "kind": "exact",
+      "evidence": [
+        { "doc": "broken-scan", "quote": "분위 3분위 이하" }
+      ]
+    },
+    {
+      "id": "x03",
+      "question": "305호",
+      "kind": "exact",
+      "evidence": [
+        { "doc": "dept-overview", "quote": "305호와 306호" }
+      ]
+    },
+    {
+      "id": "x04",
+      "question": "MRR",
+      "kind": "exact",
+      "evidence": [
+        { "doc": "rag-evaluation", "quote": "MRR은 첫 번째 정답 문서 순위의 역수" }
+      ]
+    },
+    {
+      "id": "x05",
+      "question": "모델이 없는 사실을 지어내는 현상",
+      "kind": "paraphrase",
+      "evidence": [
+        { "doc": "rag-intro", "quote": "그럴듯한 거짓을 만들어 낸다" }
+      ]
+    },
+    {
+      "id": "x06",
+      "question": "한 학기 등록금 절반을 지원받는 조건",
+      "kind": "paraphrase",
+      "evidence": [
+        { "doc": "broken-scan", "quote": "지급액은 수업료의 5O% 이다." }
+      ]
+    },
+    {
+      "id": "x07",
+      "question": "졸업하려면 출석을 얼마나 해야 해?",
+      "kind": "paraphrase",
+      "evidence": [
+        { "doc": "dept-overview", "quote": "출석률 80% 이상" }
+      ]
+    },
+    {
+      "id": "x08",
+      "question": "밤새 장비를 얼마나 오래 붙잡고 있어도 되지?",
+      "kind": "paraphrase",
+      "evidence": [
+        { "doc": "facility-rules", "quote": "최대 12시간이다" }
+      ]
+    },
+    {
+      "id": "x09",
+      "question": "먹을 거 들고 들어가도 돼?",
+      "kind": "paraphrase",
+      "evidence": [
+        { "doc": "facility-rules", "quote": "음식물 섭취가 금지된다" }
+      ]
+    },
+    {
+      "id": "x10",
+      "question": "글을 자를 때 겹치게 하면 손해는?",
+      "kind": "paraphrase",
+      "evidence": [
+        { "doc": "rag-chunking", "quote": "저장 공간과 임베딩 비용이 겹친 비율만큼 늘어난다" }
+      ]
+    }
+  ],
+  "vector": {
+    "q01": [
+      { "id": "facility-rules#1", "score": 0.9016 },
+      { "id": "dept-overview#2", "score": 0.8643 },
+      { "id": "broken-mixed#0", "score": 0.8566 },
+      { "id": "broken-mixed#1", "score": 0.8481 },
+      { "id": "facility-rules#0", "score": 0.8358 },
+      { "id": "broken-table#1", "score": 0.8215 },
+      { "id": "broken-mixed#2", "score": 0.8213 },
+      { "id": "course-rag-syllabus#3", "score": 0.8132 },
+      { "id": "broken-scan#2", "score": 0.8101 },
+      { "id": "course-rag-syllabus#0", "score": 0.8084 }
+    ],
+    "q02": [
+      { "id": "course-rag-syllabus#2", "score": 0.8673 },
+      { "id": "course-rag-syllabus#1", "score": 0.8625 },
+      { "id": "course-rag-syllabus#0", "score": 0.8548 },
+      { "id": "broken-table#1", "score": 0.8348 },
+      { "id": "rag-evaluation#0", "score": 0.8339 },
+      { "id": "dept-overview#1", "score": 0.8311 },
+      { "id": "dept-overview#2", "score": 0.8225 },
+      { "id": "broken-mixed#2", "score": 0.8207 },
+      { "id": "rag-intro#2", "score": 0.8125 },
+      { "id": "broken-scan#1", "score": 0.8082 }
+    ],
+    "q03": [
+      { "id": "broken-mixed#2", "score": 0.8246 },
+      { "id": "dept-overview#2", "score": 0.8156 },
+      { "id": "broken-mixed#1", "score": 0.7919 },
+      { "id": "course-rag-syllabus#2", "score": 0.7901 },
+      { "id": "course-rag-syllabus#3", "score": 0.7783 },
+      { "id": "course-rag-syllabus#0", "score": 0.7776 },
+      { "id": "rag-chunking#1", "score": 0.7776 },
+      { "id": "broken-scan#1", "score": 0.7767 },
+      { "id": "course-rag-syllabus#1", "score": 0.7743 },
+      { "id": "rag-evaluation#1", "score": 0.7713 }
+    ],
+    "q04": [
+      { "id": "rag-chunking#2", "score": 0.8819 },
+      { "id": "broken-mixed#2", "score": 0.8258 },
+      { "id": "broken-table#1", "score": 0.8008 },
+      { "id": "rag-embedding#2", "score": 0.7961 },
+      { "id": "rag-intro#1", "score": 0.7927 },
+      { "id": "rag-evaluation#0", "score": 0.7923 },
+      { "id": "rag-intro#3", "score": 0.7918 },
+      { "id": "rag-vectordb#2", "score": 0.7896 },
+      { "id": "rag-chunking#3", "score": 0.7883 },
+      { "id": "broken-scan#1", "score": 0.7883 }
+    ],
+    "q05": [
+      { "id": "rag-chunking#1", "score": 0.9325 },
+      { "id": "rag-chunking#0", "score": 0.869 },
+      { "id": "rag-chunking#3", "score": 0.8683 },
+      { "id": "rag-chunking#2", "score": 0.8378 },
+      { "id": "rag-vectordb#2", "score": 0.8328 },
+      { "id": "broken-mixed#2", "score": 0.8303 },
+      { "id": "rag-embedding#2", "score": 0.8252 },
+      { "id": "rag-hybrid#2", "score": 0.8252 },
+      { "id": "course-rag-syllabus#1", "score": 0.823 },
+      { "id": "rag-evaluation#2", "score": 0.8191 }
+    ],
+    "q06": [
+      { "id": "rag-embedding#2", "score": 0.8976 },
+      { "id": "broken-mixed#2", "score": 0.8381 },
+      { "id": "rag-embedding#0", "score": 0.8302 },
+      { "id": "rag-evaluation#2", "score": 0.8299 },
+      { "id": "rag-chunking#0", "score": 0.8249 },
+      { "id": "rag-vectordb#2", "score": 0.8209 },
+      { "id": "rag-intro#0", "score": 0.8179 },
+      { "id": "rag-chunking#2", "score": 0.8175 },
+      { "id": "rag-vectordb#0", "score": 0.8166 },
+      { "id": "broken-mixed#1", "score": 0.8165 }
+    ],
+    "q07": [
+      { "id": "rag-hybrid#1", "score": 0.8535 },
+      { "id": "broken-mixed#2", "score": 0.8174 },
+      { "id": "rag-evaluation#1", "score": 0.8147 },
+      { "id": "rag-chunking#3", "score": 0.8009 },
+      { "id": "rag-vectordb#2", "score": 0.7879 },
+      { "id": "rag-evaluation#2", "score": 0.7878 },
+      { "id": "broken-table#1", "score": 0.7848 },
+      { "id": "course-rag-syllabus#1", "score": 0.7844 },
+      { "id": "rag-embedding#2", "score": 0.7821 },
+      { "id": "rag-intro#0", "score": 0.7811 }
+    ],
+    "q08": [
+      { "id": "rag-evaluation#2", "score": 0.8818 },
+      { "id": "course-rag-syllabus#1", "score": 0.8305 },
+      { "id": "rag-evaluation#1", "score": 0.8029 },
+      { "id": "broken-mixed#2", "score": 0.798 },
+      { "id": "rag-hybrid#1", "score": 0.7902 },
+      { "id": "course-rag-syllabus#2", "score": 0.7866 },
+      { "id": "rag-evaluation#0", "score": 0.7783 },
+      { "id": "rag-intro#1", "score": 0.777 },
+      { "id": "rag-intro#0", "score": 0.7755 },
+      { "id": "rag-embedding#1", "score": 0.7749 }
+    ],
+    "q09": [
+      { "id": "rag-vectordb#1", "score": 0.8703 },
+      { "id": "rag-vectordb#2", "score": 0.8311 },
+      { "id": "rag-evaluation#2", "score": 0.8141 },
+      { "id": "rag-chunking#3", "score": 0.811 },
+      { "id": "rag-evaluation#1", "score": 0.7992 },
+      { "id": "rag-intro#0", "score": 0.7973 },
+      { "id": "broken-mixed#2", "score": 0.7973 },
+      { "id": "rag-hybrid#1", "score": 0.7955 },
+      { "id": "rag-hybrid#2", "score": 0.7943 },
+      { "id": "broken-table#1", "score": 0.7938 }
+    ],
+    "q10": [
+      { "id": "course-rag-syllabus#0", "score": 0.8727 },
+      { "id": "course-rag-syllabus#1", "score": 0.8493 },
+      { "id": "dept-overview#1", "score": 0.849 },
+      { "id": "broken-table#1", "score": 0.8391 },
+      { "id": "dept-overview#2", "score": 0.8377 },
+      { "id": "broken-table#0", "score": 0.8365 },
+      { "id": "rag-evaluation#0", "score": 0.8317 },
+      { "id": "rag-intro#1", "score": 0.8211 },
+      { "id": "facility-rules#0", "score": 0.8203 },
+      { "id": "broken-mixed#2", "score": 0.8194 }
+    ],
+    "q11": [
+      { "id": "broken-scan#1", "score": 0.8983 },
+      { "id": "broken-scan#2", "score": 0.8431 },
+      { "id": "broken-mixed#2", "score": 0.8291 },
+      { "id": "course-rag-syllabus#2", "score": 0.8198 },
+      { "id": "broken-scan#0", "score": 0.8026 },
+      { "id": "course-rag-syllabus#0", "score": 0.7985 },
+      { "id": "course-rag-syllabus#3", "score": 0.7942 },
+      { "id": "broken-mixed#0", "score": 0.7933 },
+      { "id": "broken-table#1", "score": 0.7932 },
+      { "id": "dept-overview#2", "score": 0.7903 }
+    ],
+    "q12": [
+      { "id": "broken-mixed#1", "score": 0.8801 },
+      { "id": "dept-overview#2", "score": 0.8403 },
+      { "id": "course-rag-syllabus#2", "score": 0.838 },
+      { "id": "broken-mixed#0", "score": 0.8271 },
+      { "id": "facility-rules#1", "score": 0.8258 },
+      { "id": "course-rag-syllabus#3", "score": 0.8249 },
+      { "id": "broken-table#1", "score": 0.8244 },
+      { "id": "broken-mixed#2", "score": 0.8208 },
+      { "id": "facility-rules#0", "score": 0.8154 },
+      { "id": "dept-overview#1", "score": 0.8148 }
+    ],
+    "x01": [
+      { "id": "broken-mixed#2", "score": 0.8458 },
+      { "id": "broken-table#0", "score": 0.7952 },
+      { "id": "broken-table#1", "score": 0.7947 },
+      { "id": "broken-scan#2", "score": 0.7876 },
+      { "id": "course-rag-syllabus#3", "score": 0.7846 },
+      { "id": "broken-mixed#0", "score": 0.778 },
+      { "id": "broken-scan#0", "score": 0.7751 },
+      { "id": "facility-rules#1", "score": 0.7749 },
+      { "id": "rag-intro#0", "score": 0.7701 },
+      { "id": "rag-intro#2", "score": 0.7681 }
+    ],
+    "x02": [
+      { "id": "broken-mixed#2", "score": 0.831 },
+      { "id": "rag-chunking#3", "score": 0.8129 },
+      { "id": "broken-table#1", "score": 0.8124 },
+      { "id": "course-rag-syllabus#0", "score": 0.8055 },
+      { "id": "broken-scan#1", "score": 0.802 },
+      { "id": "broken-scan#0", "score": 0.7961 },
+      { "id": "broken-mixed#1", "score": 0.7933 },
+      { "id": "facility-rules#1", "score": 0.7897 },
+      { "id": "dept-overview#2", "score": 0.789 },
+      { "id": "dept-overview#1", "score": 0.7887 }
+    ],
+    "x03": [
+      { "id": "broken-mixed#2", "score": 0.8272 },
+      { "id": "broken-table#1", "score": 0.8263 },
+      { "id": "dept-overview#2", "score": 0.7996 },
+      { "id": "rag-chunking#3", "score": 0.7948 },
+      { "id": "rag-vectordb#1", "score": 0.7844 },
+      { "id": "broken-table#0", "score": 0.7812 },
+      { "id": "facility-rules#1", "score": 0.7783 },
+      { "id": "course-rag-syllabus#3", "score": 0.7763 },
+      { "id": "broken-scan#0", "score": 0.7756 },
+      { "id": "course-rag-syllabus#0", "score": 0.7736 }
+    ],
+    "x04": [
+      { "id": "broken-mixed#2", "score": 0.8052 },
+      { "id": "rag-evaluation#1", "score": 0.7957 },
+      { "id": "course-rag-syllabus#1", "score": 0.777 },
+      { "id": "rag-intro#1", "score": 0.7678 },
+      { "id": "rag-hybrid#1", "score": 0.7655 },
+      { "id": "broken-table#1", "score": 0.7616 },
+      { "id": "rag-intro#0", "score": 0.7615 },
+      { "id": "broken-scan#2", "score": 0.7615 },
+      { "id": "rag-intro#2", "score": 0.7583 },
+      { "id": "course-rag-syllabus#3", "score": 0.7552 }
+    ],
+    "x05": [
+      { "id": "rag-intro#0", "score": 0.8444 },
+      { "id": "broken-mixed#2", "score": 0.8331 },
+      { "id": "rag-intro#1", "score": 0.8136 },
+      { "id": "rag-chunking#0", "score": 0.8094 },
+      { "id": "rag-hybrid#2", "score": 0.8075 },
+      { "id": "rag-chunking#3", "score": 0.8047 },
+      { "id": "rag-embedding#2", "score": 0.8019 },
+      { "id": "rag-evaluation#0", "score": 0.7971 },
+      { "id": "broken-table#1", "score": 0.796 },
+      { "id": "rag-intro#2", "score": 0.7952 }
+    ],
+    "x06": [
+      { "id": "broken-mixed#2", "score": 0.8556 },
+      { "id": "broken-scan#1", "score": 0.8492 },
+      { "id": "broken-mixed#0", "score": 0.8446 },
+      { "id": "broken-scan#2", "score": 0.8357 },
+      { "id": "broken-table#1", "score": 0.8312 },
+      { "id": "broken-table#0", "score": 0.8291 },
+      { "id": "facility-rules#1", "score": 0.8287 },
+      { "id": "dept-overview#1", "score": 0.8279 },
+      { "id": "broken-scan#0", "score": 0.8231 },
+      { "id": "facility-rules#0", "score": 0.8218 }
+    ],
+    "x07": [
+      { "id": "broken-scan#1", "score": 0.8293 },
+      { "id": "dept-overview#2", "score": 0.8291 },
+      { "id": "broken-scan#2", "score": 0.8283 },
+      { "id": "broken-table#1", "score": 0.8278 },
+      { "id": "broken-mixed#2", "score": 0.824 },
+      { "id": "course-rag-syllabus#0", "score": 0.8209 },
+      { "id": "broken-mixed#1", "score": 0.8205 },
+      { "id": "course-rag-syllabus#2", "score": 0.8155 },
+      { "id": "broken-mixed#0", "score": 0.8111 },
+      { "id": "facility-rules#1", "score": 0.811 }
+    ],
+    "x08": [
+      { "id": "facility-rules#1", "score": 0.8295 },
+      { "id": "broken-mixed#2", "score": 0.8211 },
+      { "id": "dept-overview#2", "score": 0.8096 },
+      { "id": "broken-scan#2", "score": 0.8013 },
+      { "id": "broken-table#1", "score": 0.7966 },
+      { "id": "facility-rules#0", "score": 0.7963 },
+      { "id": "broken-mixed#0", "score": 0.7957 },
+      { "id": "rag-hybrid#2", "score": 0.7952 },
+      { "id": "broken-mixed#1", "score": 0.7943 },
+      { "id": "rag-evaluation#2", "score": 0.7904 }
+    ],
+    "x09": [
+      { "id": "broken-mixed#2", "score": 0.8353 },
+      { "id": "facility-rules#1", "score": 0.8292 },
+      { "id": "broken-mixed#0", "score": 0.8071 },
+      { "id": "dept-overview#2", "score": 0.8044 },
+      { "id": "broken-mixed#1", "score": 0.8042 },
+      { "id": "rag-vectordb#1", "score": 0.8036 },
+      { "id": "broken-table#1", "score": 0.7941 },
+      { "id": "rag-chunking#3", "score": 0.794 },
+      { "id": "broken-scan#2", "score": 0.7928 },
+      { "id": "rag-vectordb#0", "score": 0.7917 }
+    ],
+    "x10": [
+      { "id": "broken-mixed#2", "score": 0.8316 },
+      { "id": "rag-chunking#2", "score": 0.8242 },
+      { "id": "rag-chunking#3", "score": 0.8242 },
+      { "id": "facility-rules#1", "score": 0.8197 },
+      { "id": "broken-mixed#1", "score": 0.8181 },
+      { "id": "rag-chunking#1", "score": 0.8077 },
+      { "id": "broken-mixed#0", "score": 0.806 },
+      { "id": "rag-evaluation#0", "score": 0.8052 },
+      { "id": "rag-intro#1", "score": 0.8051 },
+      { "id": "broken-scan#2", "score": 0.8043 }
+    ]
+  }
+}

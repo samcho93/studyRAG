@@ -1,0 +1,608 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>12주차 팀 프로젝트 발표 · 교사용 · RAG Lab</title>
+  <meta name="description" content="12주차 팀 프로젝트 발표 교사용 슬라이드: 발표 진행 순서, 점수판 데모, 질문 가이드, Challenge 정답, 흔한 실패와 피드백, 심사 루브릭.">
+  <script>try{var t=JSON.parse(localStorage.getItem('raglab:theme'));if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+  <link rel="stylesheet" crossorigin="anonymous" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&display=swap">
+  <link rel="stylesheet" href="../../assets/css/tokens.css">
+  <link rel="stylesheet" href="../../assets/css/base.css">
+  <link rel="stylesheet" href="../../assets/css/components.css">
+  <link rel="stylesheet" href="../../assets/css/slides.css">
+  <link rel="stylesheet" href="../../assets/css/w12.css">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%232450c4'/%3E%3Ccircle cx='14' cy='14' r='6' fill='none' stroke='white' stroke-width='3'/%3E%3Cpath d='M19 19l6 6' stroke='white' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E">
+  <script type="module" src="../../assets/js/site/site.js"></script>
+</head>
+<body>
+  <div class="layout" data-layout data-role="teacher" data-week="12" data-crumb="🧑‍🏫 교사용 › <b>12주차 · 팀 프로젝트 발표</b>">
+    <main class="pane center" id="main">
+      <div class="slide-view" data-deck data-deck-title="12주차 · 팀 프로젝트 발표">
+        <div class="deck-bar"><div class="deck-row" data-deck-controls></div></div>
+        <div class="deck-progress"><i></i></div>
+        <div class="deck-wrap">
+          <div class="deck-viewport">
+        <div class="deck-stage">
+
+          <!-- 1 -->
+          <section class="slide slide--title" data-title="표지">
+            <div class="kicker">검색증강생성(RAG) 시스템 구축 · 12주차</div>
+            <h1>팀 프로젝트 발표</h1>
+            <p>같은 골든셋, 같은 잣대로 겨룬다</p>
+            <div class="deco" aria-hidden="true">🏁</div>
+            <aside class="notes">
+              <p><strong>오늘 흐름 (180분, 8팀 기준)</strong></p>
+              <table>
+                <tr><td>0:00–0:15</td><td>오프닝 · 점수판 규칙 · 결과 JSON 최종 검증</td></tr>
+                <tr><td>0:15–1:23</td><td>1~4조 발표 (팀당 발표 10분 + 질의 5분 + 전환 2분)</td></tr>
+                <tr><td>1:23–1:35</td><td>휴식 · 전반부 점수 메모 정리</td></tr>
+                <tr><td>1:35–2:43</td><td>5~8조 발표</td></tr>
+                <tr><td>2:43–3:00</td><td>점수판 종합 · 전원 실패 문항 토론 · 12주 돌아보기</td></tr>
+              </table>
+              <p>팀이 6개 이하면 남는 시간은 Challenge C4·C5와 종합 토론에 쓴다. T 키로 타이머를 시작한다.</p>
+            </aside>
+          </section>
+
+          <!-- 2 -->
+          <section class="slide" data-title="학습 목표">
+            <h2>오늘 할 수 있게 되는 것</h2>
+            <ol>
+              <li>팀 결과를 정해진 JSON 스키마로 내보내고 검증한다</li>
+              <li>여러 팀을 같은 골든셋에서 Recall@k · MRR · nDCG · 인용률로 비교한다</li>
+              <li>문제 · 설계 · 평가 · 실패 · 개선 순서로 근거 있는 발표를 한다</li>
+            </ol>
+            <aside class="notes">
+              <p>오늘은 강의보다 운영이 중심이다. 1번은 발표 전에 끝나 있어야 한다. 오프닝에서 모든 팀의 JSON을 점수판에 올려 ✓ 통과를 확인한 뒤 발표를 시작한다.</p>
+            </aside>
+          </section>
+
+          <!-- 3 -->
+          <section class="slide" data-title="왜 같은 잣대인가">
+            <h2>데모 세 개로는 아무것도 증명되지 않는다</h2>
+            <div class="cols">
+              <div>
+                <ul>
+                  <li>A팀: 잘 되는 질문 3개만 시연</li>
+                  <li>B팀: “정확도 90%” — k=20, 직접 만든 질문</li>
+                  <li>C팀: “답이 그럴듯하다”</li>
+                </ul>
+                <p class="muted">→ 누가 더 나은지, 왜인지 아무도 모른다</p>
+              </div>
+              <div>
+                <p><strong>고정하는 세 가지</strong></p>
+                <ol>
+                  <li>같은 골든셋 (12문항)</li>
+                  <li>같은 결과 형식 (JSON)</li>
+                  <li>같은 k</li>
+                </ol>
+              </div>
+            </div>
+            <aside class="notes">
+              <p><strong>발문:</strong> “B팀의 90%와 A팀의 시연 중 무엇을 믿겠나?” → 둘 다 믿을 수 없다는 답을 끌어낸다. 조건이 다르면 숫자도 비교할 수 없다.</p>
+              <p>9주차 평가와 이어진다. 오늘은 그 평가를 팀 사이로 넓힌 것이다.</p>
+            </aside>
+          </section>
+
+          <!-- 4 -->
+          <section class="slide" data-title="결과 JSON 스키마">
+            <h2>결과 JSON 스키마</h2>
+            <pre><code class="language-json">{
+  "team": "3조 · 하이브리드",
+  "members": ["김OO", "이OO", "박OO"],
+  "system": { "chunking": "recursive 200 / overlap 20",
+              "embedding": "Xenova/multilingual-e5-small",
+              "retriever": "hybrid (RRF k=60)", "k": 5,
+              "reranker": null, "llm": "gpt-4.1-mini" },
+  "golden": [ { "id": "q01",
+      "retrieved": ["facility-rules#1", "dept-overview#2"],
+      "answer": "최대 12시간이다.", "citations": ["facility-rules#1"] } ],
+  "notes": "q10은 표 파싱 실패"
+}</code></pre>
+            <aside class="notes">
+              <p>학생이 자주 틀리는 곳: <code>"k": "5"</code>(따옴표), <code>members</code>를 쉼표 문자열로 적기, <code>citations</code>를 빈 문자열로 두기. 모두 “스키마 오류 파일” 예시에 들어 있다.</p>
+              <p>시스템 내부는 자유, 밖으로 내는 형식만 고정한다는 점을 강조한다.</p>
+            </aside>
+          </section>
+
+          <!-- 5 -->
+          <section class="slide" data-title="채점 방식">
+            <h2>채점 방식</h2>
+            <ul>
+              <li>청크 ID → 문서 ID: <code>rag-hybrid#2</code> → <code>rag-hybrid</code></li>
+              <li>같은 문서의 두 번째 청크부터는 <strong>자리만 차지</strong>, 점수는 한 번</li>
+              <li>문항당 근거 문서 1개 → Recall@k = Hit@k</li>
+              <li>nDCG: 1위 1.0 · 2위 0.63 · 3위 0.5</li>
+              <li>근거 인용률: 근거 문서를 인용한 답변 비율</li>
+            </ul>
+            <p class="muted">Faithfulness는 자동 채점하지 않는다 → 실패 사례 발표에서 사람이 본다</p>
+            <aside class="notes">
+              <p><strong>발문:</strong> “같은 문서 청크 세 개를 1~3위에 올리면 Recall은?” 중복을 제거하지 않으면 3/1 = 3이 된다. core/metrics.js의 recallAtK는 중복을 가정하지 않으므로 채점 전에 정규화해야 한다.</p>
+              <p>MRR도 k 밖은 0으로 자른다(MRR@k). 팀마다 k가 다르면 긴 목록이 유리해지기 때문이다.</p>
+            </aside>
+          </section>
+
+          <!-- 6 -->
+          <section class="slide" data-title="발표 구성">
+            <h2>발표 구성 · 10분</h2>
+            <table>
+              <thead><tr><th>순서</th><th>시간</th><th>보여 줄 것</th></tr></thead>
+              <tbody>
+                <tr><td>1 문제</td><td>1분</td><td>누가 무엇을 묻나, 대표 질문 하나</td></tr>
+                <tr><td>2 설계</td><td>2분</td><td>청킹 · 임베딩 · 검색 · 리랭킹 · LLM 선택 이유</td></tr>
+                <tr><td>3 평가 결과</td><td>3분</td><td>점수판의 우리 팀 숫자 (같은 k)</td></tr>
+                <tr><td>4 실패 사례</td><td>2분</td><td>틀린 문항 2개 이상 + 실패한 <strong>단계</strong></td></tr>
+                <tr><td>5 개선</td><td>2분</td><td>바꾼 설정 1개 · 전후 Δ · 나빠진 문항</td></tr>
+              </tbody>
+            </table>
+            <aside class="notes">
+              <p>평가 결과에 가장 많은 시간을 준다. 시연(라이브 데모)은 설계 또는 실패 사례 안에서 1분 이내로 제한한다. 라이브 데모가 실패하면 녹화 영상으로 대체하도록 미리 공지한다.</p>
+            </aside>
+          </section>
+
+          <!-- 7 -->
+          <section class="slide" data-title="진행 순서와 시간표">
+            <h2>진행 순서와 규칙</h2>
+            <div class="cols">
+              <div>
+                <table>
+                  <tbody>
+                    <tr><td>0:15</td><td>1조 → 2조 → 3조 → 4조</td></tr>
+                    <tr><td>1:23</td><td>휴식</td></tr>
+                    <tr><td>1:35</td><td>5조 → 6조 → 7조 → 8조</td></tr>
+                    <tr><td>2:43</td><td>점수판 종합</td></tr>
+                  </tbody>
+                </table>
+              </div>
+              <div>
+                <ul>
+                  <li>발표 10분 · 질의 5분 · 전환 2분</li>
+                  <li>9분에 종 1회, 10분에 종료</li>
+                  <li>다음 팀은 앞 팀 질의 중에 준비</li>
+                  <li>점수판은 발표 <strong>전</strong>에 공개</li>
+                </ul>
+              </div>
+            </div>
+            <aside class="notes">
+              <p>발표 순서는 전날 추첨으로 정해 공지한다. 점수판을 먼저 공개하면 발표가 “숫자 자랑”이 아니라 “숫자 해석”이 된다.</p>
+              <p>각 팀이 발표하는 동안 청중 팀은 질문 카드 한 장씩을 쓴다(질문 가이드 슬라이드 참고). 좋은 질문을 한 팀에 수업 참여 점수를 준다.</p>
+            </aside>
+          </section>
+
+          <!-- 8 -->
+          <section class="slide slide--demo" data-title="데모: 팀 점수판">
+            <h2>데모 · 팀별 결과 업로드 · 점수판</h2>
+            <div id="deck-w12-widget"></div>
+            <aside class="notes">
+              <p><strong>시연 순서</strong> (점수판은 오른쪽 실행 결과 창에 나온다)</p>
+              <ol>
+                <li>처음 화면: 예시 팀 3개, k=5. A 0.813 / C 0.683 / B 0.298 (nDCG)</li>
+                <li>MRR@k 열을 눌러 정렬 → 순서는 같지만 A·C 격차가 Recall보다 작다(0.778 vs 0.632)</li>
+                <li>k=1 → 전원 실패 문항이 q10 하나에서 q10·q11·q12 세 개로 는다</li>
+                <li>“스키마 오류 파일” → ✗ 오류 8개. 각 메시지를 읽어 준다</li>
+                <li>“JSON 문법 오류” → 행·열 위치가 나온다</li>
+                <li>실제 팀 JSON을 끌어 놓아 점수판에 올린다. ⛶ 크게 보기로 투영한다</li>
+              </ol>
+            </aside>
+          </section>
+
+          <!-- 9 -->
+          <section class="slide" data-title="관찰 질문">
+            <h2>관찰 질문</h2>
+            <ol>
+              <li>Recall과 MRR로 정렬하면 무엇이 달라지나?</li>
+              <li>k=1에서 전원 실패 문항은? 그 근거 문서는 어떤 문서인가?</li>
+              <li>예시 팀 B의 실패는 5주차의 어떤 실패와 같은가?</li>
+              <li>예시 팀 C의 q11: 검색 성공, 답은 틀림. 왜?</li>
+              <li>오류 파일은 왜 점수판에 오르지 않나?</li>
+            </ol>
+            <aside class="notes">
+              <p>오프닝 15분 안에서 1, 2, 4번만 짧게 다룬다. 3·5번은 학생용 페이지 과제로 넘긴다.</p>
+              <p>4번 정답: 검색된 문서 자체가 OCR 오류(5O%)를 담고 있어 LLM이 그대로 옮겼다. Recall은 성공으로 세므로 지표로는 안 보인다 → 사람이 답을 읽어야 하는 이유.</p>
+            </aside>
+          </section>
+
+          <!-- 10 -->
+          <section class="slide" data-title="코드로 확인: 전체 채점">
+            <h2>코드로 확인하기</h2>
+            <pre data-run="deck-score" data-title="예시 팀 전체 채점"><code class="language-javascript">import { evaluate } from '/assets/js/core/metrics.js';
+const golden = await (await fetch('/assets/data/golden/golden.json')).json();
+const K = 5;
+const rows = [];
+for (const f of ['sample-team-a', 'sample-team-b', 'sample-team-c']) {
+  const t = await (await fetch(`/assets/data/w12/${f}.json`)).json();
+  const runs = golden.items.map((item) => {
+    const seen = new Set();
+    const ids = (t.golden.find((q) => q.id === item.id)?.retrieved ?? [])
+      .map((id) => id.split('#')[0])
+      .map((d) => (seen.has(d) ? null : (seen.add(d), d)));
+    return { retrieved: ids.slice(0, K), relevant: item.evidence.map((e) => e.doc) };
+  });
+  const m = evaluate(runs, K);
+  rows.push({ team: t.team, recall: m.recall, mrr: m.mrr, ndcg: m.ndcg });
+}
+console.table(rows);</code></pre>
+            <aside class="notes">
+              <p>기대 출력(k=5): A 0.9167 / 0.7778 / 0.8135, B 0.5 / 0.2319 / 0.2983, C 0.8333 / 0.6319 / 0.6827.</p>
+              <p>K를 1로 바꿔 다시 실행한다: A 0.667, B 0.083, C 0.5 (k=1에서는 세 지표가 같아진다 — 이유를 묻는다).</p>
+            </aside>
+          </section>
+
+          <!-- 11 -->
+          <section class="slide" data-title="질문 가이드">
+            <h2>질문 가이드 · 청중과 심사자</h2>
+            <div class="cols">
+              <div>
+                <p><strong>설계</strong></p>
+                <ul>
+                  <li>그 청크 크기는 무엇으로 골랐나?</li>
+                  <li>리랭킹을 빼면 몇 점인가?</li>
+                </ul>
+                <p><strong>평가</strong></p>
+                <ul>
+                  <li>발표 숫자와 점수판 숫자가 같은가?</li>
+                  <li>k를 1로 바꾸면 순위가 바뀌나?</li>
+                </ul>
+              </div>
+              <div>
+                <p><strong>실패</strong></p>
+                <ul>
+                  <li>q10은 어느 단계에서 실패했나?</li>
+                  <li>검색은 맞고 답이 틀린 문항은?</li>
+                </ul>
+                <p><strong>개선</strong></p>
+                <ul>
+                  <li>나빠진 문항은 없었나?</li>
+                  <li>시간이 한 주 더 있다면 무엇을 바꾸나?</li>
+                </ul>
+              </div>
+            </div>
+            <aside class="notes">
+              <p>질문은 “왜 그렇게 했나”보다 “무엇으로 확인했나”가 좋다. 근거를 요구하는 질문이 이번 과목의 태도다.</p>
+              <p>답을 못 하면 감점하지 않고 “확인 방법”을 말하게 한다. 예: “리랭킹 없이 다시 채점해 보면 알 수 있다.”</p>
+              <p>공격적인 질문은 끊는다. 질문은 사람이 아니라 숫자와 설계를 향한다.</p>
+            </aside>
+          </section>
+
+          <!-- 12 -->
+          <section class="slide" data-title="Challenge 안내">
+            <h2>Challenge</h2>
+            <table>
+              <tbody>
+                <tr><td>C1 ★</td><td>결과 JSON 검증기</td></tr>
+                <tr><td>C2 ★★</td><td>한 팀의 지표 계산 (중복 청크 처리)</td></tr>
+                <tr><td>C3 ★★</td><td>마크다운 요약표 만들기</td></tr>
+                <tr><td>C4 ★★★</td><td>모든 팀이 놓친 문항 찾기</td></tr>
+                <tr><td>C5 ★★★★</td><td>두 설정 비교: 개선 · 악화 문항</td></tr>
+              </tbody>
+            </table>
+            <p class="muted">발표 준비에 바로 쓰는 도구들이다 — C3 표와 C5 비교를 슬라이드에 넣는다</p>
+            <aside class="notes">
+              <p>발표일 이전 주(11주차 말)에 미리 공개해 각 팀이 자기 JSON으로 돌려 보게 한다. 발표일에는 시간이 남을 때만 다룬다. 정답은 부록 B.</p>
+            </aside>
+          </section>
+
+          <!-- 13 -->
+          <section class="slide" data-title="정리 & 12주 돌아보기">
+            <h2>12주 돌아보기</h2>
+            <table>
+              <tbody>
+                <tr><td>1–3</td><td>LLM · 프롬프트 · 파싱</td><td>모르면 지어낸다 / 망가진 파싱은 복구되지 않는다</td></tr>
+                <tr><td>4–6</td><td>청킹 · 임베딩 · 벡터스토어</td><td>잘린 근거는 검색되지 않는다</td></tr>
+                <tr><td>7–9</td><td>최소 RAG · 하이브리드 · 평가</td><td>감이 아니라 골든셋으로 고른다</td></tr>
+                <tr><td>10–12</td><td>리팩터링 · 인용 UI · 발표</td><td>같은 잣대로 재고, 실패를 설명한다</td></tr>
+              </tbody>
+            </table>
+            <p><strong>근거는 어느 단계에서 사라졌는가, 그것을 무엇으로 측정했는가</strong></p>
+            <aside class="notes">
+              <p>마지막 5분. 첫 주 칠판에 적었던 “검색 실패는 생성으로 복구되지 않는다”를 다시 가리킨다. 오늘 모든 팀이 놓친 q10(표 깨짐)이 바로 그 예다.</p>
+              <p>수료 요건(출석 80% + 최종 발표 통과, 골든셋 q03)을 안내하고, 결과 공지 일정을 말한다.</p>
+            </aside>
+          </section>
+
+          <!-- Appendix -->
+          <section class="slide" data-title="부록 A · 강의안" data-appendix>
+            <h2>부록 A · 발표일 운영안</h2>
+            <table>
+              <thead><tr><th>시간</th><th>활동</th><th>준비물 · 산출물</th></tr></thead>
+              <tbody>
+                <tr><td>D-3</td><td>결과 JSON · 슬라이드 · 저장소 링크 마감</td><td>점수판에 미리 올려 검증</td></tr>
+                <tr><td>15분</td><td>오프닝 · 규칙 · 점수판 공개</td><td>팀 JSON 전부 ✓</td></tr>
+                <tr><td>68분</td><td>1~4조 발표·질의</td><td>심사표, 질문 카드</td></tr>
+                <tr><td>12분</td><td>휴식</td><td>—</td></tr>
+                <tr><td>68분</td><td>5~8조 발표·질의</td><td>심사표, 질문 카드</td></tr>
+                <tr><td>17분</td><td>종합 · 전원 실패 문항 · 돌아보기</td><td>인쇄한 점수판</td></tr>
+              </tbody>
+            </table>
+            <aside class="notes">
+              <p>🖨 인쇄 버튼으로 점수판만 인쇄해 심사표에 붙인다. 강의실 PC에서 사이트를 한 번 열어 두면 예시 파일이 캐시된다(임베딩 모델은 이번 주에 필요 없다).</p>
+            </aside>
+          </section>
+
+          <section class="slide" data-title="부록 B · C1 정답" data-appendix>
+            <h2>부록 B · C1 정답</h2>
+            <pre data-run="ans-c1" data-title="C1 정답"><code class="language-javascript">const good = await (await fetch('/assets/data/w12/sample-team-a.json')).json();
+const bad = await (await fetch('/assets/data/w12/sample-broken.json')).json();
+const isStr = (v) => typeof v === 'string' && v.trim() !== '';
+
+function validate(r) {
+  const errors = [];
+  if (!isStr(r.team)) errors.push('team: 비어 있지 않은 문자열이어야 한다');
+  if (!Array.isArray(r.members) || !r.members.every(isStr)) errors.push('members: 문자열 배열이어야 한다');
+  const k = r.system?.k;
+  if (!Number.isInteger(k) || k < 1) errors.push(`system.k: 1 이상의 정수여야 한다 (지금 ${JSON.stringify(k)})`);
+  if (!Array.isArray(r.golden)) errors.push('golden: 배열이어야 한다');
+  else r.golden.forEach((q, i) => {
+    if (!Array.isArray(q.retrieved)) errors.push(`golden[${i}].retrieved: 배열이어야 한다`);
+    if (typeof q.answer !== 'string') errors.push(`golden[${i}].answer: 문자열이어야 한다`);
+    if (!Array.isArray(q.citations)) errors.push(`golden[${i}].citations: 배열이어야 한다`);
+  });
+  return errors;
+}
+console.log('A:', validate(good));
+console.log('broken:', validate(bad));</code></pre>
+            <aside class="notes">
+              <p><strong>기대:</strong> A → [], broken → 6개 (team, members, system.k, golden[0].retrieved, golden[1].retrieved, golden[3].citations).</p>
+              <p>위젯 검증기는 여기에 두 가지를 더 본다: 골든셋에 없는 id(q99), 중복 id(q01 두 번) → 오류 8개. 학생에게 “무엇을 더 검사해야 하나”를 묻는 확장 과제로 쓴다.</p>
+              <p><strong>왜:</strong> <code>typeof []</code>는 <code>'object'</code>이므로 배열은 반드시 <code>Array.isArray</code>로 본다. <code>"5"</code>는 <code>Number.isInteger</code>에서 걸러진다.</p>
+            </aside>
+          </section>
+
+          <section class="slide" data-title="부록 B · C2 정답" data-appendix>
+            <h2>부록 B · C2 정답</h2>
+            <pre data-run="ans-c2" data-title="C2 정답"><code class="language-javascript">import { evaluate } from '/assets/js/core/metrics.js';
+const golden = await (await fetch('/assets/data/golden/golden.json')).json();
+const team = await (await fetch('/assets/data/w12/sample-team-c.json')).json();
+const K = 5;
+
+function toDocRanking(ids) {
+  const seen = new Set();
+  return ids.map((id) => {
+    const d = id.split('#')[0];
+    if (seen.has(d)) return null;
+    seen.add(d);
+    return d;
+  });
+}
+let cite = 0, citeOk = 0;
+const runs = golden.items.map((item) => {
+  const sub = team.golden.find((q) => q.id === item.id);
+  const relevant = item.evidence.map((e) => e.doc);
+  const cited = (sub?.citations ?? []).map((c) => c.split('#')[0]);
+  if (cited.length) cite++;
+  if (cited.some((d) => relevant.includes(d))) citeOk++;
+  return { retrieved: toDocRanking(sub?.retrieved ?? []).slice(0, K), relevant };
+});
+const n = golden.items.length;
+console.log(evaluate(runs, K), { cite: cite / n, citeOk: citeOk / n });</code></pre>
+            <aside class="notes">
+              <p><strong>기대(예시 팀 C, k=5):</strong> recall 0.8333, precision 0.1667, hit 0.8333, mrr 0.6319, ndcg 0.6827, cite 0.8333, citeOk 0.8333.</p>
+              <p><strong>왜 null인가:</strong> 중복 청크를 지우면(filter) 뒤 문서의 순위가 당겨져 MRR·nDCG가 부풀려진다. 자리는 두고 점수만 막는다. 예시 팀 C의 q04는 <code>rag-embedding#1, rag-chunking#2, rag-chunking#1…</code> → 근거가 2위.</p>
+            </aside>
+          </section>
+
+          <section class="slide" data-title="부록 B · C3 정답" data-appendix>
+            <h2>부록 B · C3 정답</h2>
+            <pre data-run="ans-c3" data-title="C3 정답"><code class="language-javascript">import { evaluate } from '/assets/js/core/metrics.js';
+const golden = await (await fetch('/assets/data/golden/golden.json')).json();
+const files = ['sample-team-a', 'sample-team-b', 'sample-team-c'];
+const teams = await Promise.all(files.map(async (f) => (await fetch(`/assets/data/w12/${f}.json`)).json()));
+function score(team, k) {
+  const runs = golden.items.map((item) => {
+    const seen = new Set();
+    const ids = (team.golden.find((q) => q.id === item.id)?.retrieved ?? [])
+      .map((id) => id.split('#')[0]).map((d) => (seen.has(d) ? null : (seen.add(d), d)));
+    return { retrieved: ids.slice(0, k), relevant: item.evidence.map((e) => e.doc) };
+  });
+  return evaluate(runs, k);
+}
+const K = 5;
+const rows = teams.map((t) => ({ team: t.team, ...score(t, K) })).sort((a, b) => b.ndcg - a.ndcg);
+const f = (v) => v.toFixed(3);
+const lines = [`| 순위 | 팀 | Recall@${K} | MRR@${K} | nDCG@${K} |`, '|---|---|---:|---:|---:|',
+  ...rows.map((r, i) => `| ${i + 1} | ${r.team} | ${f(r.recall)} | ${f(r.mrr)} | ${f(r.ndcg)} |`)];
+console.log(lines.join('\n'));</code></pre>
+            <aside class="notes">
+              <p><strong>기대 출력:</strong></p>
+              <pre><code>| 순위 | 팀 | Recall@5 | MRR@5 | nDCG@5 |
+|---|---|---:|---:|---:|
+| 1 | 예시 팀 A · 하이브리드+리랭킹 | 0.917 | 0.778 | 0.813 |
+| 2 | 예시 팀 C · BM25 단독 | 0.833 | 0.632 | 0.683 |
+| 3 | 예시 팀 B · 벡터 단독 | 0.500 | 0.232 | 0.298 |</code></pre>
+              <p><code>---:</code>는 오른쪽 정렬이다. 숫자 열은 오른쪽 정렬해야 자릿수 비교가 쉽다. 팀 이름에 <code>|</code>가 있으면 표가 깨진다 → <code>\|</code>로 바꾸는 것이 확장 과제.</p>
+            </aside>
+          </section>
+
+          <section class="slide" data-title="부록 B · C4 정답" data-appendix>
+            <h2>부록 B · C4 정답</h2>
+            <pre data-run="ans-c4" data-title="C4 정답"><code class="language-javascript">const golden = await (await fetch('/assets/data/golden/golden.json')).json();
+const files = ['sample-team-a', 'sample-team-b', 'sample-team-c'];
+const teams = await Promise.all(files.map(async (f) => (await fetch(`/assets/data/w12/${f}.json`)).json()));
+
+function rankOf(team, item, k) {
+  const retrieved = team.golden.find((q) => q.id === item.id)?.retrieved ?? [];
+  const relevant = item.evidence.map((e) => e.doc);
+  const i = retrieved.slice(0, k).findIndex((id) => relevant.includes(id.split('#')[0]));
+  return i === -1 ? null : i + 1;
+}
+for (const k of [1, 3, 5]) {
+  const failed = golden.items.filter((item) => teams.every((t) => rankOf(t, item, k) === null));
+  console.log(`k=${k}: 전원 실패 ${failed.length}문항`);
+  console.table(failed.map((it) => ({
+    id: it.id, question: it.question,
+    evidence: it.evidence.map((e) => e.doc).join(', '), note: it.note ?? '',
+  })));
+}</code></pre>
+            <aside class="notes">
+              <p><strong>기대:</strong> k=1 → q10, q11, q12 (세 문항 모두 broken-* 문서) · k=3 → q10 · k=5 → q10.</p>
+              <p>여기서는 첫 적중 순위만 보므로 중복 청크 처리가 필요 없다(첫 등장 위치는 변하지 않는다). 토론: 전원 실패는 팀의 실수가 아니라 데이터 문제일 가능성이 크다. q10은 표가 한 줄로 뭉개진 문서라 어떤 검색기로도 “화요일 1-3교시”를 찾기 어렵다 → 3주차 파싱으로 돌아간다.</p>
+            </aside>
+          </section>
+
+          <section class="slide" data-title="부록 B · C5 정답 (1)" data-appendix>
+            <h2>부록 B · C5 정답 (1/2)</h2>
+            <pre data-run="ans-c5" data-title="C5 정답"><code class="language-javascript">import { evaluate } from '/assets/js/core/metrics.js';
+const golden = await (await fetch('/assets/data/golden/golden.json')).json();
+const load = async (f) => (await fetch(`/assets/data/w12/${f}.json`)).json();
+const base = await load('sample-team-c'), cand = await load('sample-team-a');
+const K = 5;
+
+function perQuestion(team) {
+  return golden.items.map((item) => {
+    const seen = new Set();
+    const retrieved = (team.golden.find((q) => q.id === item.id)?.retrieved ?? [])
+      .map((id) => id.split('#')[0]).map((d) => (seen.has(d) ? null : (seen.add(d), d))).slice(0, K);
+    const relevant = item.evidence.map((e) => e.doc);
+    const i = retrieved.findIndex((d) => d !== null && relevant.includes(d));
+    return { id: item.id, retrieved, relevant, rank: i === -1 ? null : i + 1 };
+  });
+}
+const a = perQuestion(base), b = perQuestion(cand);
+const ma = evaluate(a, K), mb = evaluate(b, K);
+console.table(['recall', 'mrr', 'ndcg'].map((m) => ({ metric: m, base: ma[m], cand: mb[m], delta: mb[m] - ma[m] })));
+
+const r = (x) => x.rank ?? K + 1;
+const better = [], worse = [], same = [];
+a.forEach((qa, i) => {
+  const qb = b[i], label = `${qa.id} ${qa.rank ?? '✗'}→${qb.rank ?? '✗'}`;
+  (r(qb) < r(qa) ? better : r(qb) > r(qa) ? worse : same).push(label);
+});
+console.log('개선:', better.join(', '));
+console.log('악화:', worse.join(', '));
+console.log('변화 없음:', same.join(', '));</code></pre>
+          </section>
+
+          <section class="slide" data-title="부록 B · C5 정답 (2)" data-appendix>
+            <h2>부록 B · C5 정답 (2/2) · 해설</h2>
+            <table>
+              <thead><tr><th>지표</th><th>C (기준선)</th><th>A (개선안)</th><th>Δ</th></tr></thead>
+              <tbody>
+                <tr><td>Recall@5</td><td>0.833</td><td>0.917</td><td>+0.083</td></tr>
+                <tr><td>MRR@5</td><td>0.632</td><td>0.778</td><td>+0.146</td></tr>
+                <tr><td>nDCG@5</td><td>0.683</td><td>0.813</td><td>+0.131</td></tr>
+              </tbody>
+            </table>
+            <ul>
+              <li>개선: q04 2→1, q08 3→1, q09 2→1, q11 4→3, q12 ✗→2</li>
+              <li><strong>악화: q07 1→2</strong> · 변화 없음: 나머지 6문항 (q10은 둘 다 ✗)</li>
+            </ul>
+            <aside class="notes">
+              <p><strong>핵심:</strong> 평균은 모두 올랐지만 q07(“RRF의 k”)은 나빠졌다. BM25는 “RRF”라는 정확한 키워드로 1위를 찾았는데, 하이브리드는 벡터 쪽이 숫자 표현(10~20%)이 있는 청킹 문서를 끌어올렸다. 하이브리드가 모든 문항에서 이기지는 않는다.</p>
+              <p>nDCG보다 MRR의 Δ가 큰 이유: 순위가 2·3위에서 1위로 오른 문항이 많기 때문이다(1/r의 변화가 1/log₂(r+1)보다 크다).</p>
+              <p>12문항에서 1문항 차이는 0.083이다. 표본이 작으니 Δ를 과장하지 말라고 지도한다.</p>
+            </aside>
+          </section>
+
+          <section class="slide" data-title="부록 C · 자주 막히는 지점" data-appendix>
+            <h2>부록 C · 학생이 자주 막히는 지점</h2>
+            <table>
+              <thead><tr><th>증상</th><th>원인</th><th>대응</th></tr></thead>
+              <tbody>
+                <tr><td>파일을 올려도 반응 없음</td><td><code>file://</code>로 열었다</td><td><code>python -m http.server</code> 안내</td></tr>
+                <tr><td>JSON 문법 오류</td><td>마지막 쉼표, 작은따옴표, 주석</td><td>행·열 메시지 확인, 템플릿에서 다시 시작</td></tr>
+                <tr><td>system.k 오류</td><td><code>"k": "5"</code></td><td>숫자는 따옴표 없이</td></tr>
+                <tr><td>점수가 전부 0</td><td>retrieved에 청크 본문을 넣음</td><td>본문이 아니라 ID(<code>문서ID#번호</code>)</td></tr>
+                <tr><td>“검색되지 않은 문서를 인용” 경고</td><td>LLM이 목록 밖 출처를 지어냄</td><td>인용을 검색 결과 ID로 제한(11주차)</td></tr>
+                <tr><td>발표 숫자 ≠ 점수판</td><td>k가 다르거나 중복 청크를 셈</td><td>점수판의 k로 다시 계산</td></tr>
+              </tbody>
+            </table>
+          </section>
+
+          <section class="slide" data-title="부록 C · 흔한 실패와 피드백" data-appendix>
+            <h2>부록 C · 흔한 실패와 피드백 예시</h2>
+            <table>
+              <thead><tr><th>흔한 실패</th><th>피드백 예시</th></tr></thead>
+              <tbody>
+                <tr><td>성공 사례만 시연</td><td>“q10에서 시스템이 무엇을 했는지 보여 주면 설계가 더 설득력 있다.”</td></tr>
+                <tr><td>“정확도가 높다”만 말함</td><td>“어떤 지표, 어떤 k인가? 점수판 숫자로 다시 말해 보자.”</td></tr>
+                <tr><td>실패 원인을 LLM 탓으로</td><td>“검색 결과에 근거가 있었나? 없었다면 생성 문제가 아니다.”</td></tr>
+                <tr><td>설정 여러 개를 한꺼번에 바꿈</td><td>“무엇 때문에 좋아졌는지 모른다. 한 번에 하나씩 바꾼다.”</td></tr>
+                <tr><td>평균 Δ만 보고</td><td>“나빠진 문항은 없었나? q07처럼.”</td></tr>
+                <tr><td>인용이 형식만 있음</td><td>“인용한 청크에 그 문장이 실제로 있나? 하이라이트로 보여 주자.”</td></tr>
+              </tbody>
+            </table>
+            <aside class="notes">
+              <p>피드백은 “잘했다/못했다”가 아니라 다음 행동을 제시하는 문장으로 쓴다. 심사표의 코멘트 칸에 이 표현을 그대로 써도 된다.</p>
+            </aside>
+          </section>
+
+          <section class="slide" data-title="부록 D · 토론 주제" data-appendix>
+            <h2>부록 D · 토론 주제</h2>
+            <ol>
+              <li>점수판 1등 팀이 발표 점수도 1등이어야 하는가?</li>
+              <li>문항당 근거 문서 1개인 골든셋 12문항으로 시스템을 판단해도 되는가? 무엇을 더 넣어야 하나?</li>
+              <li>“모른다”고 답한 문항(인용 없음)은 인용률에서 감점해야 하나?</li>
+              <li>팀이 골든셋에 맞춰 시스템을 튜닝하면 무엇이 문제인가? (과적합)</li>
+              <li>Faithfulness를 사람 대신 LLM이 채점하면 무엇을 조심해야 하나?</li>
+            </ol>
+            <aside class="notes">
+              <p>2번과 4번은 이어진다. 공개 골든셋에 맞춘 튜닝은 시험 문제를 보고 공부한 것과 같다. 실무에서는 공개하지 않은 평가셋(hold-out)을 따로 둔다.</p>
+            </aside>
+          </section>
+
+          <section class="slide" data-title="부록 E · 심사 루브릭 (1)" data-appendix>
+            <h2>부록 E · 심사 루브릭 (40점)</h2>
+            <table>
+              <thead><tr><th>항목</th><th>우수</th><th>보통</th><th>미흡</th></tr></thead>
+              <tbody>
+                <tr><td>동작하는 서비스 (10)</td><td>10: 답변+인용, 근거 없으면 거절</td><td>6: 동작하나 인용 불완전</td><td>2: 시연 실패</td></tr>
+                <tr><td>평가·재현성 (10)</td><td>10: ✓ 통과, 발표=점수판</td><td>6: 통과, 숫자 일부 불일치</td><td>2: 검증 실패·미제출</td></tr>
+                <tr><td>실패 분석 (8)</td><td>8: 2개+ 단계 특정·증거</td><td>5: 현상만 서술</td><td>1: 실패 언급 없음</td></tr>
+                <tr><td>개선 실험 (7)</td><td>7: 1변수 전후 Δ+악화 문항</td><td>4: 전후 비교만</td><td>1: 비교 없음</td></tr>
+                <tr><td>발표·질의 (5)</td><td>5: 5부분·시간 준수·근거 답변</td><td>3: 일부 누락</td><td>1: 시간 초과·답변 불가</td></tr>
+              </tbody>
+            </table>
+            <aside class="notes">
+              <p>중간 점수(예: 8, 4)도 준다. 점수판 순위는 직접 배점하지 않는다. 우수·보통·미흡 사이는 다음 슬라이드의 세부 기준으로 판단한다.</p>
+            </aside>
+          </section>
+
+          <section class="slide" data-title="부록 E · 심사 루브릭 (2)" data-appendix>
+            <h2>부록 E · 세부 기준과 감점</h2>
+            <div class="cols">
+              <div>
+                <p><strong>세부 기준</strong></p>
+                <ul>
+                  <li>실패 분석 우수: 파싱·청킹·검색·생성 중 한 단계를 지목하고, 검색 결과 또는 청크 원문으로 증명</li>
+                  <li>개선 실험 우수: 같은 골든셋·같은 k, 바꾼 설정 1개</li>
+                  <li>인용: 인용 청크에 답 문장이 실제로 있음</li>
+                </ul>
+              </div>
+              <div>
+                <p><strong>감점 · 0점 처리</strong></p>
+                <ul>
+                  <li>retrieved를 손으로 수정 → 평가 항목 0점</li>
+                  <li>API 키 노출 → 즉시 폐기 안내, −5</li>
+                  <li>마감 후 제출 → 하루 −2</li>
+                  <li>발표 12분 초과 → −1</li>
+                </ul>
+              </div>
+            </div>
+            <aside class="notes">
+              <p>retrieved 수정 여부는 질의응답에서 “이 질문을 지금 서비스에 넣어 보자”로 확인한다. 라이브 결과가 JSON과 크게 다르면 재현성을 묻는다.</p>
+              <p>API 키가 저장소에 있으면 발표 전에 발견해 키 폐기부터 안내한다. 공개 저장소 키는 몇 분 안에 수집된다.</p>
+            </aside>
+          </section>
+
+        </div>
+          </div>
+        </div>
+        <section class="notes-pane" aria-label="교사 노트">
+          <button type="button" class="notes-head"><span>🧑‍🏫 교사 노트</span><span class="spacer"></span><span class="notes-next"></span><span class="notes-toggle">▾ 접기</span></button>
+          <div class="notes-body"></div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <script type="module">
+    import { initDeck } from '../../assets/js/site/slides.js';
+    import { initRunners } from '../../assets/js/site/runner.js';
+    import { mount } from '../../assets/js/widgets/w12-team-board.js';
+    initRunners(document.querySelector('.deck-stage'));
+    initDeck();
+    mount(document.getElementById('deck-w12-widget'), { outputTitle: '팀 점수판 (데모 슬라이드)' });
+  </script>
+</body>
+</html>

@@ -1,0 +1,115 @@
+{
+  "version": 1,
+  "description": "11주차 인용 하이라이트 위젯용 저장된 응답. 검색 설정(retrieval)으로 BM25 상위 k개 청크를 뽑고, 그 번호([1]~[k])로 인용한 답변이다. sources는 응답을 만들 때 쓴 청크 id(문서id#청크번호)이며 현재 검색 결과와 같아야 한다. kind: good(정상), bad(실패 예시), refusal(거절).",
+  "retrieval": { "method": "bm25", "chunk": { "strategy": "recursive", "size": 300, "overlap": 0 }, "k": 3 },
+  "items": [
+    {
+      "id": "q01",
+      "kind": "good",
+      "question": "실습실에서 GPU 서버를 한 사람이 연속으로 쓸 수 있는 최대 시간은?",
+      "sources": ["facility-rules#0", "broken-mixed#0", "dept-overview#1"],
+      "answer": "GPU 서버는 한 사람이 연속으로 최대 12시간까지 사용할 수 있다 [1]. 장시간 학습 작업을 실행할 때는 공용 캘린더에 사용 시간을 먼저 등록해야 한다 [1]."
+    },
+    {
+      "id": "q02",
+      "kind": "good",
+      "question": "RAG 교과목의 팀 프로젝트는 성적에서 몇 퍼센트를 차지하나?",
+      "sources": ["course-rag-syllabus#1", "course-rag-syllabus#0", "broken-table#0"],
+      "answer": "팀 프로젝트는 성적 평가의 40%다 [1]. 나머지는 주차별 실습 과제 30%, 중간 점검 20%, 수업 참여 10%로 구성된다 [1]."
+    },
+    {
+      "id": "q03",
+      "kind": "good",
+      "question": "수료 요건은 무엇인가?",
+      "sources": ["dept-overview#1"],
+      "answer": "수료 요건은 출석률 80% 이상과 팀 프로젝트 최종 발표 통과다 [1]."
+    },
+    {
+      "id": "q04",
+      "kind": "good",
+      "question": "오버랩을 두면 어떤 비용이 늘어나나?",
+      "sources": ["rag-chunking#1", "rag-embedding#0", "rag-chunking#2"],
+      "answer": "오버랩을 두면 저장 공간과 임베딩 비용이 겹친 비율만큼 늘어난다 [1]. 그래서 실무에서는 청크 크기의 10~20%만 오버랩으로 두는 경우가 많다 [1]."
+    },
+    {
+      "id": "q05",
+      "kind": "good",
+      "question": "고정 길이 청킹에서 문장이 잘리면 어떤 문제가 생기나?",
+      "sources": ["rag-chunking#0", "rag-embedding#0", "rag-evaluation#1"],
+      "answer": "고정 길이 청킹은 문자 수를 기준으로 자르므로 문장 중간에서 잘릴 수 있다 [1]. 문장이 잘리면 답에 필요한 정보가 두 청크에 나뉘어 어느 쪽도 검색되지 않는 문제가 생긴다 [1]."
+    },
+    {
+      "id": "q06",
+      "kind": "good",
+      "question": "e5 계열 임베딩 모델을 쓸 때 주의할 점은?",
+      "sources": ["rag-embedding#1", "rag-intro#0", "rag-intro#1"],
+      "answer": "e5 계열 모델은 질문에는 \"query: \", 문서에는 \"passage: \" 접두어를 붙여야 성능이 제대로 나온다 [1]. 접두어를 빠뜨리는 것은 흔한 실수다 [1]."
+    },
+    {
+      "id": "q07",
+      "kind": "good",
+      "question": "RRF에서 k 값은 보통 얼마를 쓰나?",
+      "sources": ["rag-hybrid#0", "rag-embedding#0", "rag-evaluation#0"],
+      "answer": "RRF에서 k는 보통 60을 쓴다 [1]. RRF 점수는 각 결과 목록에서의 순위 r에 대해 1/(k+r)을 더한 값이다 [1]."
+    },
+    {
+      "id": "q08",
+      "kind": "good",
+      "question": "Faithfulness는 무엇을 측정하나?",
+      "sources": ["rag-evaluation#1", "course-rag-syllabus#0", "rag-chunking#0"],
+      "answer": "Faithfulness는 답변의 각 주장이 검색된 근거로 뒷받침되는지를 측정한다 [1]. 근거에 없는 내용을 답했다면 정답이더라도 Faithfulness는 낮다 [1]."
+    },
+    {
+      "id": "q09",
+      "kind": "good",
+      "question": "HNSW 인덱스의 단점은?",
+      "sources": ["rag-vectordb#1", "rag-vectordb#0", "rag-intro#1"],
+      "answer": "HNSW는 수백만 개 벡터에서도 밀리초 단위로 검색한다 [2]. 다만 가끔 가장 가까운 이웃을 놓치는 근사 검색이다 [2]."
+    },
+    {
+      "id": "q10",
+      "kind": "good",
+      "question": "RAG 수업은 무슨 요일 몇 교시이고 어느 강의실인가?",
+      "sources": ["broken-table#0", "course-rag-syllabus#0", "dept-overview#1"],
+      "answer": "시간표에서 검색증강생성(RAG) 시스템 구축은 화요일 1-3교시, 305 강의실이다 [1]. 이 과목은 주 1회 3시간씩 12주 동안 진행된다 [2]."
+    },
+    {
+      "id": "q11",
+      "kind": "good",
+      "question": "성적 우수 장학금 지급액은?",
+      "sources": ["broken-scan#0", "course-rag-syllabus#1"],
+      "answer": "성적 우수 장학금 지급액은 수업료의 50%다 [1]. 대상은 직전 학기 평균 평점이 4.0 이상인 학생이다 [1]."
+    },
+    {
+      "id": "q12",
+      "kind": "good",
+      "question": "결석하면 실습 과제는 어떻게 하나?",
+      "sources": ["broken-mixed#0", "course-rag-syllabus#1", "facility-rules#0"],
+      "answer": "결석한 주의 실습 과제는 다음 주 수업 전까지 제출하면 인정된다 [1]. 녹화 영상은 제공되지 않는다 [1]."
+    },
+    {
+      "id": "bad-q01",
+      "kind": "bad",
+      "label": "⚠ 실패 예시: 없는 번호 · 인용 없는 문장 · 엉뚱한 출처",
+      "question": "실습실에서 GPU 서버를 한 사람이 연속으로 쓸 수 있는 최대 시간은?",
+      "sources": ["facility-rules#0", "broken-mixed#0", "dept-overview#1"],
+      "answer": "GPU 서버는 한 사람이 연속으로 최대 12시간까지 사용할 수 있다 [1]. 사용 전에는 공용 캘린더에 시간을 등록해야 한다 [4]. 주말과 공휴일에는 누구나 자유롭게 이용할 수 있다. 장비 고장을 발견하면 즉시 조교에게 알린다 [2]."
+    },
+    {
+      "id": "refuse-dorm",
+      "kind": "refusal",
+      "label": "🙅 거절: 문서에 없는 질문",
+      "question": "기숙사 신청은 언제까지 하나?",
+      "sources": ["facility-rules#0", "rag-chunking#0", "dept-overview#1"],
+      "answer": "문서에서 찾을 수 없다. 검색된 문서에는 기숙사 신청 기한에 대한 내용이 없다."
+    },
+    {
+      "id": "bad-dorm",
+      "kind": "bad",
+      "label": "⚠ 그럴듯한 거짓: 비슷한 문장을 끌어다 인용",
+      "question": "기숙사 신청은 언제까지 하나?",
+      "sources": ["facility-rules#0", "rag-chunking#0", "dept-overview#1"],
+      "answer": "기숙사 신청은 이용일 이틀 전까지 학과 행정실에 한다 [1]."
+    }
+  ]
+}

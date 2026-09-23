@@ -1,0 +1,278 @@
+/* w10 코드 비교 뷰어 — tokens only */
+
+.w10 {
+  container-type: inline-size;
+}
+
+.w10-steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: var(--space-3);
+}
+
+.w10-step:focus-visible,
+.w10 [data-preset]:focus-visible,
+.w10-code:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+/* Stacked by default (phones, narrow center pane, demo slide); three columns when wide */
+.w10-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-3);
+}
+
+.w10-layout-row {
+  display: none;
+  justify-content: flex-end;
+  margin-bottom: var(--space-2);
+}
+
+@container (min-width: 760px) {
+  .w10-grid:not(.is-stacked) {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .w10-layout-row {
+    display: flex;
+  }
+}
+
+.w10-pane {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-code-bg);
+}
+
+.w10-pane__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 8px;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface-2);
+  font-size: var(--text-sm);
+}
+
+.w10-tag {
+  padding: 0 6px;
+  border-radius: 4px;
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-bold);
+}
+
+.w10-sub,
+.w10-file {
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
+}
+
+.w10-file {
+  padding: 2px 10px;
+  font-family: var(--font-mono);
+}
+
+.w10-count {
+  margin-left: auto;
+  color: var(--color-accent2);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-bold);
+}
+
+.w10-code {
+  position: relative;
+  max-height: 300px;
+  margin: 0;
+  padding: 4px 0 8px;
+  overflow: auto;
+  background: var(--color-code-bg);
+  color: var(--color-code-fg);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.w10-code code {
+  display: block;
+  min-width: max-content;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font-size: inherit;
+}
+
+.w10-line {
+  display: block;
+  padding-right: 10px;
+  border-left: 3px solid transparent;
+  opacity: 0.5;
+  transition: opacity var(--dur-fast), background var(--dur-fast);
+}
+
+.w10-line.is-hl {
+  border-left-color: var(--color-accent);
+  background: var(--color-accent-soft);
+  opacity: 1;
+}
+
+.w10-ln {
+  display: inline-block;
+  width: 3.2ch;
+  margin-right: 1ch;
+  color: var(--color-text-muted);
+  text-align: right;
+  user-select: none;
+}
+
+.w10-src {
+  white-space: pre;
+}
+
+.w10-cm {
+  color: var(--color-text-muted);
+  font-style: italic;
+}
+
+.w10-note {
+  margin: var(--space-2) 0 0;
+  color: var(--color-warning);
+  font-size: var(--text-xs);
+}
+
+.w10-h {
+  margin: var(--space-5) 0 var(--space-1);
+  font-size: var(--text-md);
+}
+
+.w10-help {
+  margin: 0 0 var(--space-2);
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+
+.w10-presets {
+  margin-bottom: var(--space-3);
+}
+
+.w10 .field__label code {
+  font-size: var(--text-xs);
+}
+
+/* Output panel */
+.w10-out h4 {
+  margin: 12px 0 6px;
+  font-size: var(--text-sm);
+}
+
+.w10-out h4:first-child {
+  margin-top: 0;
+}
+
+.w10-out .callout {
+  margin: 0 0 8px;
+  padding: 8px 12px;
+  font-size: 13px;
+}
+
+.w10-out .callout ul {
+  margin: 4px 0 0;
+  padding-left: 18px;
+}
+
+.w10-explain {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.w10-card {
+  padding: 6px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  font-size: 13px;
+}
+
+.w10-card p {
+  margin: 2px 0 0;
+}
+
+.w10-stat-sub {
+  display: block;
+  color: var(--color-text-muted);
+  font-size: 11.5px;
+}
+
+.w10-delta {
+  display: block;
+  color: var(--color-text-muted);
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+}
+
+.w10-delta.up {
+  color: var(--color-success);
+}
+
+.w10-delta.down {
+  color: var(--color-danger);
+}
+
+.w10-changed {
+  margin: 0 0 8px;
+  font-size: 13px;
+}
+
+.w10-changed summary {
+  cursor: pointer;
+  color: var(--color-accent2);
+  font-weight: var(--weight-bold);
+}
+
+.w10-changed ul {
+  margin: 4px 0 0;
+  padding-left: 18px;
+}
+
+.w10-table-wrap {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.w10-defaults {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.w10-defaults th,
+.w10-defaults td {
+  padding: 4px 6px;
+  border-bottom: 1px solid var(--color-border);
+  text-align: left;
+  vertical-align: top;
+}
+
+.w10-defaults th {
+  color: var(--color-text-muted);
+  font-weight: var(--weight-bold);
+  white-space: nowrap;
+}
+
+.w10-defaults code {
+  font-size: 11px;
+  word-break: break-all;
+}

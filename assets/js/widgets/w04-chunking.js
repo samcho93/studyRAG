@@ -124,7 +124,7 @@ export async function mount(el, options = {}) {
     .map(([k, v]) => `<option value="${k}">${v}</option>`)
     .join('');
   $('[data-slot=presets]').innerHTML = Object.entries(PRESETS)
-    .map(([k, p]) => `<button type="button" class="btn btn--ghost" data-preset="${k}">${p.label}</button>`)
+    .map(([k, p]) => `<button type="button" class="btn small" data-preset="${k}">${p.label}</button>`)
     .join('');
 
   const factsFor = (docId) => golden.items.filter((it) => it.evidence.some((e) => e.doc === docId));
@@ -182,7 +182,7 @@ export async function mount(el, options = {}) {
         const has = holders.includes(c);
         return `<li class="${has ? 'has-fact' : ''}" style="border-left-color: var(--chunk-${(c.index % COLORS) + 1})">
           <div class="chunk-meta"><span>#${c.index + 1}</span><span>${c.start}–${c.end}</span><span>${c.end - c.start}자</span>
-          ${has ? '<span class="badge badge--ok">근거 온전히 포함</span>' : ''}</div>
+          ${has ? '<span class="badge-ok">근거 온전히 포함</span>' : ''}</div>
           ${escapeHtml(c.text)}</li>`;
       })
       .join('');
@@ -247,7 +247,7 @@ export function unmount(el) {
 function verdictHtml(item, quote, fact, holders, touching) {
   if (!item) return '';
   if (!fact) {
-    return `<div class="callout callout--warn"><span class="callout__title">근거 문장을 찾을 수 없다</span>
+    return `<div class="callout"><span class="callout__title">근거 문장을 찾을 수 없다</span>
       원문을 수정해서 근거 문장 「${escapeHtml(quote ?? '')}」가 사라졌다.</div>`;
   }
   if (holders.length > 0) {

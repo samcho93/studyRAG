@@ -1,0 +1,369 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>5주차 임베딩 &amp; 유사도 · RAG Lab</title>
+  <meta name="description" content="임베딩과 유사도: 브라우저에서 임베딩 모델을 돌려 문장 사이의 코사인 유사도를 히트맵과 2D 투영으로 보고, 영어 전용 모델이 한국어에서 실패하는 모습을 관찰한다.">
+  <script>try{var t=JSON.parse(localStorage.getItem('raglab:theme'));if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+  <link rel="stylesheet" crossorigin="anonymous" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&display=swap">
+  <link rel="stylesheet" href="../../assets/css/tokens.css">
+  <link rel="stylesheet" href="../../assets/css/base.css">
+  <link rel="stylesheet" href="../../assets/css/components.css">
+  <link rel="stylesheet" href="../../assets/css/w05.css">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%232450c4'/%3E%3Ccircle cx='14' cy='14' r='6' fill='none' stroke='white' stroke-width='3'/%3E%3Cpath d='M19 19l6 6' stroke='white' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E">
+  <script type="module" src="../../assets/js/site/site.js"></script>
+</head>
+<body>
+  <div class="layout" data-layout data-role="student" data-week="5" data-crumb="PART 2 · 검색 파이프라인 › <b>5주차 · 임베딩 &amp; 유사도</b>">
+    <main class="pane center" id="main">
+      <div class="content" tabindex="-1">
+        <article class="doc">
+      <span class="chapter-badge">🧭 5주차 · 임베딩 &amp; 유사도</span>
+      <h1>“비슷하다”를 숫자로 만들기</h1>
+      <p class="lead">검색은 결국 “질문과 가장 비슷한 청크”를 고르는 일이다. 이번 주는 문장을 벡터로 바꾸고, 벡터 사이의 거리로 비슷함을 재는 방법과 그 방법이 무너지는 조건을 직접 본다.</p>
+      <div class="meta-row">
+        <span class="chip">⏱ 180분</span>
+        <span class="chip accent">▶ 체험: 유사도 히트맵 + 2D 투영</span>
+        <span class="chip">🧪 Challenge 5개</span>
+        <span class="chip ok">🔑 LLM API 키 필요 없음</span>
+      </div>
+      <div class="flow" aria-label="RAG 파이프라인에서 이번 주의 위치">
+        <div>문서 파싱</div><div>청킹</div><div><b>임베딩</b></div><div>벡터스토어</div><div>검색</div><div>생성</div><div>평가</div>
+      </div>
+
+      <section id="goals">
+        <h2><span class="section-num">1</span>학습 목표</h2>
+        <div class="goals">
+        <b>이번 주가 끝나면</b>
+        <ul>
+          <li>코사인 유사도·내적·유클리드 거리의 차이와, 정규화하면 셋의 순위가 같아지는 이유를 설명할 수 있다.</li>
+          <li>임베딩 모델(다국어/영어 전용)과 e5 접두어가 한국어 검색 결과를 어떻게 바꾸는지 관찰하고 근거를 들어 모델을 고를 수 있다.</li>
+          <li>유사도 행렬, top-k 순위, 2D 주성분 투영을 직접 구현할 수 있다.</li>
+        </ul>
+        </div>
+      </section>
+
+      <section id="why">
+        <h2><span class="section-num">2</span>왜 필요한가</h2>
+        <p>학생이 “랩실에서 커피 마셔도 돼?”라고 묻는다. 실습실 이용 규정에는 답이 분명히 있다. “실습실 안에서는 음료를 포함한 모든 음식물 섭취가 금지된다.” 그런데 질문과 규정 문장이 공유하는 단어는 거의 없다. <em>랩실</em>과 <em>실습실</em>, <em>커피 마셔도</em>와 <em>음식물 섭취</em>는 글자가 다르다.</p>
+        <div class="callout callout--danger">
+          <span class="callout__title">글자가 다르면 찾지 못한다</span>
+          <p>단어가 겹치는 정도로만 문서를 고르면 이 질문의 정답 문장은 순위 밖으로 밀리기 쉽다. 반대로 “성적 우수 장학금은 평점 4.0 이상인 학생에게 지급하지 <b>않는다</b>”처럼 단어는 거의 같고 뜻은 반대인 문장은 높은 점수를 받는다.</p>
+        </div>
+        <p>필요한 것은 <strong>뜻</strong>이 가까우면 가까운 숫자가 나오는 표현이다. 그것이 임베딩(embedding)이다. 그러나 임베딩도 만능이 아니다. 한국어를 배우지 않은 모델을 쓰면 모든 문장이 비슷하다고 판단해 검색이 통째로 무너진다. 이번 주 실습에서 두 경우를 모두 확인한다.</p>
+      </section>
+
+      <section id="concept">
+        <h2><span class="section-num">3</span>개념</h2>
+
+        <h3>임베딩: 문장을 방향으로 바꾼다</h3>
+        <figure class="figure">
+          <svg viewBox="0 0 640 250" role="img" aria-labelledby="vec-fig-title" style="width: 100%">
+            <title id="vec-fig-title">왼쪽: 뜻이 가까운 문장은 벡터 방향이 가깝다. 오른쪽: 길이가 긴 벡터는 내적 점수를 부풀린다.</title>
+            <defs>
+              <marker id="w05-ar-a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" style="fill: var(--color-accent)"/></marker>
+              <marker id="w05-ar-b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" style="fill: var(--color-accent2)"/></marker>
+              <marker id="w05-ar-c" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" style="fill: var(--color-success)"/></marker>
+              <marker id="w05-ar-d" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" style="fill: var(--color-danger)"/></marker>
+            </defs>
+            <style>
+              .w05f-ttl { font: 700 13px var(--font-sans); fill: var(--color-text); }
+              .w05f-lbl { font: 600 12px var(--font-sans); }
+              .w05f-note { font: 12px var(--font-sans); fill: var(--color-text-muted); }
+              .w05f-axis { stroke: var(--color-border-strong); stroke-width: 1; }
+              .w05f-arc { fill: none; stroke: var(--color-text-muted); stroke-width: 1.2; stroke-dasharray: 3 3; }
+              .w05f-unit { fill: none; stroke: var(--color-border-strong); stroke-dasharray: 4 4; }
+            </style>
+
+            <text class="w05f-ttl" x="10" y="20">방향 = 뜻</text>
+            <line class="w05f-axis" x1="40" y1="215" x2="300" y2="215"/><line class="w05f-axis" x1="40" y1="215" x2="40" y2="30"/>
+            <line x1="40" y1="215" x2="250" y2="95" style="stroke: var(--color-accent); stroke-width: 3" marker-end="url(#w05-ar-a)"/>
+            <text class="w05f-lbl" x="228" y="84" style="fill: var(--color-accent)">청킹 문장</text>
+            <line x1="40" y1="215" x2="255" y2="130" style="stroke: var(--color-accent); stroke-width: 3; opacity: 0.6" marker-end="url(#w05-ar-a)"/>
+            <text class="w05f-lbl" x="232" y="150" style="fill: var(--color-accent)">오버랩 문장</text>
+            <line x1="40" y1="215" x2="95" y2="45" style="stroke: var(--color-success); stroke-width: 3" marker-end="url(#w05-ar-c)"/>
+            <text class="w05f-lbl" x="100" y="42" style="fill: var(--color-success)">장학금 문장</text>
+            <path class="w05f-arc" d="M 105.1 189.2 A 70 70 0 0 0 100.8 180.3"/>
+            <path class="w05f-arc" d="M 79.1 192.7 A 45 45 0 0 0 53.8 172.2"/>
+            <text class="w05f-note" x="112" y="206">청킹↔오버랩: 작은 각 → cos ≈ 1</text>
+            <text class="w05f-note" x="130" y="64">청킹↔장학금: 큰 각 → cos ≈ 0</text>
+
+            <text class="w05f-ttl" x="340" y="20">길이의 함정 (내적)</text>
+            <line class="w05f-axis" x1="360" y1="215" x2="630" y2="215"/><line class="w05f-axis" x1="360" y1="215" x2="360" y2="30"/>
+            <path class="w05f-unit" d="M 460 215 A 100 100 0 0 0 360 115"/>
+            <text class="w05f-note" x="440" y="232">길이 1 (정규화)</text>
+            <line x1="360" y1="215" x2="448" y2="160" style="stroke: var(--color-accent2); stroke-width: 3" marker-end="url(#w05-ar-b)"/>
+            <text class="w05f-lbl" x="400" y="150" style="fill: var(--color-accent2)">질의</text>
+            <line x1="360" y1="215" x2="452" y2="170" style="stroke: var(--color-accent); stroke-width: 3" marker-end="url(#w05-ar-a)"/>
+            <text class="w05f-lbl" x="458" y="182" style="fill: var(--color-accent)">정답 청크</text>
+            <line x1="360" y1="215" x2="600" y2="50" style="stroke: var(--color-danger); stroke-width: 3" marker-end="url(#w05-ar-d)"/>
+            <text class="w05f-lbl" x="470" y="45" style="fill: var(--color-danger)">긴 잡탕 문서</text>
+            <text class="w05f-note" x="520" y="150">방향은 조금 어긋나도</text>
+            <text class="w05f-note" x="520" y="166">길어서 내적이 가장 크다</text>
+          </svg>
+          <figcaption>실제 임베딩은 2차원이 아니라 수백~수천 차원이다(이번 주 기본 모델은 384차원). 그림은 두 축만 떼어 낸 직관이다.</figcaption>
+        </figure>
+        <p>임베딩 모델은 문장을 고정 길이의 실수 벡터로 바꾼다. 학습 과정에서 뜻이 가까운 문장 쌍은 가까운 방향을, 관련 없는 쌍은 먼 방향을 갖도록 조정된다. 그래서 “랩실”과 “실습실”처럼 글자는 달라도 비슷하게 쓰이는 표현은 비슷한 방향으로 간다. 검색 시스템은 질문도 같은 모델로 벡터로 바꾼 뒤, 가장 가까운 청크 벡터를 고른다.</p>
+
+        <h3>가까움을 재는 세 가지 방법</h3>
+        <table>
+          <thead><tr><th>척도</th><th>식</th><th>무엇을 보나</th><th>주의</th></tr></thead>
+          <tbody>
+            <tr><td>코사인 유사도(cosine similarity)</td><td><code>a·b / (‖a‖‖b‖)</code></td><td>두 벡터 사이 각도. −1~1, 클수록 비슷</td><td>길이를 무시한다</td></tr>
+            <tr><td>내적(dot product)</td><td><code>Σ aᵢbᵢ</code></td><td>방향 × 길이</td><td>길이가 긴 벡터가 부당하게 유리하다</td></tr>
+            <tr><td>유클리드 거리(Euclidean distance)</td><td><code>‖a − b‖</code></td><td>끝점 사이 직선 거리. 작을수록 비슷</td><td>길이가 다르면 방향이 같아도 멀다</td></tr>
+          </tbody>
+        </table>
+        <p>세 척도는 벡터를 <strong>정규화</strong>(길이를 1로 맞춤)하면 하나로 모인다. 길이가 1이면 분모가 1이므로 코사인 = 내적이고, 유클리드 거리도 코사인만의 함수가 된다.</p>
+        <pre><code class="language-text">‖a‖ = ‖b‖ = 1 이면
+  cos(a, b) = a · b
+  ‖a − b‖² = ‖a‖² + ‖b‖² − 2 a·b = 2 − 2 cos(a, b)</code></pre>
+        <p>그래서 정규화된 벡터에서는 어떤 척도로 정렬해도 순위가 같다. 이 과정의 <code>embed.js</code>는 모델 출력을 정규화해서 돌려주고, <code>vectorstore.js</code>도 저장할 때 다시 정규화한다. 덕분에 검색은 가장 빠른 연산인 내적 한 번으로 끝난다.</p>
+
+        <h3>e5 모델의 접두어: query: 와 passage:</h3>
+        <p>이번 주 기본 모델 multilingual-e5-small은 학습할 때 질문 앞에 <code>query: </code>, 문서 앞에 <code>passage: </code>를 붙였다. 사용할 때도 똑같이 붙여야 학습 때와 같은 조건이 된다. 모델 카드는 문장끼리 비교하는 대칭 작업(유사도 측정, 군집)에는 양쪽 모두 <code>query: </code>를 쓰라고 안내한다.</p>
+        <pre><code class="language-javascript">// core/embed.js가 모델 정보에 따라 접두어를 자동으로 붙인다
+await embedBatch(chunks, { role: 'passage' }); // → "passage: 청킹은 …"
+await embed('청킹이 뭐야?', { role: 'query' }); // → "query: 청킹이 뭐야?"</code></pre>
+        <p>실습 위젯의 히트맵(문장 ↔ 문장)은 양쪽에 <code>query: </code>를, 질의 순위(질의 ↔ 문장)는 질의에 <code>query: </code>, 문장에 <code>passage: </code>를 붙인다. 접두어를 빠뜨리는 것은 e5 계열에서 가장 흔한 실수다. 오류 없이 돌아가면서 점수만 조용히 나빠지므로 발견하기도 어렵다.</p>
+        <div class="callout">
+          <span class="callout__title">e5 점수는 원래 높게 몰린다</span>
+          <p>e5 모델 카드는 코사인 점수가 대체로 0.7~1.0 근처에 몰리는 것이 정상이라고 설명한다(학습에 낮은 온도 값을 썼기 때문이다). 그래서 “0.8이면 관련 있음” 같은 절대 기준은 모델마다 다르다. 검색에서 중요한 것은 값의 크기가 아니라 <strong>순위</strong>다.</p>
+        </div>
+
+        <h3>모델 선택: 다국어냐 영어 전용이냐</h3>
+        <p>임베딩 모델은 학습한 언어만 제대로 이해한다. 영어 문장으로만 학습한 all-MiniLM-L6-v2에 한국어를 넣으면 토크나이저가 한글을 의미 있는 조각으로 자르지 못하고, 모든 문장이 비슷한 벡터가 된다. 유사도가 높은 값으로 몰리고 주제가 섞인다. 위젯에서 이 모델을 고르는 것이 이번 주의 핵심 실패 실험이다.</p>
+        <table>
+          <thead><tr><th>위젯의 모델</th><th>언어</th><th>차원</th><th>이번 주 역할</th></tr></thead>
+          <tbody>
+            <tr><td>multilingual-e5-small</td><td>다국어(한국어 포함)</td><td>384</td><td>기본 모델. 접두어 필요</td></tr>
+            <tr><td>paraphrase-multilingual-MiniLM-L12-v2</td><td>다국어</td><td>384</td><td>다른 다국어 모델과 비교</td></tr>
+            <tr><td>all-MiniLM-L6-v2</td><td>영어 전용</td><td>384</td><td>한국어 실패 사례</td></tr>
+          </tbody>
+        </table>
+        <p>실무에서 쓸 만한 한국어 모델(KURE, BGE-M3, OpenAI text-embedding-3 등)의 크기·라이선스·비용 비교는 이론 페이지 <a href="../../theory/embedding-models.html">한국어 임베딩 모델 비교</a>에 정리했다.</p>
+
+        <h3>차원: 크면 좋은가</h3>
+        <p>차원은 벡터 하나에 담긴 숫자의 개수다. 차원이 크면 더 많은 구분을 담을 수 있지만, 저장 공간과 검색 계산량이 차원에 비례해 늘어난다. 32비트 실수 기준으로 384차원 벡터 하나는 1,536바이트, 1024차원은 4,096바이트다. 청크 100만 개면 각각 약 1.5GB와 4.1GB가 된다. 차원이 크다고 한국어를 더 잘하는 것도 아니다. 모델이 무엇으로 학습했는지가 먼저다.</p>
+
+        <h3>고차원을 눈으로 보기: 주성분 분석</h3>
+        <p>384차원은 그릴 수 없으므로, 위젯은 주성분 분석(PCA, Principal Component Analysis)으로 점들이 가장 넓게 퍼진 두 방향을 찾아 그 위에 투영한다. 방향은 거듭제곱법(power iteration)으로 찾는다. 공분산 행렬을 벡터에 계속 곱하면 벡터가 분산이 가장 큰 방향으로 끌려가는 성질을 쓴다.</p>
+        <pre><code class="language-text">1. 모든 벡터에서 평균을 뺀다 (중심화)
+2. 임의의 v에서 시작해  v ← normalize(Xᵀ(X v))  를 수렴할 때까지 반복 → PC1
+3. PC1 성분을 빼 가며 같은 반복 → PC2
+4. 각 점을 (x·PC1, x·PC2)로 그린다</code></pre>
+        <p>두 축이 설명하는 분산은 전체의 일부뿐이다. 2D 그림에서 가까워 보여도 실제 코사인은 다를 수 있으므로, 그림은 전체 모양을 보는 데만 쓰고 판단은 히트맵 값으로 한다.</p>
+      </section>
+
+      <section id="lab">
+        <h2><span class="section-num">4</span>실습</h2>
+        <p>아래 위젯은 브라우저 안에서 임베딩 모델을 실제로 돌린다. 문장 12개는 문서셋의 청킹·실습실 규정·장학금 문서에서 가져왔고, 뜻은 같고 단어가 다른 문장(S10)과 단어는 같고 뜻이 반대인 문장(S11), 관련 없는 문장(S12)을 섞었다. 처음 열면 모델(약 118MB)을 내려받는다. 한 번 받으면 브라우저 캐시에 남아 다음부터는 빠르다. 히트맵, 2D 투영, 질의 순위는 오른쪽 <b>실행 결과</b> 창에 표시된다.</p>
+      </section>
+
+      <div id="w05-widget"></div>
+
+      <section aria-labelledby="observe-title">
+        <h3 id="observe-title">관찰 질문</h3>
+        <ol>
+          <li>기본 모델에서 히트맵의 값 범위는 얼마인가? 색 범위를 <strong>고정 (0~1)</strong>으로 바꾸면 무엇이 달라 보이나? 그래도 같은 주제끼리 더 진한가?</li>
+          <li><strong>함정 1</strong>(S4↔S10)과 <strong>함정 2</strong>(S7↔S11)를 차례로 누른다. 글자 겹침과 코사인이 각각 어떤 순서인가? 임베딩이 이긴 쪽과 진 쪽은 어디인가?</li>
+          <li><strong>실패 재현: 영어 전용 모델</strong>을 누른다. 값 범위, 최근접 이웃 주제 일치, 2D 투영의 무리는 어떻게 변했나? 함정 1의 이웃 순위는?</li>
+          <li>질의를 “랩실에서 커피 마셔도 돼?”로 바꾼다. 다국어 모델과 영어 전용 모델에서 1위 문장은 각각 무엇인가?</li>
+          <li>2D 투영 아래의 “설명된 분산” 비율을 확인한다. 2D에서 가까운 두 점을 골라 히트맵 값과 비교한다. 그림을 그대로 믿어도 되나?</li>
+        </ol>
+      </section>
+
+      <section id="challenge">
+        <h2><span class="section-num">5</span>Challenge</h2>
+        <p>난이도 순서다. Challenge에서는 모델을 내려받지 않는다. 뜻을 알아보기 쉽게 손으로 만든 4차원 벡터(축: 청킹, 실습실, 장학금, 일상)를 쓴다. 코드 상자는 직접 고칠 수 있고, <strong>▶ 실행</strong>(또는 Ctrl+Enter)을 누르면 결과가 오른쪽 <b>실행 결과</b> 창에 나온다(휴대폰에서는 코드 바로 아래). 코드는 워커에서 돌아가며 10초가 지나면 자동으로 멈춘다.</p>
+
+        <div class="practice">
+          <div class="practice-head"><b>C1. 코사인 유사도 직접 구현</b><span class="level" aria-label="난이도 1">★</span></div>
+          <div class="practice-body">
+          <p><code>dot</code>, <code>norm</code>, <code>cosine</code>을 구현한다. 길이가 0인 벡터가 들어오면 0으로 나누지 않도록 0을 돌려준다.</p>
+          <pre data-run="c1" data-title="C1 코사인 유사도"><code class="language-javascript">const v = {
+  청킹: [0.9, 0.1, 0.0, 0.1],
+  오버랩: [0.8, 0.2, 0.1, 0.0],
+  장학금: [0.1, 0.0, 0.9, 0.1],
+  영벡터: [0, 0, 0, 0],
+};
+
+function dot(a, b) {
+  // TODO: Σ a[i] * b[i]
+}
+function norm(a) {
+  // TODO: √(a·a)
+}
+function cosine(a, b) {
+  // TODO: 분모가 0이면 0을 돌려준다
+}
+
+console.log('청킹·오버랩', cosine(v.청킹, v.오버랩)); // 1에 가깝다
+console.log('청킹·장학금', cosine(v.청킹, v.장학금)); // 0에 가깝다
+console.log('청킹·영벡터', cosine(v.청킹, v.영벡터)); // 0</code></pre>
+          </div>
+        </div>
+
+        <div class="practice">
+          <div class="practice-head"><b>C2. 정규화하면 내적 = 코사인</b><span class="level" aria-label="난이도 1">★</span></div>
+          <div class="practice-body">
+          <p>“긴문서”는 여러 주제가 섞여 길이가 큰 벡터다. 질의에 대해 원래 내적, 코사인, 정규화 후 내적, 정규화 후 유클리드 거리를 표로 비교한다. 내적 1위와 코사인 1위가 다른지, 정규화 후에는 <code>‖a − b‖² = 2 − 2cos</code>가 성립하는지 확인한다.</p>
+          <pre data-run="c2" data-title="C2 정규화와 세 척도"><code class="language-javascript">const docs = {
+  청킹: [0.9, 0.1, 0.0, 0.1],
+  실습실: [0.1, 0.9, 0.1, 0.1],
+  긴문서: [3.0, 2.4, 0.3, 0.6],
+};
+const q = [0.8, 0.2, 0.0, 0.1]; // "청킹이란?"
+
+const dot = (a, b) => a.reduce((s, x, i) => s + x * b[i], 0);
+const norm = (a) => Math.sqrt(dot(a, a));
+const cosine = (a, b) => dot(a, b) / (norm(a) * norm(b));
+
+function normalize(a) {
+  // TODO: 길이가 1인 새 배열을 돌려준다
+}
+function euclid(a, b) {
+  // TODO: √Σ(a[i] − b[i])²
+}
+
+const rows = Object.entries(docs).map(([id, d]) => ({
+  id,
+  rawDot: dot(q, d),
+  cosine: cosine(q, d),
+  // TODO: unitDot (정규화 후 내적), euclidUnit (정규화 후 거리)
+}));
+console.table(rows);
+// TODO: 내적 1위와 코사인 1위를 출력한다</code></pre>
+          </div>
+        </div>
+
+        <div class="practice">
+          <div class="practice-head"><b>C3. top-k 검색</b><span class="level" aria-label="난이도 2">★★</span></div>
+          <div class="practice-body">
+          <p>질의 벡터와 가장 가까운 문서 k개를 점수와 함께 돌려주는 <code>topK</code>를 만든다. 결과를 이 과정의 <code>VectorStore</code>(<code>core/vectorstore.js</code>)와 비교해 순서가 같은지 확인한다. 3위 문서가 질문과 관련이 있는지도 생각해 본다.</p>
+          <pre data-run="c3" data-title="C3 top-k"><code class="language-javascript">import { VectorStore } from '/assets/js/core/vectorstore.js';
+
+const docs = [
+  { id: 'chunk-fixed', vector: [0.9, 0.1, 0.0, 0.1] },
+  { id: 'chunk-overlap', vector: [0.8, 0.2, 0.1, 0.0] },
+  { id: 'lab-food', vector: [0.1, 0.9, 0.1, 0.1] },
+  { id: 'lab-hours', vector: [0.0, 0.8, 0.0, 0.3] },
+  { id: 'sch-grade', vector: [0.1, 0.0, 0.9, 0.1] },
+  { id: 'sch-work', vector: [0.0, 0.2, 0.8, 0.2] },
+  { id: 'lunch', vector: [0.1, 0.1, 0.1, 0.9] },
+];
+const query = [0.2, 0.7, 0.1, 0.4]; // "실습실은 밤에도 열려 있나?"
+
+const dot = (a, b) => a.reduce((s, x, i) => s + x * b[i], 0);
+const cosine = (a, b) => dot(a, b) / Math.sqrt(dot(a, a) * dot(b, b));
+
+function topK(q, items, k = 3) {
+  // TODO: 각 문서의 { id, score }를 만들고, 점수 내림차순 정렬 후 k개만
+}
+
+const mine = topK(query, docs, 3);
+console.table(mine);
+
+const store = new VectorStore();
+store.addMany(docs);
+console.table(store.search(query, 3));
+// TODO: 두 결과의 id 순서가 같은지 true/false로 출력</code></pre>
+          </div>
+        </div>
+
+        <div class="practice">
+          <div class="practice-head"><b>C4. 유사도 행렬과 가장 비슷한 쌍</b><span class="level" aria-label="난이도 3">★★★</span></div>
+          <div class="practice-body">
+          <p>위젯의 히트맵을 코드로 만든다. N×N 코사인 행렬을 표로 출력하고, 대각선을 뺀 가장 비슷한 쌍을 찾는다. 또 문장마다 가장 가까운 이웃이 같은 주제인지 세어 “최근접 이웃 주제 일치” 비율을 낸다. S7(무관)의 이웃은 무엇이고, 이것이 검색에서 무엇을 뜻하나?</p>
+          <pre data-run="c4" data-title="C4 유사도 행렬"><code class="language-javascript">const items = [
+  { id: 'S1', topic: '청킹', v: [0.9, 0.1, 0.0, 0.1] },
+  { id: 'S2', topic: '청킹', v: [0.8, 0.2, 0.1, 0.0] },
+  { id: 'S3', topic: '실습실', v: [0.1, 0.9, 0.1, 0.1] },
+  { id: 'S4', topic: '실습실', v: [0.0, 0.8, 0.0, 0.3] },
+  { id: 'S5', topic: '장학금', v: [0.1, 0.0, 0.9, 0.1] },
+  { id: 'S6', topic: '장학금', v: [0.0, 0.2, 0.8, 0.2] },
+  { id: 'S7', topic: '무관', v: [0.1, 0.1, 0.1, 0.9] },
+];
+const dot = (a, b) => a.reduce((s, x, i) => s + x * b[i], 0);
+const cosine = (a, b) => dot(a, b) / Math.sqrt(dot(a, a) * dot(b, b));
+const n = items.length;
+
+// TODO 1: sim[i][j] = cosine(items[i].v, items[j].v) 인 N×N 배열
+const sim = [];
+
+// TODO 2: console.table로 행렬 출력 (행·열 이름은 id, 값은 소수 둘째 자리)
+
+// TODO 3: i &lt; j 인 쌍 중 가장 큰 값 → "가장 비슷한 쌍: S?–S? (0.xxx)"
+
+// TODO 4: 각 문장의 최근접 이웃(자기 자신 제외)과 주제 일치 여부, 일치 비율('무관' 제외)</code></pre>
+          </div>
+        </div>
+
+        <div class="practice">
+          <div class="practice-head"><b>C5. 거듭제곱법으로 2D 주성분 분석</b><span class="level" aria-label="난이도 4">★★★★</span></div>
+          <div class="practice-body">
+          <p>위젯의 2D 투영을 직접 구현한다. 공분산 행렬을 만들지 않고 <code>Xᵀ(Xv)</code>로 곱을 계산한다. 두 번째 주성분은 매 반복마다 첫 번째 성분을 빼서(직교화) 구한다. 두 성분이 설명하는 분산 비율과 두 성분의 내적(0이어야 한다)을 출력하고, 각 점의 좌표를 표로 낸다.</p>
+          <pre data-run="c5" data-title="C5 PCA (power iteration)"><code class="language-javascript">const X0 = [
+  [0.9, 0.1, 0.0, 0.1], [0.8, 0.2, 0.1, 0.0],
+  [0.1, 0.9, 0.1, 0.1], [0.0, 0.8, 0.0, 0.3],
+  [0.1, 0.0, 0.9, 0.1], [0.0, 0.2, 0.8, 0.2],
+  [0.1, 0.1, 0.1, 0.9],
+];
+const n = X0.length, d = X0[0].length;
+const dot = (a, b) => a.reduce((s, x, i) => s + x * b[i], 0);
+const unit = (v) => { const l = Math.sqrt(dot(v, v)); return v.map((x) => x / l); };
+
+// TODO 1: 열 평균을 빼서 중심화한 X, 전체 분산 total = Σ‖x‖²
+const X = X0;
+const total = 1;
+
+// TODO 2: covMul(v) = Xᵀ(X v)
+const covMul = (v) => v;
+
+// TODO 3: powerIteration(comps) — v를 반복해서 unit(covMul(v))로 바꾸되,
+//         comps에 있는 성분 방향은 매번 빼 준다. 변화량이 아주 작으면 멈춘다
+function powerIteration(comps, iters = 500) {
+  let v = unit([1, 0.9, 0.8, 0.7]);
+  return v;
+}
+
+const pc1 = powerIteration([]);
+const pc2 = powerIteration([pc1]);
+// TODO 4: 설명된 분산 = dot(c, covMul(c)) / total, 직교 확인 dot(pc1, pc2), 좌표 표</code></pre>
+          </div>
+        </div>
+      </section>
+
+      <section id="wrap">
+        <h2><span class="section-num">6</span>정리 &amp; 다음 주 예고</h2>
+        <ul>
+          <li>임베딩은 뜻을 방향으로 바꾼다. 글자가 달라도 뜻이 같으면 가까워질 수 있다.</li>
+          <li>코사인은 방향만, 내적은 방향과 길이를, 유클리드는 끝점 거리를 본다. 정규화하면 세 척도의 순위가 같아지므로 내적 하나로 검색한다.</li>
+          <li>임베딩도 부정(“않는다”)이나 역할 바뀜처럼 단어가 거의 같은 문장은 잘 구분하지 못할 수 있다. 검색 결과를 그대로 믿지 않고 측정한다.</li>
+          <li>모델 선택이 가장 큰 변수다. 영어 전용 모델은 한국어에서 모든 문장을 비슷하게 만든다. e5 계열은 <code>query: </code> / <code>passage: </code> 접두어를 반드시 붙인다.</li>
+          <li>2D 투영은 모양을 보는 도구일 뿐이다. 판단은 원래 차원의 유사도로 한다.</li>
+        </ul>
+        <p><strong>다음 주(6주차 벡터DB &amp; 인덱스)</strong>에는 오늘 C3에서 한 “모든 문서와 하나씩 비교하기”(Flat 검색)가 문서 수가 늘면 얼마나 느려지는지 재고, 근사 이웃 검색 인덱스인 HNSW가 속도와 정확도를 어떻게 맞바꾸는지 비교한다.</p>
+      </section>
+
+      <div class="section-end">
+        <label class="done-toggle">
+          <input type="checkbox" data-done-toggle="5"> ✅ 5주차 학습 완료로 표시
+        </label>
+      </div>
+      <nav class="week-nav" data-week-nav="5" aria-label="주차 이동"></nav>
+        </article>
+      </div>
+    </main>
+  </div>
+
+  <script type="module">
+    import { mount } from '../../assets/js/widgets/w05-similarity.js';
+    import { initRunners } from '../../assets/js/site/runner.js';
+    mount(document.getElementById('w05-widget'));
+    initRunners(document.getElementById('challenge'));
+  </script>
+</body>
+</html>

@@ -1,0 +1,364 @@
+{
+  "version": 1,
+  "note": "프레임워크 API는 자주 바뀐다. 이 코드는 작성 시점의 공개 API를 기준으로 했으며, 패키지 이름·인자·기본값은 버전마다 달라질 수 있다. 실행 전에 설치된 버전(pip show langchain-core llama-index-core)과 공식 문서를 확인하고, requirements.txt에 버전을 고정한다.",
+  "versions": [
+    {
+      "id": "ours",
+      "label": "우리 코드",
+      "sub": "JavaScript · core 모듈",
+      "lang": "JS",
+      "file": "minimal-rag.js",
+      "code": "// minimal-rag.js — the same pipeline with this course's own core modules\nimport { chunk } from '/assets/js/core/chunker.js';\nimport { loadModel, embed, embedBatch } from '/assets/js/core/embed.js';\nimport { VectorStore } from '/assets/js/core/vectorstore.js';\nimport { generate, ragPrompt } from '/assets/js/core/llm.js';\nimport { hitAtK, reciprocalRank } from '/assets/js/core/metrics.js';\n\n// every setting is written down: nothing comes from a hidden default\nconst CONFIG = {\n  strategy: 'recursive', size: 150, overlap: 20, k: 3,\n  model: 'Xenova/multilingual-e5-small', provider: 'openai', temperature: 0,\n};\n\nconst corpus = await (await fetch('/assets/data/corpus/corpus.json')).json();\nconst golden = await (await fetch('/assets/data/golden/golden.json')).json();\nconst chunks = corpus.documents.flatMap((doc) =>\n  chunk(doc.text, { strategy: CONFIG.strategy, size: CONFIG.size, overlap: CONFIG.overlap })\n    .map((c) => ({ ...c, id: `${doc.id}#${c.index}`, docId: doc.id })));\nawait loadModel(CONFIG.model); // e5 'passage: ' / 'query: ' prefixes are added in embed.js\nconst vectors = await embedBatch(chunks.map((c) => c.text), { role: 'passage' });\nconst store = new VectorStore(); // flat cosine, vectors L2-normalized on add\nchunks.forEach((c, i) => store.add(c.id, vectors[i], { docId: c.docId, text: c.text }));\nasync function retrieve(question, k = CONFIG.k) {\n  const q = await embed(question, { role: 'query' });\n  return store.search(q, k); // [{ id, score, meta }]\n}\nfunction buildPrompt(question, hits) {\n  return ragPrompt(question, hits.map((h) => ({ text: h.meta.text })));\n}\nasync function answer(question) {\n  const hits = await retrieve(question);\n  const { system, messages } = buildPrompt(question, hits);\n  const { text } = await generate({\n    provider: CONFIG.provider, system, messages, temperature: CONFIG.temperature,\n  });\n  return { text, sources: hits.map((h) => h.id) };\n}\nconsole.log(await answer('RRF에서 k 값은 보통 얼마를 쓰나?'));\nlet hit = 0, mrr = 0;\nfor (const item of golden.items) {\n  const ids = (await retrieve(item.question)).map((h) => h.id);\n  const relevant = chunks\n    .filter((c) => item.evidence.some((e) => c.text.includes(e.quote)))\n    .map((c) => c.id);\n  hit += hitAtK(ids, relevant, CONFIG.k);\n  mrr += reciprocalRank(ids, relevant);\n}\nconst n = golden.items.length;\nconsole.log(`hit@${CONFIG.k}=${(hit / n).toFixed(3)}  MRR=${(mrr / n).toFixed(3)}`);",
+      "ranges": {
+        "load": [
+          [
+            14,
+            15
+          ]
+        ],
+        "chunk": [
+          [
+            16,
+            18
+          ]
+        ],
+        "embed": [
+          [
+            19,
+            20
+          ]
+        ],
+        "store": [
+          [
+            21,
+            22
+          ]
+        ],
+        "search": [
+          [
+            23,
+            26
+          ]
+        ],
+        "prompt": [
+          [
+            27,
+            29
+          ]
+        ],
+        "generate": [
+          [
+            30,
+            38
+          ]
+        ],
+        "eval": [
+          [
+            39,
+            49
+          ]
+        ]
+      }
+    },
+    {
+      "id": "langchain",
+      "label": "LangChain",
+      "sub": "Python",
+      "lang": "PY",
+      "file": "minimal_rag_langchain.py",
+      "code": "# minimal_rag_langchain.py — the same pipeline with LangChain\n# pip install langchain-core langchain-text-splitters langchain-huggingface langchain-openai\nimport json\nfrom langchain_core.documents import Document\nfrom langchain_text_splitters import RecursiveCharacterTextSplitter\nfrom langchain_huggingface import HuggingFaceEmbeddings\nfrom langchain_core.vectorstores import InMemoryVectorStore\nfrom langchain_core.prompts import ChatPromptTemplate\nfrom langchain_core.runnables import RunnablePassthrough\nfrom langchain_core.output_parsers import StrOutputParser\nfrom langchain_openai import ChatOpenAI\n\nCONFIG = {\"chunk_size\": 150, \"chunk_overlap\": 20, \"k\": 3}\nMODEL_NAME = \"gpt-4.1-mini\"  # same as llm.js; check the provider's current model list\n\ncorpus = json.load(open(\"assets/data/corpus/corpus.json\", encoding=\"utf-8\"))\ngolden = json.load(open(\"assets/data/golden/golden.json\", encoding=\"utf-8\"))\ndocs = [Document(page_content=d[\"text\"], metadata={\"doc_id\": d[\"id\"], \"title\": d[\"title\"]})\n        for d in corpus[\"documents\"]]\nsplitter = RecursiveCharacterTextSplitter(\n    chunk_size=CONFIG[\"chunk_size\"],  # characters (length_function=len)\n    chunk_overlap=CONFIG[\"chunk_overlap\"],\n    separators=[\"\\n\\n\", \"\\n\", \". \", \"다. \", \" \", \"\"],  # default has no sentence breaks\n)\nchunks = splitter.split_documents(docs)  # metadata is copied to every chunk\nembeddings = HuggingFaceEmbeddings(\n    model_name=\"intfloat/multilingual-e5-small\",  # the default is an English model\n    encode_kwargs={\"normalize_embeddings\": True, \"prompt\": \"passage: \"},\n    query_encode_kwargs={\"normalize_embeddings\": True, \"prompt\": \"query: \"},\n)\nstore = InMemoryVectorStore.from_documents(chunks, embeddings)  # embeds every chunk here\nretriever = store.as_retriever(search_kwargs={\"k\": CONFIG[\"k\"]})  # default k=4\nprompt = ChatPromptTemplate.from_messages([\n    (\"system\", \"너는 주어진 근거 문서만 사용해 답하는 조교다. 근거에 없는 내용은 \"\n               \"\\\"문서에서 찾을 수 없다\\\"고 답한다. 문장마다 근거 번호를 [1]처럼 표기한다.\"),\n    (\"human\", \"근거 문서:\\n{context}\\n\\n질문: {question}\"),\n])\n\n\ndef format_docs(found):\n    return \"\\n\\n\".join(f\"[{i + 1}] {d.page_content}\" for i, d in enumerate(found))\nllm = ChatOpenAI(model=MODEL_NAME, temperature=0)  # set it: the default differs by version\nchain = (\n    {\"context\": retriever | format_docs, \"question\": RunnablePassthrough()}\n    | prompt | llm | StrOutputParser()\n)\nprint(chain.invoke(\"RRF에서 k 값은 보통 얼마를 쓰나?\"))\nhit = mrr = 0\nfor item in golden[\"items\"]:\n    found = retriever.invoke(item[\"question\"])\n    quotes = [e[\"quote\"] for e in item[\"evidence\"]]\n    ranks = [i for i, d in enumerate(found) if any(q in d.page_content for q in quotes)]\n    hit += 1 if ranks else 0\n    mrr += 1 / (ranks[0] + 1) if ranks else 0\nn = len(golden[\"items\"])\nprint(f\"hit@{CONFIG['k']}={hit / n:.3f}  MRR={mrr / n:.3f}\")",
+      "ranges": {
+        "load": [
+          [
+            16,
+            19
+          ]
+        ],
+        "chunk": [
+          [
+            20,
+            25
+          ]
+        ],
+        "embed": [
+          [
+            26,
+            30
+          ]
+        ],
+        "store": [
+          [
+            31,
+            31
+          ]
+        ],
+        "search": [
+          [
+            32,
+            32
+          ]
+        ],
+        "prompt": [
+          [
+            33,
+            41
+          ]
+        ],
+        "generate": [
+          [
+            42,
+            47
+          ]
+        ],
+        "eval": [
+          [
+            48,
+            56
+          ]
+        ]
+      }
+    },
+    {
+      "id": "llamaindex",
+      "label": "LlamaIndex",
+      "sub": "Python",
+      "lang": "PY",
+      "file": "minimal_rag_llamaindex.py",
+      "code": "# minimal_rag_llamaindex.py — the same pipeline with LlamaIndex\n# pip install llama-index-core llama-index-embeddings-huggingface llama-index-llms-openai\nimport json\nfrom llama_index.core import Document, PromptTemplate, Settings, VectorStoreIndex\nfrom llama_index.core.node_parser import SentenceSplitter\nfrom llama_index.embeddings.huggingface import HuggingFaceEmbedding\nfrom llama_index.llms.openai import OpenAI\n\nCONFIG = {\"chunk_size\": 150, \"chunk_overlap\": 20, \"k\": 3}\nMODEL_NAME = \"gpt-4.1-mini\"  # same as llm.js; check the provider's current model list\n\ncorpus = json.load(open(\"assets/data/corpus/corpus.json\", encoding=\"utf-8\"))\ngolden = json.load(open(\"assets/data/golden/golden.json\", encoding=\"utf-8\"))\ndocs = [Document(text=d[\"text\"], id_=d[\"id\"], metadata={\"title\": d[\"title\"]})\n        for d in corpus[\"documents\"]]\n# chunk_size counts TOKENS (default tokenizer), not characters\nsplitter = SentenceSplitter(chunk_size=CONFIG[\"chunk_size\"],\n                            chunk_overlap=CONFIG[\"chunk_overlap\"])\nSettings.embed_model = HuggingFaceEmbedding(  # without this: an OpenAI embedding model\n    model_name=\"intfloat/multilingual-e5-small\",\n    query_instruction=\"query: \", text_instruction=\"passage: \",\n)\n# split + embed + store in one call; metadata (title) is embedded with each node\nindex = VectorStoreIndex.from_documents(docs, transformations=[splitter])\nretriever = index.as_retriever(similarity_top_k=CONFIG[\"k\"])  # default 2\nqa_prompt = PromptTemplate(  # the built-in default QA prompt is in English\n    \"너는 주어진 근거 문서만 사용해 답하는 조교다. 근거에 없는 내용은 \"\n    \"\\\"문서에서 찾을 수 없다\\\"고 답한다.\\n\"\n    \"근거 문서:\\n{context_str}\\n\\n질문: {query_str}\\n답: \"\n)\nSettings.llm = OpenAI(model=MODEL_NAME, temperature=0)\nengine = index.as_query_engine(similarity_top_k=CONFIG[\"k\"], text_qa_template=qa_prompt)\nresponse = engine.query(\"RRF에서 k 값은 보통 얼마를 쓰나?\")\nprint(response, [s.node.ref_doc_id for s in response.source_nodes])\nhit = mrr = 0\nfor item in golden[\"items\"]:\n    found = retriever.retrieve(item[\"question\"])  # list of NodeWithScore\n    quotes = [e[\"quote\"] for e in item[\"evidence\"]]\n    ranks = [i for i, s in enumerate(found) if any(q in s.node.get_content() for q in quotes)]\n    hit += 1 if ranks else 0\n    mrr += 1 / (ranks[0] + 1) if ranks else 0\nn = len(golden[\"items\"])\nprint(f\"hit@{CONFIG['k']}={hit / n:.3f}  MRR={mrr / n:.3f}\")",
+      "ranges": {
+        "load": [
+          [
+            12,
+            15
+          ]
+        ],
+        "chunk": [
+          [
+            16,
+            18
+          ]
+        ],
+        "embed": [
+          [
+            19,
+            22
+          ]
+        ],
+        "store": [
+          [
+            23,
+            24
+          ]
+        ],
+        "search": [
+          [
+            25,
+            25
+          ]
+        ],
+        "prompt": [
+          [
+            26,
+            30
+          ]
+        ],
+        "generate": [
+          [
+            31,
+            34
+          ]
+        ],
+        "eval": [
+          [
+            35,
+            43
+          ]
+        ]
+      }
+    }
+  ],
+  "steps": [
+    {
+      "id": "load",
+      "label": "로드",
+      "ours": "<code>fetch()</code>로 JSON을 읽는다. 문서는 그냥 <code>{ id, title, text }</code> 객체다.",
+      "langchain": "<code>Document(page_content, metadata)</code>로 감싼다. 이후 모든 단계가 이 객체를 주고받는다. 파일·PDF·웹용 로더도 많지만(<code>langchain_community.document_loaders</code>) 로더마다 메타데이터 키가 다르다.",
+      "llamaindex": "<code>Document(text, id_, metadata)</code>로 감싼다. <code>id_</code>를 주지 않으면 무작위 ID가 붙어 골든셋의 문서 ID와 연결할 수 없다.",
+      "hidden": [
+        "LlamaIndex는 metadata를 기본적으로 임베딩·LLM 입력 텍스트 앞에 함께 넣는다. 4주차 C5의 “제목 붙이기”가 자동으로 켜진 셈이다."
+      ]
+    },
+    {
+      "id": "chunk",
+      "label": "청킹",
+      "ours": "<code>chunk(text, { strategy, size, overlap })</code>. 크기는 <b>문자</b> 단위이고 원문 위치 <code>start/end</code>가 남는다.",
+      "langchain": "<code>RecursiveCharacterTextSplitter</code>가 4주차의 재귀 분할과 같은 알고리즘이다. 인자를 생략하면 <code>chunk_size=4000</code>, <code>chunk_overlap=200</code>, 구분자 <code>[\"\\n\\n\", \"\\n\", \" \", \"\"]</code>로 동작한다. 문장 경계가 구분자에 없다.",
+      "llamaindex": "<code>SentenceSplitter</code>는 문장 단위로 묶는다. <code>chunk_size</code>가 <b>토큰</b> 단위라서 같은 150이라도 우리 150자와 크기가 다르다. 생략하면 1024 토큰, 오버랩 200 토큰이다.",
+      "hidden": [
+        "LangChain 기본 크기 4000자는 이 코퍼스의 가장 긴 문서(550자)보다 크다. 청킹이 사실상 사라진다.",
+        "단위가 다르다: 우리·LangChain은 문자, LlamaIndex는 토큰. 숫자를 그대로 옮기면 크기가 달라진다.",
+        "chunk_overlap이 chunk_size보다 크면 LangChain은 오류를 낸다. 우리 chunker.js는 조용히 size−1로 줄인다. 우리 코드에도 숨은 기본값이 있다."
+      ]
+    },
+    {
+      "id": "embed",
+      "label": "임베딩",
+      "ours": "<code>loadModel()</code> 후 <code>embedBatch(texts, { role })</code>. e5 모델의 <code>query: </code>/<code>passage: </code> 접두어를 <code>embed.js</code>가 붙인다(5주차).",
+      "langchain": "<code>HuggingFaceEmbeddings</code>는 sentence-transformers를 부른다. 모델 이름을 생략하면 영어 중심 모델(all-mpnet-base-v2)이 기본이다. 접두어와 정규화는 <code>encode_kwargs</code>로 직접 넘겨야 한다.",
+      "llamaindex": "<code>Settings.embed_model</code>을 정하지 않으면 OpenAI 임베딩을 기본으로 쓰려 한다(키가 없으면 오류). <code>query_instruction</code>/<code>text_instruction</code>이 e5 접두어 자리다.",
+      "hidden": [
+        "LangChain HuggingFaceEmbeddings 기본 모델은 영어 중심이다. 5주차에 본 “한국어에서 유사도가 전부 비슷해지는” 실패가 그대로 재현된다.",
+        "e5 접두어는 어느 프레임워크도 모델 이름을 보고 자동으로 붙여 주지 않는다. 빠뜨려도 오류 없이 점수만 떨어진다."
+      ]
+    },
+    {
+      "id": "store",
+      "label": "저장",
+      "ours": "<code>new VectorStore()</code>에 <code>add(id, vector, meta)</code>. 벡터를 정규화해 두고 코사인 = 내적으로 검색한다(6주차 Flat).",
+      "langchain": "<code>InMemoryVectorStore.from_documents()</code> 한 줄이 임베딩과 저장을 함께 한다. 저장소를 FAISS로 바꾸면 기본 거리가 L2라서 점수의 의미(클수록 좋음 → 작을수록 좋음)가 바뀐다.",
+      "llamaindex": "<code>VectorStoreIndex.from_documents()</code> 한 줄이 청킹 + 임베딩 + 저장을 모두 한다. 편하지만 중간 결과(청크 목록, 벡터)를 보려면 따로 꺼내야 한다.",
+      "hidden": [
+        "한 줄 API가 세 단계를 삼키면 어느 단계에서 틀렸는지 보이지 않는다. 디버깅할 때는 단계를 다시 풀어 쓴다."
+      ]
+    },
+    {
+      "id": "search",
+      "label": "검색",
+      "ours": "<code>store.search(queryVector, k)</code>. k는 <code>CONFIG.k</code> 하나로만 정한다.",
+      "langchain": "<code>as_retriever(search_kwargs={\"k\": 3})</code>. 생략하면 <b>k=4</b>다. retriever는 <code>invoke(query)</code>로 부르는 공통 인터페이스라 BM25·하이브리드로 쉽게 바꿔 끼울 수 있다.",
+      "llamaindex": "<code>as_retriever(similarity_top_k=3)</code>. 생략하면 <b>2</b>다. <code>as_query_engine()</code>도 따로 top-k를 받으므로 두 곳을 모두 맞춰야 한다.",
+      "hidden": [
+        "top-k 기본값이 4(LangChain)와 2(LlamaIndex)로 다르다. 9주차에 hit@3으로 튜닝했다면 리팩터링 후 측정하는 값 자체가 hit@4나 hit@2가 된다."
+      ]
+    },
+    {
+      "id": "prompt",
+      "label": "프롬프트",
+      "ours": "<code>ragPrompt()</code>가 근거 번호 <code>[1]</code>을 붙인 한국어 프롬프트를 만든다. 전문이 코드에 그대로 보인다.",
+      "langchain": "<code>ChatPromptTemplate</code>에 직접 적는다. 검색 결과를 문자열로 바꾸는 <code>format_docs</code>도 직접 만든다. 허브에서 받은 프롬프트를 쓰면 내용이 코드 밖에 있다.",
+      "llamaindex": "<code>text_qa_template</code>을 넘기지 않으면 내장 영어 프롬프트(“Context information is below…”)가 쓰인다. 코드에 한 줄도 안 보이지만 답변 언어와 거절 방식이 달라진다.",
+      "hidden": [
+        "LlamaIndex 기본 QA 프롬프트는 영어이고 인용 번호 규칙이 없다. 11주차 인용 표기를 하려면 반드시 바꿔야 한다."
+      ]
+    },
+    {
+      "id": "generate",
+      "label": "생성",
+      "ours": "<code>generate({ provider, system, messages, temperature })</code>. 키는 sessionStorage에만 있다(7주차).",
+      "langchain": "LCEL 파이프(<code>|</code>)로 retriever → format → prompt → llm → parser를 잇는다. 짧지만 오류가 나면 스택 트레이스가 여러 층의 Runnable을 지나간다.",
+      "llamaindex": "<code>as_query_engine()</code>이 검색 + 프롬프트 + 생성을 한다. 기본 응답 모드(compact)는 컨텍스트가 길면 LLM을 여러 번 부를 수 있다.",
+      "hidden": [
+        "temperature를 생략하면 라이브러리와 버전에 따라 기본값이 다르다. 평가를 재현하려면 항상 명시한다.",
+        "LLM 모델 이름 기본값도 버전마다 바뀐다. 모델은 반드시 코드에 적는다."
+      ]
+    },
+    {
+      "id": "eval",
+      "label": "평가",
+      "ours": "<code>metrics.js</code>의 <code>hitAtK</code>, <code>reciprocalRank</code>로 골든셋을 채점한다(9주차). 정답 = 근거 문장이 든 청크.",
+      "langchain": "검색 지표용 기본 도구가 코어에 없다. 루프를 직접 쓰거나 외부 평가 도구를 붙인다. 같은 골든셋, 같은 정의로 재야 전후 비교가 된다.",
+      "llamaindex": "<code>RetrieverEvaluator</code>(hit_rate, mrr)가 있지만 정답을 <b>노드 ID</b>로 받는다. 청킹을 바꾸면 노드 ID가 바뀌어 골든셋을 다시 만들어야 하므로 여기서는 근거 문장 포함 여부로 직접 잰다.",
+      "hidden": [
+        "리팩터링 전후 지표가 다르면 “프레임워크가 나쁘다”가 아니라 “설정이 바뀌었다”부터 의심한다. 기본값을 모두 명시하면 hit@3이 같아야 한다."
+      ]
+    }
+  ],
+  "defaults": [
+    {
+      "fw": "LangChain",
+      "api": "RecursiveCharacterTextSplitter",
+      "param": "chunk_size",
+      "value": "4000 (문자)",
+      "ours": "150",
+      "effect": "이 코퍼스에서는 문서 전체가 한 청크가 된다. 근거는 늘 들어 있지만 컨텍스트가 몇 배로 길어진다."
+    },
+    {
+      "fw": "LangChain",
+      "api": "RecursiveCharacterTextSplitter",
+      "param": "chunk_overlap",
+      "value": "200",
+      "ours": "20",
+      "effect": "청크가 작을 때는 중복 저장이 크게 늘어난다. size보다 크면 오류."
+    },
+    {
+      "fw": "LangChain",
+      "api": "RecursiveCharacterTextSplitter",
+      "param": "separators",
+      "value": "[\"\\n\\n\", \"\\n\", \" \", \"\"]",
+      "ours": "+ \". \", \"다. \"",
+      "effect": "문장 경계를 모르므로 작은 청크에서 문장 중간(공백)에서 잘린다."
+    },
+    {
+      "fw": "LangChain",
+      "api": "VectorStore.as_retriever",
+      "param": "search_kwargs.k",
+      "value": "4",
+      "ours": "3",
+      "effect": "측정하는 지표가 hit@3에서 hit@4로 바뀐다. 컨텍스트도 길어진다."
+    },
+    {
+      "fw": "LangChain",
+      "api": "HuggingFaceEmbeddings",
+      "param": "model_name",
+      "value": "all-mpnet-base-v2 (영어 중심)",
+      "ours": "multilingual-e5-small",
+      "effect": "한국어 유사도가 뭉개진다(5주차 실패 재현)."
+    },
+    {
+      "fw": "LangChain",
+      "api": "FAISS (저장소 교체 시)",
+      "param": "distance_strategy",
+      "value": "L2 거리",
+      "ours": "코사인",
+      "effect": "점수가 작을수록 가깝다. 임계값 필터를 그대로 옮기면 반대로 동작한다."
+    },
+    {
+      "fw": "LlamaIndex",
+      "api": "Settings / SentenceSplitter",
+      "param": "chunk_size",
+      "value": "1024 (토큰)",
+      "ours": "150 (문자)",
+      "effect": "단위가 토큰이다. 이 코퍼스에서는 문서 전체가 한 청크가 된다."
+    },
+    {
+      "fw": "LlamaIndex",
+      "api": "Settings / SentenceSplitter",
+      "param": "chunk_overlap",
+      "value": "200 (토큰)",
+      "ours": "20 (문자)",
+      "effect": "오버랩 비율이 20%로 커진다."
+    },
+    {
+      "fw": "LlamaIndex",
+      "api": "as_retriever / as_query_engine",
+      "param": "similarity_top_k",
+      "value": "2",
+      "ours": "3",
+      "effect": "근거가 3위에 있던 질문은 놓친다. 두 곳 모두 지정해야 한다."
+    },
+    {
+      "fw": "LlamaIndex",
+      "api": "Settings.embed_model / llm",
+      "param": "(미지정)",
+      "value": "OpenAI 모델",
+      "ours": "e5 / 명시한 LLM",
+      "effect": "키가 없으면 실행 오류, 있으면 모르는 사이 유료 API를 호출한다."
+    },
+    {
+      "fw": "LlamaIndex",
+      "api": "query engine",
+      "param": "text_qa_template",
+      "value": "영어 기본 프롬프트",
+      "ours": "ragPrompt() 한국어",
+      "effect": "답변 언어, “모른다” 처리, 인용 번호가 달라진다."
+    },
+    {
+      "fw": "LlamaIndex",
+      "api": "Document / Node",
+      "param": "metadata 포함",
+      "value": "임베딩·LLM 입력에 포함",
+      "ours": "본문만",
+      "effect": "제목이 임베딩에 섞여 유사도가 달라진다. 좋을 수도, 나쁠 수도 있다."
+    }
+  ]
+}

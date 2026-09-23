@@ -144,6 +144,9 @@ function buildNav(layout, { role, week, sections }) {
     <div class="nav-tree">
       <a class="nav-home" href="${homeUrl(role)}"${isHome ? ' aria-current="page"' : ''}>🏠 ${role === 'teacher' ? '교사용 안내' : '강좌 소개'}</a>
       ${tree}
+      <div class="nav-group"><div class="nav-part">이론</div>
+        <div class="nav-ch" data-search="이론 임베딩 모델 비교 KURE BGE-M3 e5 OpenAI"><a class="nav-ch-head" href="${url('theory/embedding-models.html')}"${location.pathname.endsWith('/theory/embedding-models.html') ? ' aria-current="page"' : ''}><span class="no">📚</span><span class="t">한국어 임베딩 모델 비교</span></a></div>
+      </div>
       <p class="nav-empty" hidden>검색 결과가 없다.</p>
     </div>
     <div class="nav-foot">

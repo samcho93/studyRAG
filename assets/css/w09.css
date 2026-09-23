@@ -1,0 +1,451 @@
+/* w09 평가 점수판 — widget-specific styles. Tokens only. */
+
+.w09-hint {
+  margin: 0 0 var(--space-3);
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+
+.w09-small {
+  display: block;
+  color: var(--color-text-muted);
+  font-size: 12px;
+}
+
+/* Segmented radio groups (retriever / relevance mode) */
+.w09-segs {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
+  gap: var(--space-3) var(--space-4);
+  margin-bottom: var(--space-3);
+}
+
+.w09-seg {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.w09-seg legend {
+  margin-bottom: var(--space-1);
+  padding: 0;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+}
+
+.w09-seg label {
+  display: inline-flex;
+  margin: 0 4px 4px 0;
+  cursor: pointer;
+}
+
+.w09-seg input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.w09-seg span {
+  padding: 5px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface-2);
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.w09-seg input:checked + span {
+  border-color: var(--color-accent);
+  background: var(--color-accent);
+  color: var(--color-accent-contrast);
+  font-weight: var(--weight-bold);
+}
+
+.w09-seg input:focus-visible + span {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.w09-model {
+  margin-bottom: var(--space-3);
+}
+
+.w09-model .progress {
+  height: 6px;
+  margin-top: 4px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--color-surface-2);
+}
+
+.w09-model .progress__bar {
+  height: 100%;
+  width: 0;
+  background: var(--color-accent);
+  transition: width var(--dur-med);
+}
+
+.w09-presets {
+  margin-bottom: var(--space-3);
+}
+
+.w09-presets .btn {
+  white-space: normal;
+  text-align: left;
+}
+
+.w09-save {
+  align-items: center;
+  margin-bottom: var(--space-3);
+}
+
+.w09-save-msg {
+  color: var(--color-success);
+  font-size: 12.5px;
+}
+
+/* ---------- output (terminal card or inline) ---------- */
+.w09-out {
+  font-size: 13px;
+}
+
+.w09-out.is-stale .stat-row,
+.w09-out.is-stale .w09-qlist,
+.w09-out.is-stale .w09-noise {
+  opacity: 0.45;
+}
+
+.w09-out h4 {
+  margin: 12px 0 6px;
+  font-size: var(--text-sm);
+}
+
+.w09-cfg {
+  margin-bottom: 6px;
+}
+
+.w09-noise {
+  margin: 0 0 6px;
+  padding: 6px 10px;
+  border-left: 3px solid var(--color-accent2);
+  border-radius: var(--radius-sm);
+  background: var(--color-accent2-soft);
+  font-size: 12.5px;
+}
+
+.w09-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+}
+
+.w09-board {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.w09-board th,
+.w09-board td {
+  padding: 4px 6px;
+  border-bottom: 1px solid var(--color-border);
+  text-align: right;
+  font-family: var(--font-mono);
+  white-space: nowrap;
+}
+
+.w09-board thead th {
+  background: var(--color-surface-2);
+  color: var(--color-text-muted);
+  font-family: var(--font-sans);
+  font-weight: var(--weight-bold);
+}
+
+.w09-board tbody th {
+  min-width: 9.5em;
+  max-width: 14em;
+  font-family: var(--font-sans);
+  font-weight: var(--weight-regular);
+  text-align: left;
+  white-space: normal;
+}
+
+.w09-board thead th:first-child {
+  text-align: left;
+}
+
+.w09-board tr:last-child th,
+.w09-board tr:last-child td {
+  border-bottom: 0;
+}
+
+.w09-board tr.is-current {
+  background: var(--color-accent-soft);
+}
+
+.w09-board td.is-best {
+  color: var(--color-success);
+  font-weight: var(--weight-heavy);
+}
+
+.w09-board td.w09-fails {
+  color: var(--color-danger);
+  text-align: left;
+  white-space: normal;
+}
+
+.w09-now {
+  padding: 0 5px;
+  border-radius: 4px;
+  background: var(--color-accent);
+  color: var(--color-accent-contrast);
+  font-size: 10.5px;
+  font-weight: var(--weight-bold);
+}
+
+.w09-linkbtn,
+.w09-x {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--color-accent);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.w09-linkbtn {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.w09-x {
+  min-width: 24px;
+  min-height: 24px;
+  color: var(--color-text-muted);
+  text-align: center;
+}
+
+.w09-x:hover {
+  color: var(--color-danger);
+}
+
+/* Per-question breakdown */
+.w09-qlist {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.w09-q {
+  margin: 0;
+  border: 1px solid var(--color-border);
+  border-left-width: 5px;
+  border-radius: 6px;
+  background: var(--color-surface);
+}
+
+.w09-q.ok {
+  border-left-color: var(--color-success);
+}
+
+.w09-q.miss {
+  border-left-color: var(--color-danger);
+  background: var(--color-danger-soft);
+}
+
+.w09-q.cut {
+  border-left-color: var(--color-warning);
+  background: var(--color-warning-soft);
+}
+
+.w09-q summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 6px;
+  padding: 5px 8px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.w09-q summary::-webkit-details-marker {
+  display: none;
+}
+
+.w09-q summary:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.w09-mark {
+  width: 1.1em;
+  font-weight: var(--weight-heavy);
+  text-align: center;
+}
+
+.w09-q.ok .w09-mark {
+  color: var(--color-success);
+}
+
+.w09-q.miss .w09-mark {
+  color: var(--color-danger);
+}
+
+.w09-q.cut .w09-mark {
+  color: var(--color-warning);
+}
+
+.w09-rank {
+  font-family: var(--font-mono);
+  font-weight: var(--weight-bold);
+}
+
+.w09-q .chip {
+  padding: 0 6px;
+  font-size: 10.5px;
+}
+
+.w09-qtext {
+  flex-basis: 100%;
+  padding-left: 1.5em;
+  color: var(--color-text-muted);
+  font-size: 12.5px;
+}
+
+.w09-q details > :not(summary) {
+  margin: 0 8px 6px 10px;
+}
+
+.w09-why {
+  margin: 0 0 4px;
+  font-size: 12.5px;
+}
+
+.w09-top,
+.w09-ctx {
+  display: grid;
+  gap: 3px;
+  padding: 0;
+  list-style: none;
+}
+
+.w09-top li,
+.w09-ctx li {
+  margin: 0;
+  padding: 3px 8px;
+  border: 1px solid var(--color-border);
+  border-radius: 5px;
+  background: var(--color-surface);
+  font-size: 12px;
+}
+
+.w09-top li.is-rel {
+  border-color: var(--color-success);
+  box-shadow: inset 3px 0 0 var(--color-success);
+}
+
+.w09-src {
+  display: block;
+  color: var(--color-text-muted);
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+
+/* ---------- Faithfulness panel ---------- */
+.w09-faith {
+  margin-top: var(--space-4);
+  padding-top: var(--space-3);
+  border-top: 1px dashed var(--color-border-strong);
+}
+
+.w09-faith h4 {
+  margin: 12px 0 4px;
+  font-size: var(--text-sm);
+}
+
+.w09-faith .btn-row {
+  align-items: center;
+  margin-bottom: var(--space-3);
+}
+
+.w09-answer textarea {
+  min-height: 72px;
+}
+
+.w09-heur,
+.w09-claims {
+  display: grid;
+  gap: 4px;
+  margin: 4px 0;
+  padding: 0;
+  list-style: none;
+}
+
+.w09-heur li,
+.w09-claims li {
+  margin: 0;
+  padding: 4px 8px;
+  border-left: 4px solid var(--color-border);
+  border-radius: 4px;
+  background: var(--color-surface-2);
+  font-size: 13px;
+}
+
+.w09-heur li.is-ok,
+.w09-claims li.is-ok {
+  border-left-color: var(--color-success);
+}
+
+.w09-heur li.is-ok b,
+.w09-claims li.is-ok b {
+  color: var(--color-success);
+}
+
+.w09-heur li.is-bad,
+.w09-claims li.is-bad {
+  border-left-color: var(--color-danger);
+}
+
+.w09-heur li.is-bad b,
+.w09-claims li.is-bad b {
+  color: var(--color-danger);
+}
+
+.w09-heur li.w09-score {
+  border-left-color: var(--color-accent);
+}
+
+.w09-recorded,
+.w09-live {
+  margin-top: 6px;
+  padding: 8px 12px;
+  border: 1px dashed var(--color-border-strong);
+  border-radius: 8px;
+}
+
+.w09-recorded p,
+.w09-live p {
+  margin: 6px 0;
+}
+
+.w09-raw {
+  max-height: 200px;
+  overflow: auto;
+  font-size: 12px;
+  white-space: pre-wrap;
+}
+
+/* Concept figures / hand-calculation tables on the student page */
+.w09-calc td:nth-child(n + 3),
+.w09-calc th:nth-child(n + 3) {
+  font-family: var(--font-mono);
+  text-align: right;
+}
+
+.w09-calc tr.is-rel td {
+  background: var(--color-success-soft);
+}
