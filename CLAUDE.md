@@ -66,8 +66,8 @@ studyRAG/
 │   ├── css/
 │   │   ├── tokens.css          # 디자인 토큰 (색·타이포·간격) — 여기만 수정해 테마 변경
 │   │   ├── base.css            # 리셋 + 기본 타이포그래피
-│   │   ├── components.css      # 3단 셸, 카드, 코드 실행기, 실습위젯 공통 스타일
-│   │   └── slides.css          # 교사용 PPT 슬라이드(16:9) + 교사 노트
+│   │   ├── components.css      # 3단 레이아웃(목차·내용·터미널), 문서, 카드, 코드 블록, 위젯
+│   │   └── slides.css          # 교사용 PPT 슬라이드(16:9) + 교사 노트 창
 │   ├── js/
 │   │   ├── core/
 │   │   │   ├── embed.js        # Transformers.js 래퍼 (모델 로딩·캐시·임베딩)
@@ -221,10 +221,14 @@ export function unmount(el) { /* 리스너·모델 정리 */ }
 
 ## 8. 디자인 규칙
 
-- **3단 화면** (학생용·교사용 공통): 왼쪽 강의 목록(`.shell-toc`) · 가운데 강의 내용(`.shell-main`) · 오른쪽 실습 결과(`.shell-result`)
-  - 위젯 출력과 코드 실행 결과는 `result.js`의 `registerOutput()`으로 오른쪽 창에 보낸다
-  - 1000px 미만에서는 목록이 서랍으로 바뀌고 결과는 원래 자리(인라인)로 돌아온다
-
+- **기존 강좌 사이트(studyMLBasic)와 같은 형태·디자인**을 유지한다
+  - 3단 화면: 왼쪽 목차(`.nav`) · 가운데 강의 내용(`.center`) · 오른쪽 어두운 **실행 결과** 터미널(`.output`), 경계선 드래그로 너비 조절
+  - 왼쪽: 브랜드 · 🎓학생용/🧑‍🏫교사용 전환 · 학습 진도 · 검색 · PART별 주차 트리(현재 주차의 섹션/슬라이드 목록)
+  - 가운데 위: 경로(crumb) · 📄 문서 / 🖼️ 슬라이드 전환 · ◀ ▶ 주차 이동
+  - 틀(목차·상단 바·터미널)은 `site.js`가 만든다. 페이지는 `<div class="layout" data-layout data-role data-week data-crumb>` 안에 `<main class="pane center">`만 둔다
+  - 위젯 출력은 `result.js`의 `registerOutput()`(터미널 상단 LIVE 카드), 코드 실행은 `startRun()`(실행 기록)
+  - 860px 미만: 한 단으로 바뀌고 목차는 ☰로 열며, 결과는 원래 자리(인라인)에 표시
+- 팔레트: 인디고(`--color-accent`) + 앰버(`--color-accent2`), 글꼴: Pretendard Variable · JetBrains Mono (CDN 버전 고정, MLBasic과 동일)
 - 색·간격·폰트는 **`tokens.css`의 CSS 변수만** 사용한다. 하드코딩 금지
 - 다크모드 필수: `@media (prefers-color-scheme: dark)` + `[data-theme]` 수동 토글 둘 다 지원
 - 모바일 반응형 필수 (학생이 폰으로 본다). 최소 375px, 좌우 여백 16px
@@ -269,7 +273,7 @@ export function unmount(el) { /* 리스너·모델 정리 */ }
 ### Phase 1 — 기반
 - [x] `tokens.css` / `base.css` / `components.css`
 - [x] `index.html` 랜딩 + 주차 목차
-- [x] 3단 화면(목록·내용·실습 결과) + 교사용 PPT 슬라이드 엔진 + 코드 실행기
+- [x] 3단 화면(목록·내용·실행 결과) + 교사용 PPT 슬라이드 엔진 + 코드 실행기 — studyMLBasic 디자인과 통일
 - [x] `core/embed.js` (Transformers.js 래퍼 + 로딩 UI) — 브라우저 실측 검증은 5주차 위젯에서
 - [x] `core/` bm25 · vectorstore · chunker · rerank · metrics · llm
 - [x] 공통 코퍼스 `assets/data/corpus/` + 골든셋 `assets/data/golden/`

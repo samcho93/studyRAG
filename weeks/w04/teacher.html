@@ -6,6 +6,8 @@
   <title>4주차 청킹 전략 · 교사용 · RAG Lab</title>
   <meta name="description" content="4주차 청킹 전략 교사용 슬라이드: 강의 흐름, 교사 노트, Challenge 정답, 자주 막히는 지점, 토론 주제, 평가 루브릭.">
   <script>try{var t=JSON.parse(localStorage.getItem('raglab:theme'));if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+  <link rel="stylesheet" crossorigin="anonymous" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&display=swap">
   <link rel="stylesheet" href="../../assets/css/tokens.css">
   <link rel="stylesheet" href="../../assets/css/base.css">
   <link rel="stylesheet" href="../../assets/css/components.css">
@@ -13,36 +15,14 @@
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%232450c4'/%3E%3Ccircle cx='14' cy='14' r='6' fill='none' stroke='white' stroke-width='3'/%3E%3Cpath d='M19 19l6 6' stroke='white' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E">
   <script type="module" src="../../assets/js/site/site.js"></script>
 </head>
-<body class="app">
-  <header class="site-header">
-    <div class="site-header__inner">
-      <button type="button" class="icon-btn shell-toggle" data-toc-toggle aria-label="강의 목록 열기" aria-expanded="false" aria-controls="toc">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
-      </button>
-      <a class="brand" href="../../">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M5 3h9l5 5v6"/><path d="M14 3v5h5"/><path d="M5 3v18h7"/><circle cx="16.5" cy="17.5" r="3"/><path d="m21 22-2.3-2.3"/></svg>
-        RAG Lab
-      </a>
-      <span class="header-spacer"></span>
-      <nav class="role-switch" aria-label="보기 전환">
-        <a href="./">학생용</a>
-        <a href="teacher.html" aria-current="page">교사용</a>
-      </nav>
-      <button type="button" class="icon-btn" data-theme-toggle aria-label="테마 변경"></button>
-    </div>
-  </header>
-
-  <div class="shell">
-    <nav class="shell-toc" id="toc" data-toc data-week="4" data-role="teacher" aria-label="강의 목록"></nav>
-    <div class="shell-backdrop" aria-hidden="true"></div>
-
-    <main class="shell-main deck-col" id="main" data-deck data-deck-title="4주차 · 청킹 전략">
-      <div class="deck-bar">
-        <span class="deck-bar__title">4주차 · 청킹 전략</span>
-        <div class="deck-bar__controls"></div>
-      </div>
-
-      <div class="deck-viewport">
+<body>
+  <div class="layout" data-layout data-role="teacher" data-week="4" data-crumb="🧑‍🏫 교사용 › <b>4주차 · 청킹 전략</b>">
+    <main class="pane center" id="main">
+      <div class="slide-view" data-deck data-deck-title="4주차 · 청킹 전략">
+        <div class="deck-bar"><div class="deck-row" data-deck-controls></div></div>
+        <div class="deck-progress"><i></i></div>
+        <div class="deck-wrap">
+          <div class="deck-viewport">
         <div class="deck-stage">
 
           <!-- 1 -->
@@ -50,6 +30,7 @@
             <div class="kicker">검색증강생성(RAG) 시스템 구축 · 4주차</div>
             <h1>청킹 전략</h1>
             <p>문서를 어디서 자를 것인가</p>
+            <div class="deco" aria-hidden="true">✂️</div>
             <aside class="notes">
               <p><strong>오늘 흐름 (180분)</strong></p>
               <table>
@@ -151,7 +132,7 @@
             <h2>데모 · 청킹 플레이그라운드</h2>
             <div id="deck-w04-widget"></div>
             <aside class="notes">
-              <p><strong>시연 순서</strong> (결과는 오른쪽 실습 결과 창에 나온다)</p>
+              <p><strong>시연 순서</strong> (결과는 오른쪽 실행 결과 창에 실시간으로 나온다)</p>
               <ol>
                 <li>처음 화면: 고정 100자, 오버랩 0 → 빨간 판정 “근거가 잘렸다”</li>
                 <li>“오버랩 추가” 프리셋 → 초록 판정. 중복 저장이 58%로 뛴 것을 짚는다</li>
@@ -228,7 +209,7 @@ for (const strategy of ['fixed', 'sentence', 'recursive']) {
           </section>
 
           <!-- Appendix -->
-          <section class="slide slide--section" data-title="부록 A · 강의안" data-appendix>
+          <section class="slide" data-title="부록 A · 강의안" data-appendix>
             <h2>부록 A · 강의안</h2>
             <table>
               <thead><tr><th>시간</th><th>활동</th><th>산출물</th></tr></thead>
@@ -379,20 +360,14 @@ console.log('위치 보존:', out.every((c) => doc.text.slice(c.start, c.end) ==
           </section>
 
         </div>
+          </div>
+        </div>
+        <section class="notes-pane" aria-label="교사 노트">
+          <button type="button" class="notes-head"><span>🧑‍🏫 교사 노트</span><span class="spacer"></span><span class="notes-next"></span><span class="notes-toggle">▾ 접기</span></button>
+          <div class="notes-body"></div>
+        </section>
       </div>
-
-      <section class="deck-notes" aria-label="교사 노트"></section>
     </main>
-
-    <aside class="shell-result" aria-label="실습 결과">
-      <div class="result-head">
-        <h2>실습 결과</h2>
-        <button type="button" class="btn btn--ghost" data-result-clear style="min-height: 32px; padding: 0 var(--space-3); font-size: var(--text-sm)">코드 결과 지우기</button>
-      </div>
-      <div class="result-body" data-result-body>
-        <p class="result-empty">데모 슬라이드의 위젯이나 코드 슬라이드의 ▶ 실행 결과가 여기에 표시된다.</p>
-      </div>
-    </aside>
   </div>
 
   <script type="module">

@@ -1,9 +1,7 @@
-// PPT-style slide deck for teacher pages.
+// PPT-style slide deck for teacher pages (same controls as the sibling course sites).
 // Slides are authored in HTML as <section class="slide" data-title="…"> with an
-// optional <aside class="notes"> (teacher notes, never shown on the slide).
+// optional <aside class="notes"> (teacher notes, shown in the notes pane only).
 //
-// Layout: left TOC lists the slides, middle holds the 16:9 stage + notes,
-// right is the shared 실습 결과 panel (demo widgets / code slides write there).
 // Keys: ← → / Space / PageUp PageDown · Home End · F fullscreen · N notes
 //       B blackout · T timer · P presenter window
 // A second window opened with P (?presenter) stays in sync via BroadcastChannel.
@@ -11,67 +9,72 @@
 const W = 1280;
 const H = 720;
 
-const ICON = {
-  prev: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>',
-  next: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>',
-  notes: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 4h16v16H4z"/><path d="M8 9h8M8 13h8M8 17h5"/></svg>',
-  timer: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2M9 2h6"/></svg>',
-  full: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M8 3H3v5M16 3h5v5M8 21H3v-5M16 21h5v-5"/></svg>',
-  presenter: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="2" y="4" width="13" height="10" rx="1"/><path d="M18 8h4v12H9v-3"/></svg>',
-};
-
 export function initDeck(root = document.querySelector('[data-deck]')) {
   if (!root) return;
   const isPresenter = new URLSearchParams(location.search).has('presenter');
   document.body.classList.toggle('is-presenter', isPresenter);
 
+  const wrap = root.querySelector('.deck-wrap');
   const viewport = root.querySelector('.deck-viewport');
   const stage = root.querySelector('.deck-stage');
   const slides = [...stage.querySelectorAll(':scope > .slide')];
-  const notesPanel = root.querySelector('.deck-notes');
+  const notesPane = root.querySelector('.notes-pane');
+  const notesBody = notesPane.querySelector('.notes-body');
+  const notesNext = notesPane.querySelector('.notes-next');
+  const progress = root.querySelector('.deck-progress i');
   const deckTitle = root.dataset.deckTitle ?? document.title;
   const channel = 'BroadcastChannel' in window ? new BroadcastChannel(`raglab-deck:${location.pathname}`) : null;
+  const label = (s) => s.dataset.title ?? s.querySelector('h1,h2')?.textContent ?? '';
 
-  // ---------- chrome ----------
-  const bar = root.querySelector('.deck-bar__controls');
+  // ---------- toolbar ----------
+  const bar = root.querySelector('[data-deck-controls]');
   bar.innerHTML = `
-    <span class="deck-bar__counter" aria-live="polite"></span>
-    <span class="deck-bar__timer" data-running="false" title="수업 경과 시간 (T)">00:00</span>
-    <button type="button" class="icon-btn" data-act="timer" aria-label="타이머 시작/정지 (T)" title="타이머 (T)">${ICON.timer}</button>
-    <button type="button" class="icon-btn" data-act="notes" aria-label="교사 노트 (N)" title="교사 노트 (N)">${ICON.notes}</button>
-    <button type="button" class="icon-btn hide-sm" data-act="presenter" aria-label="발표자 창 열기 (P)" title="발표자 창 (P)">${ICON.presenter}</button>
-    <button type="button" class="icon-btn hide-sm" data-act="full" aria-label="전체 화면 (F)" title="전체 화면 (F)">${ICON.full}</button>`;
+    <button type="button" class="dk-btn" data-act="first" title="처음 슬라이드 (Home)">⏮<span class="lbl">처음</span></button>
+    <button type="button" class="dk-btn" data-act="prev" title="이전 슬라이드 (←)" aria-label="이전 슬라이드">◀</button>
+    <span class="s-count" aria-live="polite"></span>
+    <button type="button" class="dk-btn" data-act="next" title="다음 슬라이드 (→, Space)" aria-label="다음 슬라이드">▶</button>
+    <input class="s-slider" type="range" min="1" max="${slides.length}" value="1" step="1" aria-label="슬라이드 이동">
+    <span class="s-slide-title"></span>
+    <span class="spacer"></span>
+    <button type="button" class="timer-btn" data-act="timer" title="수업 타이머 시작/일시정지 (T)" aria-pressed="false">⏱ <span data-timer>00:00</span></button>
+    <button type="button" class="dk-btn" data-act="notes" title="교사 노트 (N)">📝<span class="lbl">노트</span></button>
+    <button type="button" class="dk-btn" data-act="blackout" title="화면 가리기 (B)">⬛<span class="lbl">가리기</span></button>
+    <button type="button" class="dk-btn" data-act="presenter" title="발표자 창 (P)">🖥<span class="lbl">발표자 창</span></button>
+    <button type="button" class="dk-btn" data-act="full" title="전체 화면 (F)">⛶<span class="lbl">전체 화면</span></button>`;
+  const counter = bar.querySelector('.s-count');
+  const slider = bar.querySelector('.s-slider');
+  const titleEl = bar.querySelector('.s-slide-title');
+  const timerEl = bar.querySelector('[data-timer]');
+
   viewport.insertAdjacentHTML('beforeend', `
-    <button type="button" class="icon-btn deck-nav-btn deck-nav-btn--prev" data-act="prev" aria-label="이전 슬라이드">${ICON.prev}</button>
-    <button type="button" class="icon-btn deck-nav-btn deck-nav-btn--next" data-act="next" aria-label="다음 슬라이드">${ICON.next}</button>
+    <button type="button" class="edge edge-prev" data-act="prev" aria-label="이전 슬라이드">‹</button>
+    <button type="button" class="edge edge-next" data-act="next" aria-label="다음 슬라이드">›</button>
     <div class="deck-blackout" hidden></div>`);
-  const counter = bar.querySelector('.deck-bar__counter');
-  const timerEl = bar.querySelector('.deck-bar__timer');
   const blackout = viewport.querySelector('.deck-blackout');
 
-  // Footer with deck title + page number on every slide
   slides.forEach((s, i) => {
     if (s.classList.contains('slide--title') || s.classList.contains('slide--demo')) return;
-    s.insertAdjacentHTML('beforeend', `<div class="slide-footer" aria-hidden="true"><span>${deckTitle}</span><span>${i + 1}</span></div>`);
+    s.insertAdjacentHTML('beforeend', `<div class="slide-footer" aria-hidden="true"><span>${deckTitle}</span><span class="pg">${i + 1} / ${slides.length}</span></div>`);
   });
 
-  // ---------- slide list in the left TOC ----------
-  const tocSub = document.querySelector('[data-toc-sub]');
-  const label = (s) => s.dataset.title ?? s.querySelector('h1,h2')?.textContent ?? '';
-  if (tocSub) {
-    tocSub.innerHTML = slides
-      .map((s, i) => `<li><button type="button" data-go="${i}">${i + 1}. ${label(s)}</button></li>`)
+  // ---------- slide list in the left nav ----------
+  const navSecs = document.querySelector('[data-nav-secs]');
+  if (navSecs) {
+    navSecs.innerHTML = slides
+      .map((s, i) => `<li><button type="button" class="nav-sec" data-go="${i}"><span class="chk">${i + 1}</span><span>${label(s)}</span></button></li>`)
       .join('');
-    tocSub.addEventListener('click', (e) => {
+    navSecs.addEventListener('click', (e) => {
       const b = e.target.closest('[data-go]');
       if (b) go(Number(b.dataset.go));
     });
   }
 
   // ---------- scaling ----------
+  const PAD = 14;
   const fit = () => {
     const r = viewport.getBoundingClientRect();
-    const scale = Math.min(r.width / W, r.height / H);
+    const pad = document.fullscreenElement ? 0 : PAD;
+    const scale = Math.max(0.05, Math.min((r.width - pad * 2) / W, (r.height - pad * 2) / H));
     const x = (r.width - W * scale) / 2;
     const y = (r.height - H * scale) / 2;
     stage.style.transform = `translate(${x}px, ${y}px) scale(${scale})`;
@@ -93,9 +96,12 @@ export function initDeck(root = document.querySelector('[data-deck]')) {
       s.inert = j !== index;
     });
     counter.textContent = `${index + 1} / ${slides.length}`;
+    slider.value = String(index + 1);
+    titleEl.textContent = label(slides[index]);
+    progress.style.width = `${((index + 1) / slides.length) * 100}%`;
     history.replaceState(null, '', `${location.search}#${index + 1}`);
     renderNotes();
-    tocSub?.querySelectorAll('[data-go]').forEach((b) => b.setAttribute('aria-current', String(Number(b.dataset.go) === index)));
+    navSecs?.querySelectorAll('[data-go]').forEach((b) => b.setAttribute('aria-current', String(Number(b.dataset.go) === index)));
     if (broadcast) channel?.postMessage({ type: 'go', index });
   }
 
@@ -103,9 +109,8 @@ export function initDeck(root = document.querySelector('[data-deck]')) {
     const s = slides[index];
     const notes = s.querySelector(':scope > .notes');
     const next = slides[index + 1];
-    notesPanel.innerHTML = `<h2>교사 노트 · ${index + 1}. ${label(s)}</h2>
-      ${notes ? notes.innerHTML : '<p class="muted">이 슬라이드에는 노트가 없다.</p>'}
-      <p class="deck-notes__next">다음 → ${next ? label(next) : '마지막 슬라이드'}</p>`;
+    notesBody.innerHTML = `<h5>${index + 1}. ${label(s)}</h5>${notes ? notes.innerHTML : '<p class="muted">이 슬라이드에는 노트가 없다.</p>'}`;
+    notesNext.textContent = next ? `다음 → ${label(next)}` : '마지막 슬라이드';
   }
 
   // ---------- notes toggle ----------
@@ -113,11 +118,13 @@ export function initDeck(root = document.querySelector('[data-deck]')) {
   let notesOn = isPresenter || readPref(NOTES_KEY, true);
   const setNotes = (on) => {
     notesOn = on;
-    notesPanel.hidden = !on;
+    notesPane.classList.toggle('collapsed', !on);
+    notesPane.querySelector('.notes-toggle').textContent = on ? '▾ 접기' : '▸ 펼치기';
     bar.querySelector('[data-act=notes]').setAttribute('aria-pressed', String(on));
     if (!isPresenter) writePref(NOTES_KEY, on);
     fit();
   };
+  notesPane.querySelector('.notes-head').addEventListener('click', () => setNotes(!notesOn));
 
   // ---------- timer ----------
   let elapsed = 0;
@@ -136,27 +143,37 @@ export function initDeck(root = document.querySelector('[data-deck]')) {
       startedAt = Date.now();
       tick = setInterval(renderTimer, 500);
     }
-    timerEl.dataset.running = String(Boolean(startedAt));
     bar.querySelector('[data-act=timer]').setAttribute('aria-pressed', String(Boolean(startedAt)));
     renderTimer();
   };
 
-  const toggleFull = () => {
-    if (document.fullscreenElement) document.exitFullscreen();
-    else viewport.requestFullscreen?.();
+  const toggleBlackout = () => {
+    blackout.hidden = !blackout.hidden;
+    bar.querySelector('[data-act=blackout]').setAttribute('aria-pressed', String(!blackout.hidden));
   };
 
+  const toggleFull = () => {
+    if (document.fullscreenElement) document.exitFullscreen();
+    else wrap.requestFullscreen?.();
+  };
+  document.addEventListener('fullscreenchange', () => {
+    bar.querySelector('[data-act=full]').setAttribute('aria-pressed', String(Boolean(document.fullscreenElement)));
+    fit();
+  });
+
   const openPresenter = () => {
-    const url = new URL(location.href);
-    url.searchParams.set('presenter', '');
-    window.open(url, 'raglab-presenter', 'width=1200,height=760');
+    const u = new URL(location.href);
+    u.searchParams.set('presenter', '');
+    window.open(u, 'raglab-presenter', 'width=1200,height=800');
   };
 
   const actions = {
+    first: () => go(0),
     prev: () => go(index - 1),
     next: () => go(index + 1),
     notes: () => setNotes(!notesOn),
     timer: toggleTimer,
+    blackout: toggleBlackout,
     full: toggleFull,
     presenter: openPresenter,
   };
@@ -166,12 +183,14 @@ export function initDeck(root = document.querySelector('[data-deck]')) {
     // runner buttons inside slides share the data-act attribute; only handle deck actions
     if (Object.hasOwn(actions, act)) actions[act]();
   });
+  slider.addEventListener('input', () => go(Number(slider.value) - 1));
+
   document.addEventListener('keydown', (e) => {
     if (e.ctrlKey || e.metaKey || e.altKey) return;
-    // Let widgets inside demo slides keep their own keyboard handling.
-    if (e.target.closest('input, select, textarea, [contenteditable], summary, .shell-toc')) return;
+    // widgets, code boxes and the nav search keep their own keyboard handling
+    if (e.target.closest('input, select, textarea, [contenteditable], summary')) return;
     const k = e.key;
-    if (k === 'ArrowRight' || k === 'PageDown' || (k === ' ' && !e.target.closest('button'))) {
+    if (k === 'ArrowRight' || k === 'PageDown' || (k === ' ' && !e.target.closest('button, a'))) {
       e.preventDefault();
       go(index + 1);
     } else if (k === 'ArrowLeft' || k === 'PageUp') {
@@ -181,7 +200,7 @@ export function initDeck(root = document.querySelector('[data-deck]')) {
     else if (k === 'End') go(slides.length - 1);
     else if (k === 'f' || k === 'F') toggleFull();
     else if (k === 'n' || k === 'N') setNotes(!notesOn);
-    else if (k === 'b' || k === 'B' || k === '.') blackout.hidden = !blackout.hidden;
+    else if (k === 'b' || k === 'B' || k === '.') toggleBlackout();
     else if (k === 't' || k === 'T') toggleTimer();
     else if (k === 'p' || k === 'P') openPresenter();
   });
@@ -190,7 +209,7 @@ export function initDeck(root = document.querySelector('[data-deck]')) {
   let touchX = null;
   viewport.addEventListener('touchstart', (e) => { touchX = e.touches[0].clientX; }, { passive: true });
   viewport.addEventListener('touchend', (e) => {
-    if (touchX === null || e.target.closest('.widget')) return;
+    if (touchX === null || e.target.closest('.widget, .code-block')) return;
     const dx = e.changedTouches[0].clientX - touchX;
     if (Math.abs(dx) > 60) go(index + (dx < 0 ? 1 : -1));
     touchX = null;

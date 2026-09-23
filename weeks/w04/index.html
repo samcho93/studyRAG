@@ -6,47 +6,42 @@
   <title>4주차 청킹 전략 · RAG Lab</title>
   <meta name="description" content="청킹 전략: 고정 길이, 오버랩, 문장 단위, 재귀 분할을 직접 조작하며 근거 문장이 잘리는 조건을 관찰한다.">
   <script>try{var t=JSON.parse(localStorage.getItem('raglab:theme'));if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+  <link rel="stylesheet" crossorigin="anonymous" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&display=swap">
   <link rel="stylesheet" href="../../assets/css/tokens.css">
   <link rel="stylesheet" href="../../assets/css/base.css">
   <link rel="stylesheet" href="../../assets/css/components.css">
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%232450c4'/%3E%3Ccircle cx='14' cy='14' r='6' fill='none' stroke='white' stroke-width='3'/%3E%3Cpath d='M19 19l6 6' stroke='white' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E">
   <script type="module" src="../../assets/js/site/site.js"></script>
 </head>
-<body class="app">
-  <header class="site-header">
-    <div class="site-header__inner">
-      <button type="button" class="icon-btn shell-toggle" data-toc-toggle aria-label="강의 목록 열기" aria-expanded="false" aria-controls="toc">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
-      </button>
-      <a class="brand" href="../../">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M5 3h9l5 5v6"/><path d="M14 3v5h5"/><path d="M5 3v18h7"/><circle cx="16.5" cy="17.5" r="3"/><path d="m21 22-2.3-2.3"/></svg>
-        RAG Lab
-      </a>
-      <span class="header-spacer"></span>
-      <nav class="role-switch" aria-label="보기 전환">
-        <a href="./" aria-current="page">학생용</a>
-        <a href="teacher.html">교사용</a>
-      </nav>
-      <button type="button" class="icon-btn" data-theme-toggle aria-label="테마 변경"></button>
-    </div>
-  </header>
-
-  <div class="shell">
-    <nav class="shell-toc" id="toc" data-toc data-week="4" data-role="student" aria-label="강의 목록"></nav>
-    <div class="shell-backdrop" aria-hidden="true"></div>
-    <main class="shell-main" id="main">
-    <article class="prose">
-      <span class="eyebrow">4주차 · 청킹 전략</span>
+<body>
+  <div class="layout" data-layout data-role="student" data-week="4" data-crumb="PART 2 · 검색 파이프라인 › <b>4주차 · 청킹 전략</b>">
+    <main class="pane center" id="main">
+      <div class="content" tabindex="-1">
+        <article class="doc">
+      <span class="chapter-badge">✂️ 4주차 · 청킹 전략</span>
       <h1>문서를 어디서 자를 것인가</h1>
       <p class="lead">같은 문서, 같은 질문이라도 자르는 방법에 따라 검색이 성공하기도 하고 실패하기도 한다. 이번 주는 그 경계를 눈으로 확인한다.</p>
+      <div class="meta-row">
+        <span class="chip">⏱ 180분</span>
+        <span class="chip accent">▶ 체험: 청킹 플레이그라운드</span>
+        <span class="chip">🧪 Challenge 5개</span>
+        <span class="chip ok">🔑 LLM API 키 필요 없음</span>
+      </div>
+      <div class="flow" aria-label="RAG 파이프라인에서 이번 주의 위치">
+        <div>문서 파싱</div><div><b>청킹</b></div><div>임베딩</div><div>벡터스토어</div><div>검색</div><div>생성</div><div>평가</div>
+      </div>
 
       <section id="goals">
         <h2><span class="section-num">1</span>학습 목표</h2>
+        <div class="goals">
+        <b>이번 주가 끝나면</b>
         <ul>
           <li>고정 길이·문장 단위·재귀 분할 청킹의 차이를 설명할 수 있다.</li>
           <li>오버랩이 경계에서 잘린 정보를 어떻게 보존하는지, 그 대가가 무엇인지 계산할 수 있다.</li>
           <li>근거 문장 보존율로 청킹 설정을 비교하는 코드를 작성할 수 있다.</li>
         </ul>
+        </div>
       </section>
 
       <section id="why">
@@ -116,13 +111,11 @@
 
       <section id="lab">
         <h2><span class="section-num">4</span>실습</h2>
-        <p>아래 위젯은 문서셋(<code>assets/data/corpus/corpus.json</code>)의 문서를 실제 <code>chunker.js</code>로 자른다. 물결 밑줄이 선택한 질문의 근거 문장이다. 처음 화면은 일부러 실패하는 설정이다. 결과(판정, 통계, 청크 경계, 청크 목록)는 오른쪽 <strong>실습 결과</strong> 창에 표시된다.</p>
+        <p>아래 위젯은 문서셋(<code>assets/data/corpus/corpus.json</code>)의 문서를 실제 <code>chunker.js</code>로 자른다. 물결 밑줄이 선택한 질문의 근거 문장이다. 처음 화면은 일부러 실패하는 설정이다. 결과(판정, 통계, 청크 경계, 청크 목록)는 오른쪽 <b>실행 결과</b> 창에 실시간으로 표시된다.</p>
       </section>
-    </article>
 
-    <div id="w04-widget"></div>
+      <div id="w04-widget"></div>
 
-    <article class="prose">
       <section aria-labelledby="observe-title">
         <h3 id="observe-title">관찰 질문</h3>
         <ol>
@@ -136,10 +129,11 @@
 
       <section id="challenge">
         <h2><span class="section-num">5</span>Challenge</h2>
-        <p>난이도 순서다. 코드 상자는 직접 고칠 수 있고, <strong>▶ 실행</strong>(또는 Ctrl+Enter)을 누르면 결과가 오른쪽 실습 결과 창에 나온다. 코드는 페이지와 분리된 워커에서 돌아가므로 무한 루프가 생겨도 10초 뒤 자동으로 멈춘다. <code>/assets/…</code> 경로는 사이트 루트 기준이다.</p>
+        <p>난이도 순서다. 코드 상자는 직접 고칠 수 있고, <strong>▶ 실행</strong>(또는 Ctrl+Enter)을 누르면 결과가 오른쪽 <b>실행 결과</b> 창에 나온다(휴대폰에서는 코드 바로 아래). 코드는 페이지와 분리된 워커에서 돌아가므로 무한 루프가 생겨도 10초 뒤 자동으로 멈춘다. <code>/assets/…</code> 경로는 사이트 루트 기준이다.</p>
 
-        <details open>
-          <summary>C1. 고정 길이 청커 직접 구현 ★</summary>
+        <div class="practice">
+          <div class="practice-head"><b>C1. 고정 길이 청커 직접 구현</b><span class="level" aria-label="난이도 1">★</span></div>
+          <div class="practice-body">
           <p>문자 수 기준 고정 길이 청커를 구현한다. 각 청크는 원문에서의 위치 <code>start</code>, <code>end</code>를 가져야 한다. 오버랩이 크기 이상이면 무한 루프가 된다는 점에 주의한다.</p>
           <pre data-run="c1" data-title="C1 고정 길이 청커"><code class="language-javascript">function fixedChunks(text, size, overlap = 0) {
   const chunks = [];
@@ -150,10 +144,12 @@
 
 console.log(fixedChunks('가나다라마바사아자차', 4, 1).map((c) => c.text));
 // 기대: ["가나다라", "라마바사", "사아자차"]</code></pre>
-        </details>
+          </div>
+        </div>
 
-        <details>
-          <summary>C2. 오버랩 비용 계산 ★</summary>
+        <div class="practice">
+          <div class="practice-head"><b>C2. 오버랩 비용 계산</b><span class="level" aria-label="난이도 1">★</span></div>
+          <div class="practice-body">
           <p>30,000자 문서를 크기 300, 오버랩 60으로 고정 길이 청킹한다. 청크 수와 임베딩해야 하는 총 문자 수를 먼저 손으로 계산하고, 코드로 검산한다. 오버랩 0일 때와 비교해 몇 % 늘었나?</p>
           <pre data-run="c2" data-title="C2 오버랩 비용"><code class="language-javascript">import { fixedSpans } from '/assets/js/core/chunker.js';
 
@@ -163,10 +159,12 @@ const b = fixedSpans(0, N, 300, 60);
 
 // TODO: 두 결과의 청크 수와 총 문자 수(Σ end − start)를 console.table로 출력한다
 // TODO: 총 문자 수가 몇 % 늘었는지 출력한다</code></pre>
-        </details>
+          </div>
+        </div>
 
-        <details>
-          <summary>C3. 소수점에서 자르지 않는 문장 분리기 ★★</summary>
+        <div class="practice">
+          <div class="practice-head"><b>C3. 소수점에서 자르지 않는 문장 분리기</b><span class="level" aria-label="난이도 2">★★</span></div>
+          <div class="practice-body">
           <p>아래 순진한 분리기는 “평점이 4.0 이상이다.”를 “평점이 4” / “0 이상이다”로 자르고, 마침표도 잃어버린다. 위치 정보를 보존하면서 문장 부호 <em>뒤에 공백이나 문서 끝이 올 때만</em> 자르는 <code>sentenceSpans</code>를 작성한다.</p>
           <pre data-run="c3" data-title="C3 문장 분리기"><code class="language-javascript">const naive = (text) => text.split(/[.!?]/);
 const sample = '평점이 4.0 이상이다. 지급액은 50%다!\n다음 줄? 끝';
@@ -180,10 +178,12 @@ function sentenceSpans(text) {
 }
 
 console.log('mine:', sentenceSpans(sample).map(([s, e]) => sample.slice(s, e)));</code></pre>
-        </details>
+          </div>
+        </div>
 
-        <details>
-          <summary>C4. 근거 보존율로 설정 비교하기 ★★★</summary>
+        <div class="practice">
+          <div class="practice-head"><b>C4. 근거 보존율로 설정 비교하기</b><span class="level" aria-label="난이도 3">★★★</span></div>
+          <div class="practice-body">
           <p>골든셋 12문항 전체에 대해 “근거 문장이 한 청크 안에 온전히 들어간 비율”을 계산한다. 크기 60, 100, 200, 400과 오버랩 0, 20%의 조합 8개를 비교하는 표를 출력한다. 전략은 고정 길이와 재귀 분할 두 가지를 모두 해 본다.</p>
           <pre data-run="c4" data-title="C4 근거 보존율"><code class="language-javascript">import { chunk } from '/assets/js/core/chunker.js';
 
@@ -205,10 +205,12 @@ function survivalRate(cfg) {
 
 // TODO: 8개 조합을 돌려 console.table로 출력
 console.log(survivalRate({ strategy: 'fixed', size: 100, overlap: 0 }));</code></pre>
-        </details>
+          </div>
+        </div>
 
-        <details>
-          <summary>C5. 제목을 기억하는 청커 ★★★★</summary>
+        <div class="practice">
+          <div class="practice-head"><b>C5. 제목을 기억하는 청커</b><span class="level" aria-label="난이도 4">★★★★</span></div>
+          <div class="practice-body">
           <p>“최대 12시간이다.”만 남은 청크는 무엇에 대한 이야기인지 모른다. 문서 제목(<code>title</code>)을 각 청크 앞에 붙여 임베딩할 텍스트를 만드는 <code>contextualize</code>를 작성한다. 원문 위치(<code>start</code>, <code>end</code>)는 제목을 붙이기 전 기준을 유지해야 인용 하이라이트(11주차)가 깨지지 않는다.</p>
           <pre data-run="c5" data-title="C5 제목 붙이기"><code class="language-javascript">import { chunk } from '/assets/js/core/chunker.js';
 
@@ -225,7 +227,8 @@ function contextualize(doc, chunks) {
 const out = contextualize(doc, chunk(doc.text, { strategy: 'recursive', size: 120 }));
 console.table(out.map(({ start, end, embedText }) => ({ start, end, embedText })));
 // 확인: doc.text.slice(start, end)가 원래 청크 텍스트와 같아야 한다</code></pre>
-        </details>
+          </div>
+        </div>
       </section>
 
       <section id="wrap">
@@ -238,24 +241,17 @@ console.table(out.map(({ start, end, embedText }) => ({ start, end, embedText })
         </ul>
         <p><strong>다음 주(5주차 임베딩 &amp; 유사도)</strong>에는 이번 주에 만든 청크를 실제로 벡터로 바꾼다. 브라우저 안에서 임베딩 모델을 돌려 청크 사이의 유사도를 히트맵으로 보고, 영어 전용 모델이 한국어에서 어떻게 실패하는지 확인한다.</p>
 
-        <label class="done-toggle">
-          <input type="checkbox" data-done-toggle="4"> 4주차 학습 완료로 표시
-        </label>
       </section>
 
+      <div class="section-end">
+        <label class="done-toggle">
+          <input type="checkbox" data-done-toggle="4"> ✅ 4주차 학습 완료로 표시
+        </label>
+      </div>
       <nav class="week-nav" data-week-nav="4" aria-label="주차 이동"></nav>
-    </article>
+        </article>
+      </div>
     </main>
-
-    <aside class="shell-result" aria-label="실습 결과">
-      <div class="result-head">
-        <h2>실습 결과</h2>
-        <button type="button" class="btn btn--ghost" data-result-clear style="min-height: 32px; padding: 0 var(--space-3); font-size: var(--text-sm)">코드 결과 지우기</button>
-      </div>
-      <div class="result-body" data-result-body>
-        <p class="result-empty">위젯을 조작하거나 Challenge 코드의 ▶ 실행을 누르면 결과가 여기에 표시된다.</p>
-      </div>
-    </aside>
   </div>
 
   <script type="module">

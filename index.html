@@ -3,111 +3,82 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>RAG Lab</title>
+  <title>RAG 시스템 구축 · RAG Lab</title>
   <meta name="description" content="검색증강생성(RAG) 시스템 구축 — 문서 파싱부터 평가까지, 브라우저에서 직접 실습하는 12주 과정">
   <script>try{var t=JSON.parse(localStorage.getItem('raglab:theme'));if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+  <link rel="stylesheet" crossorigin="anonymous" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&display=swap">
   <link rel="stylesheet" href="assets/css/tokens.css">
   <link rel="stylesheet" href="assets/css/base.css">
   <link rel="stylesheet" href="assets/css/components.css">
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%232450c4'/%3E%3Ccircle cx='14' cy='14' r='6' fill='none' stroke='white' stroke-width='3'/%3E%3Cpath d='M19 19l6 6' stroke='white' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔎</text></svg>">
   <script type="module" src="assets/js/site/site.js"></script>
 </head>
 <body>
-  <header class="site-header">
-    <div class="site-header__inner">
-      <a class="brand" href="./">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M5 3h9l5 5v6"/><path d="M14 3v5h5"/><path d="M5 3v18h7"/><circle cx="16.5" cy="17.5" r="3"/><path d="m21 22-2.3-2.3"/></svg>
-        RAG Lab
-      </a>
-      <span class="header-spacer"></span>
-      <nav class="role-switch" aria-label="보기 전환">
-        <a href="student.html">학생용</a>
-        <a href="teacher.html">교사용</a>
-      </nav>
-      <button type="button" class="icon-btn" data-theme-toggle aria-label="테마 변경"></button>
-    </div>
-  </header>
+  <div class="layout" data-layout data-role="student" data-crumb="<b>강좌 소개</b>">
+    <main class="pane center" id="main">
+      <div class="content" tabindex="-1">
+        <article class="doc">
+          <section class="hero">
+            <h1>🔎 검색증강생성(RAG) 시스템 구축</h1>
+            <p>문서 파싱부터 평가까지, <b>동작하는 RAG를 직접 만든다</b>. 청킹·임베딩·검색은 설치 없이 <b>이 페이지 안에서</b> 돌아가고, 결과는 오른쪽 실행 결과 창에 바로 나온다. 마지막에는 내가 만든 시스템을 Recall@k와 Faithfulness로 측정한다.</p>
+            <p>12주 · 주 1회 3시간 · 한국폴리텍대학 분당융합기술교육원 AI응용소프트웨어과</p>
+            <div class="hero-actions">
+              <a class="btn" href="weeks/w04/">▶ 4주차 실습 시작</a>
+              <a class="btn outline" href="teacher/">🧑‍🏫 교사용(PPT) 화면으로</a>
+            </div>
+            <div class="deco" aria-hidden="true">🧩</div>
+          </section>
 
-  <main class="page">
-    <section class="prose" style="margin-bottom: var(--space-7)">
-      <span class="eyebrow">AI응용소프트웨어과 · 12주 과정</span>
-      <h1>검색증강생성(RAG) 시스템 구축</h1>
-      <p class="lead">문서 파싱부터 평가까지, 동작하는 RAG를 만든다. 설치 없이 이 페이지에서 청킹·임베딩·검색을 직접 돌려 보고, 마지막에는 자신이 만든 시스템을 숫자로 측정한다.</p>
-      <div class="btn-row">
-        <a class="btn" href="student.html">학생용 — 문서 + 실습</a>
-        <a class="btn btn--ghost" href="teacher.html">교사용 — PPT 슬라이드 + 교사 노트</a>
+          <h2>이 과정이 다른 점</h2>
+          <div class="cards">
+            <div class="card"><span class="ci">🧪</span><span class="ct">브라우저에서 직접 실습</span><span class="cs">파이썬 설치도 서버도 필요 없다. 슬라이더를 움직이면 결과가 바로 바뀐다.</span></div>
+            <div class="card"><span class="ci">📊</span><span class="ct">평가까지 간다</span><span class="cs">골든셋을 만들고 Recall@k · nDCG · Faithfulness로 내 RAG를 숫자로 측정한다.</span></div>
+            <div class="card"><span class="ci">🛠️</span><span class="ct">고장난 RAG를 고친다</span><span class="cs">표 깨짐 · OCR 오류 · 잘린 문장. 망가진 예제에서 증상을 보고 원인을 추적한다.</span></div>
+          </div>
+
+          <div class="flow" aria-label="RAG 파이프라인과 주차">
+            <div>파싱 <b>3</b></div><div>청킹 <b>4</b></div><div>임베딩 <b>5</b></div><div>벡터스토어 <b>6</b></div><div>하이브리드 <b>8</b></div><div>생성·인용 <b>7·11</b></div><div>평가 <b>9</b></div>
+          </div>
+
+          <h2 class="part-title">Part 1. LLM과 문서 준비 <small>LLM 기초 · 프롬프트 · 파싱</small></h2>
+          <div class="cards">
+            <div class="card disabled"><span class="ci">🧠</span><span class="cn">01주차 · 준비 중</span><span class="ct">LLM 기초 &amp; RAG 필요성</span><span class="cs">토큰 카운터, 환각 체험 · LLM 키 선택</span></div>
+            <div class="card disabled"><span class="ci">✍️</span><span class="cn">02주차 · 준비 중</span><span class="ct">프롬프트 엔지니어링</span><span class="cs">프롬프트 A/B 비교 · LLM 키 필요</span></div>
+            <div class="card disabled"><span class="ci">📄</span><span class="cn">03주차 · 준비 중</span><span class="ct">문서 로딩 &amp; 파싱</span><span class="cs">PDF 텍스트 추출 뷰어</span></div>
+          </div>
+
+          <h2 class="part-title">Part 2. 검색 파이프라인 <small>청킹 · 임베딩 · 벡터스토어</small></h2>
+          <div class="cards">
+            <a class="card" href="weeks/w04/"><span class="ci">✂️</span><span class="cn">04주차 · 핵심 · ▶ 체험</span><span class="ct">청킹 전략</span><span class="cs">청킹 플레이그라운드 — 근거 문장이 청크 경계에서 잘리는 순간을 본다</span><span class="cp"><i data-week-progress="4"></i></span></a>
+            <div class="card disabled"><span class="ci">🧭</span><span class="cn">05주차 · 핵심 · 준비 중</span><span class="ct">임베딩 &amp; 유사도</span><span class="cs">유사도 히트맵 + 2D 투영</span></div>
+            <div class="card disabled"><span class="ci">🗄️</span><span class="cn">06주차 · 준비 중</span><span class="ct">벡터DB &amp; 인덱스</span><span class="cs">Flat vs HNSW 속도 비교</span></div>
+          </div>
+
+          <h2 class="part-title">Part 3. RAG 완성과 고도화 <small>최소 RAG · 하이브리드 검색 · 평가</small></h2>
+          <div class="cards">
+            <div class="card disabled"><span class="ci">🔗</span><span class="cn">07주차 · 준비 중</span><span class="ct">최소 RAG 완성</span><span class="cs">전체 파이프라인 실행 · LLM 키 필요</span></div>
+            <div class="card disabled"><span class="ci">⚖️</span><span class="cn">08주차 · 핵심 · 준비 중</span><span class="ct">하이브리드 검색 + 리랭킹</span><span class="cs">BM25 vs 벡터 vs 하이브리드</span></div>
+            <div class="card disabled"><span class="ci">📊</span><span class="cn">09주차 · 핵심 · 준비 중</span><span class="ct">평가 데이터셋 &amp; 측정</span><span class="cs">점수판(Recall@k, nDCG)</span></div>
+          </div>
+
+          <h2 class="part-title">Part 4. 서비스와 프로젝트 <small>리팩터링 · 웹 UI · 발표</small></h2>
+          <div class="cards">
+            <div class="card disabled"><span class="ci">🧰</span><span class="cn">10주차 · 준비 중</span><span class="ct">프레임워크 리팩터링</span><span class="cs">코드 비교 뷰어</span></div>
+            <div class="card disabled"><span class="ci">💬</span><span class="cn">11주차 · 준비 중</span><span class="ct">웹 UI + 인용 표기</span><span class="cs">인용 하이라이트 데모 · LLM 키 필요</span></div>
+            <div class="card disabled"><span class="ci">🏁</span><span class="cn">12주차 · 준비 중</span><span class="ct">팀 프로젝트 발표</span><span class="cs">팀별 결과 업로드</span></div>
+          </div>
+
+          <h2>시작하기 전에</h2>
+          <ol class="steps">
+            <li><b>최신 크롬·엣지를 쓴다.</b> 5주차부터 임베딩 모델(약 120MB)을 처음 한 번 내려받고, 이후에는 브라우저 캐시에서 바로 불러온다.</li>
+            <li><b>화면 구성:</b> 왼쪽 강의 목록 · 가운데 강의 내용 · 오른쪽 실행 결과. 경계선을 끌어 너비를 바꿀 수 있다.</li>
+            <li><b>LLM API 키는 본인 것을 쓴다.</b> 키는 이 탭의 <code>sessionStorage</code>에만 저장되고 탭을 닫으면 사라진다. 어떤 서버로도 보내지 않는다.</li>
+            <li><b>모든 실습은 같은 문서셋을 쓴다.</b> 학과 안내문과 이 과정의 이론 교안 자체가 문서다. 정답을 아는 문서로 실험해야 검색이 맞았는지 판단할 수 있다.</li>
+          </ol>
+        </article>
       </div>
-    </section>
-
-    <section aria-labelledby="diff-title" style="margin-bottom: var(--space-7)">
-      <h2 id="diff-title">이 과정이 다른 점</h2>
-      <div class="card-grid">
-        <article class="card">
-          <svg class="card__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="2" y="4" width="20" height="14" rx="2"/><path d="m8 10 2 2-2 2M13 14h3"/></svg>
-          <h3>브라우저에서 직접 실습한다</h3>
-          <p>파이썬 설치도, 서버도 필요 없다. 임베딩 모델이 브라우저 안에서 돌아가므로 슬라이더를 움직이면 결과가 바로 바뀐다.</p>
-        </article>
-        <article class="card">
-          <svg class="card__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M3 3v18h18"/><path d="m7 15 4-4 3 3 5-6"/></svg>
-          <h3>평가까지 간다</h3>
-          <p>튜토리얼에서 멈추지 않는다. 골든셋을 만들고 Recall@k, nDCG, Faithfulness로 내 RAG가 얼마나 좋은지 측정한다.</p>
-        </article>
-        <article class="card">
-          <svg class="card__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.5 2.5-2.4-.6-.6-2.4z"/></svg>
-          <h3>고장난 RAG를 고친다</h3>
-          <p>표가 깨진 문서, OCR 오류, 잘린 문장. 일부러 망가뜨린 예제에서 증상을 보고 원인을 추적하는 연습을 한다.</p>
-        </article>
-      </div>
-    </section>
-
-    <section aria-labelledby="pipe-title" style="margin-bottom: var(--space-7)">
-      <h2 id="pipe-title">12주 동안 만드는 것</h2>
-      <figure class="figure">
-        <ol class="pipeline" aria-label="RAG 파이프라인 단계">
-          <li>문서 로딩·파싱 <small class="muted">3주</small></li><li class="arrow" aria-hidden="true">→</li>
-          <li>청킹 <small class="muted">4주</small></li><li class="arrow" aria-hidden="true">→</li>
-          <li>임베딩 <small class="muted">5주</small></li><li class="arrow" aria-hidden="true">→</li>
-          <li>벡터스토어 <small class="muted">6주</small></li><li class="arrow" aria-hidden="true">→</li>
-          <li>하이브리드 검색·리랭킹 <small class="muted">8주</small></li><li class="arrow" aria-hidden="true">→</li>
-          <li class="is-optional">LLM 생성 + 인용 <small class="muted">7·11주</small></li><li class="arrow" aria-hidden="true">→</li>
-          <li class="is-focus">평가 <small>9주</small></li>
-        </ol>
-        <figcaption>점선 단계만 LLM API 키가 필요하다. 검색까지는 모두 브라우저 안에서 키 없이 동작한다.</figcaption>
-      </figure>
-    </section>
-
-    <section id="weeks" aria-labelledby="weeks-title" style="margin-bottom: var(--space-7)">
-      <h2 id="weeks-title">주차 목차</h2>
-      <p class="muted" data-progress-summary></p>
-      <ul class="week-list">
-        <li><div class="week-item" aria-disabled="true"><span class="week-item__no">01</span><span><span class="week-item__title">LLM 기초 &amp; RAG 필요성</span><span class="week-item__meta">토큰 카운터, 환각 체험</span></span><span class="week-item__side"><span class="badge">LLM 키 선택</span><span class="badge">준비 중</span></span></div></li>
-        <li><div class="week-item" aria-disabled="true"><span class="week-item__no">02</span><span><span class="week-item__title">프롬프트 엔지니어링</span><span class="week-item__meta">프롬프트 A/B 비교</span></span><span class="week-item__side"><span class="badge badge--warn">LLM 키 필요</span><span class="badge">준비 중</span></span></div></li>
-        <li><div class="week-item" aria-disabled="true"><span class="week-item__no">03</span><span><span class="week-item__title">문서 로딩 &amp; 파싱</span><span class="week-item__meta">PDF 텍스트 추출 뷰어</span></span><span class="week-item__side"><span class="badge">준비 중</span></span></div></li>
-        <li><a class="week-item is-core" href="weeks/w04/"><span class="week-item__no">04</span><span><span class="week-item__title">청킹 전략</span><span class="week-item__meta">청킹 플레이그라운드</span></span><span class="week-item__side"><span class="badge badge--ok" data-week-progress="4" hidden>완료</span><span class="badge badge--accent">공개</span></span></a></li>
-        <li><div class="week-item is-core" aria-disabled="true"><span class="week-item__no">05</span><span><span class="week-item__title">임베딩 &amp; 유사도</span><span class="week-item__meta">유사도 히트맵 + 2D 투영</span></span><span class="week-item__side"><span class="badge">준비 중</span></span></div></li>
-        <li><div class="week-item" aria-disabled="true"><span class="week-item__no">06</span><span><span class="week-item__title">벡터DB &amp; 인덱스</span><span class="week-item__meta">Flat vs HNSW 속도 비교</span></span><span class="week-item__side"><span class="badge">준비 중</span></span></div></li>
-        <li><div class="week-item" aria-disabled="true"><span class="week-item__no">07</span><span><span class="week-item__title">최소 RAG 완성</span><span class="week-item__meta">전체 파이프라인 실행</span></span><span class="week-item__side"><span class="badge badge--warn">LLM 키 필요</span><span class="badge">준비 중</span></span></div></li>
-        <li><div class="week-item is-core" aria-disabled="true"><span class="week-item__no">08</span><span><span class="week-item__title">하이브리드 검색 + 리랭킹</span><span class="week-item__meta">BM25 vs 벡터 vs 하이브리드</span></span><span class="week-item__side"><span class="badge">준비 중</span></span></div></li>
-        <li><div class="week-item is-core" aria-disabled="true"><span class="week-item__no">09</span><span><span class="week-item__title">평가 데이터셋 &amp; 측정</span><span class="week-item__meta">점수판(Recall@k, nDCG)</span></span><span class="week-item__side"><span class="badge">LLM 키 선택</span><span class="badge">준비 중</span></span></div></li>
-        <li><div class="week-item" aria-disabled="true"><span class="week-item__no">10</span><span><span class="week-item__title">프레임워크 리팩터링</span><span class="week-item__meta">코드 비교 뷰어</span></span><span class="week-item__side"><span class="badge">준비 중</span></span></div></li>
-        <li><div class="week-item" aria-disabled="true"><span class="week-item__no">11</span><span><span class="week-item__title">웹 UI + 인용 표기</span><span class="week-item__meta">인용 하이라이트 데모</span></span><span class="week-item__side"><span class="badge badge--warn">LLM 키 필요</span><span class="badge">준비 중</span></span></div></li>
-        <li><div class="week-item" aria-disabled="true"><span class="week-item__no">12</span><span><span class="week-item__title">팀 프로젝트 발표</span><span class="week-item__meta">팀별 결과 업로드</span></span><span class="week-item__side"><span class="badge">준비 중</span></span></div></li>
-      </ul>
-    </section>
-
-    <section class="prose" aria-labelledby="start-title">
-      <h2 id="start-title">시작하기 전에</h2>
-      <ul>
-        <li><strong>최신 크롬·엣지를 쓴다.</strong> 5주차부터 임베딩 모델(약 120MB)을 처음 한 번 내려받는다. 이후에는 브라우저 캐시에서 바로 불러온다.</li>
-        <li><strong>LLM API 키는 본인 것을 쓴다.</strong> 키는 이 탭의 <code>sessionStorage</code>에만 저장되고 탭을 닫으면 사라진다. 서버로 전송되지 않는다.</li>
-        <li><strong>모든 실습 데이터는 같은 문서셋이다.</strong> 학과 안내문과 이 과정의 이론 교안 자체를 문서로 쓴다. 정답을 아는 문서로 실험해야 검색이 맞았는지 판단할 수 있다.</li>
-      </ul>
-      <p class="muted">학생용과 교사용 화면은 모두 3단이다. 왼쪽은 강의 목록, 가운데는 강의 내용(학생용은 문서, 교사용은 16:9 슬라이드와 교사 노트), 오른쪽은 실습 결과다. 교수자는 <a href="teacher/">교사용 허브</a>에서 주차별 슬라이드, Challenge 정답, 평가 루브릭을 본다.</p>
-    </section>
-  </main>
-
-  <footer class="site-footer">
-    RAG Lab · 한국폴리텍대학 분당융합기술교육원 AI응용소프트웨어과
-  </footer>
+    </main>
+  </div>
 </body>
 </html>

@@ -11,14 +11,15 @@
 
 | 왼쪽 | 가운데 | 오른쪽 |
 |---|---|---|
-| 주차 목차 · 현재 주차의 섹션(학생용) / 슬라이드 목록(교사용) | 🎓 문서(학습 목표 · 왜 필요한가 · 개념 · 실습 위젯 · Challenge · 정리)<br>🧑‍🏫 16:9 슬라이드 + 교사 노트, 끝에 부록(강의안 · 정답 · 막히는 지점 · 토론 · 루브릭) | **실습 결과** — 위젯 출력, Challenge 코드 ▶ 실행 결과(console.log · console.table) |
+| PART → 주차 → 섹션(학생용)/슬라이드(교사용) 목차, 학습 진도, 검색, 학생용/교사용 전환 | 🎓 문서(학습 목표 · 왜 필요한가 · 개념 · ▶ 체험 위젯 · Challenge · 정리)<br>🧑‍🏫 PPT 슬라이드(16:9, 타이머 · 화면 가리기 · 전체 화면 · 발표자 창) + 교사 노트, 끝에 부록(강의안 · 정답 · 막히는 지점 · 토론 · 루브릭) | **실행 결과** 터미널 — 위젯 실시간 출력(LIVE), Challenge 코드 ▶ 실행 기록(console.log · console.table) |
 
-- 1000px 미만(휴대폰)에서는 목록이 서랍 메뉴로 바뀌고, 실습 결과는 위젯·코드 바로 아래에 표시됩니다.
+- 기존 강좌 사이트([studyMLBasic](https://samcho93.github.io/studyMLBasic/))와 같은 화면 구성 · 디자인입니다. 경계선을 끌어 각 단의 너비를 바꿀 수 있습니다.
+- 860px 미만(휴대폰)에서는 한 단으로 바뀌고, 목차는 ☰로 열며, 결과는 위젯 · 코드 바로 아래에 표시됩니다.
 - Challenge 코드는 페이지 안에서 바로 고치고 실행합니다. Web Worker에서 돌아가므로 무한 루프도 10초 뒤 자동으로 멈춥니다.
 - 임베딩은 [Transformers.js](https://huggingface.co/docs/transformers.js)로 브라우저 안에서 실행합니다(5주차부터, 모델 최초 1회 다운로드).
 - LLM이 필요한 주차는 학생 본인의 API 키를 쓰며, 키는 `sessionStorage`에만 저장됩니다.
 
-교사용 슬라이드 단축키: `←` `→` 이동 · `F` 전체 화면 · `N` 교사 노트 · `B` 화면 가리기 · `T` 타이머 · `P` 발표자 창
+교사용 슬라이드 단축키: `←` `→` 이동 · `F` 전체 화면 · `N` 교사 노트 · `B` 화면 가리기 · `T` 타이머 · `P` 발표자 창 · 코드 `Ctrl+Enter` 실행
 
 ## 커리큘럼 (12주)
 
@@ -43,7 +44,7 @@
 index.html · student.html · teacher.html   랜딩 / 학생용·교사용 진입점
 weeks/wNN/index.html · teacher.html         주차별 학생용 문서 / 교사용 슬라이드
 teacher/index.html                          교사용 허브
-assets/css/                                 tokens(디자인 토큰) · base · components(3단 셸) · slides
+assets/css/                                 tokens(디자인 토큰) · base · components(3단 레이아웃) · slides
 assets/js/core/                             chunker · embed · bm25 · vectorstore · rerank · metrics · llm
 assets/js/widgets/                          주차별 실습 위젯 (위젯 하나 = 파일 하나)
 assets/js/site/                             목차·진도·테마 · 슬라이드 엔진 · 실습 결과 창 · 코드 실행기

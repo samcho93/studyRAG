@@ -3,68 +3,54 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>교수자용 허브 · RAG Lab</title>
-  <meta name="description" content="RAG Lab 교수자용 허브: 주차별 슬라이드, 교사 노트, Challenge 정답, 평가 루브릭.">
+  <title>교사용 · RAG 시스템 구축 · RAG Lab</title>
+  <meta name="description" content="RAG Lab 교사용: 주차별 PPT 슬라이드, 교사 노트, Challenge 정답, 평가 루브릭.">
   <script>try{var t=JSON.parse(localStorage.getItem('raglab:theme'));if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+  <link rel="stylesheet" crossorigin="anonymous" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&display=swap">
   <link rel="stylesheet" href="../assets/css/tokens.css">
   <link rel="stylesheet" href="../assets/css/base.css">
   <link rel="stylesheet" href="../assets/css/components.css">
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%232450c4'/%3E%3Ccircle cx='14' cy='14' r='6' fill='none' stroke='white' stroke-width='3'/%3E%3Cpath d='M19 19l6 6' stroke='white' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔎</text></svg>">
   <script type="module" src="../assets/js/site/site.js"></script>
 </head>
 <body>
-  <header class="site-header">
-    <div class="site-header__inner">
-      <a class="brand" href="../">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M5 3h9l5 5v6"/><path d="M14 3v5h5"/><path d="M5 3v18h7"/><circle cx="16.5" cy="17.5" r="3"/><path d="m21 22-2.3-2.3"/></svg>
-        RAG Lab
-      </a>
-      <span class="header-spacer"></span>
-      <nav class="role-switch" aria-label="보기 전환">
-        <a href="../student.html">학생용</a>
-        <a href="./" aria-current="page">교사용</a>
-      </nav>
-      <button type="button" class="icon-btn" data-theme-toggle aria-label="테마 변경"></button>
-    </div>
-  </header>
+  <div class="layout" data-layout data-role="teacher" data-crumb="🧑‍🏫 <b>교사용 안내</b>">
+    <main class="pane center" id="main">
+      <div class="content" tabindex="-1">
+        <article class="doc">
+          <section class="hero">
+            <h1>🧑‍🏫 교사용 — PPT 슬라이드 + 교사 노트</h1>
+            <p>주차마다 <b>16:9 슬라이드</b>와 슬라이드별 <b>교사 노트</b>를 제공한다. 데모 슬라이드에서는 실습 위젯이 그대로 동작하고, 코드 슬라이드는 ▶ 실행하면 오른쪽 실행 결과 창에 결과가 나온다.</p>
+            <p>덱 끝의 <b>부록</b>에 강의안(시간 배분) · Challenge 정답 · 자주 막히는 지점 · 토론 주제 · 평가 루브릭이 있다.</p>
+            <div class="hero-actions">
+              <a class="btn" href="../weeks/w04/teacher.html">▶ 4주차 슬라이드 열기</a>
+              <a class="btn outline" href="../">🎓 학생용 화면으로</a>
+            </div>
+            <div class="deco" aria-hidden="true">🖼️</div>
+          </section>
 
-  <main class="page">
-    <section class="prose" style="margin-bottom: var(--space-6)">
-      <span class="eyebrow">교수자용</span>
-      <h1>교수자용 허브</h1>
-      <p class="lead">주차마다 PPT형 슬라이드(16:9)와 교사 노트, Challenge 정답, 자주 막히는 지점, 토론 주제, 평가 루브릭을 제공한다. 정답과 루브릭은 각 슬라이드 덱 끝의 <strong>부록</strong>에 있다.</p>
-    </section>
+          <h2>슬라이드 화면 사용법</h2>
+          <div class="cards">
+            <div class="card"><span class="ci">⌨️</span><span class="ct">단축키</span><span class="cs"><kbd>←</kbd> <kbd>→</kbd> 이동 · <kbd>F</kbd> 전체 화면 · <kbd>N</kbd> 교사 노트 · <kbd>B</kbd> 화면 가리기 · <kbd>T</kbd> 타이머 · <kbd>P</kbd> 발표자 창</span></div>
+            <div class="card"><span class="ci">🖥</span><span class="ct">발표자 창</span><span class="cs"><kbd>P</kbd>로 연 두 번째 창에는 슬라이드와 노트가 크게 나오고, 원래 창과 쪽이 같이 넘어간다. 프로젝터에는 원래 창을 <kbd>F</kbd>로 전체 화면.</span></div>
+            <div class="card"><span class="ci">📑</span><span class="ct">왼쪽 목록</span><span class="cs">현재 주차의 슬라이드 제목이 나열된다. 눌러서 바로 이동한다. 부록 슬라이드는 제목이 “부록”으로 시작한다.</span></div>
+          </div>
 
-    <section aria-labelledby="keys-title" style="margin-bottom: var(--space-6)">
-      <h2 id="keys-title">슬라이드 화면</h2>
-      <div class="card-grid">
-        <div class="card">
-          <h3>3단 구성</h3>
-          <p><strong>왼쪽</strong> 주차·슬라이드 목록, <strong>가운데</strong> 슬라이드와 교사 노트, <strong>오른쪽</strong> 실습 결과(데모 위젯과 코드 슬라이드의 ▶ 실행 결과).</p>
-        </div>
-        <div class="card">
-          <h3>단축키</h3>
-          <p><kbd>←</kbd> <kbd>→</kbd> 이동 · <kbd>F</kbd> 전체 화면 · <kbd>N</kbd> 교사 노트 · <kbd>B</kbd> 화면 가리기 · <kbd>T</kbd> 타이머 · <kbd>P</kbd> 발표자 창</p>
-        </div>
-        <div class="card">
-          <h3>발표자 창</h3>
-          <p><kbd>P</kbd>로 연 두 번째 창은 슬라이드와 노트를 크게 보여 주고, 원래 창과 페이지가 같이 넘어간다. 프로젝터에는 원래 창을 전체 화면(<kbd>F</kbd>)으로 띄운다.</p>
-        </div>
+          <h2 class="part-title">주차별 슬라이드 <small>공개된 주차만 열린다</small></h2>
+          <div class="cards">
+            <a class="card" href="../weeks/w04/teacher.html"><span class="ci">✂️</span><span class="cn">04주차 · 슬라이드 11장 + 부록 8장</span><span class="ct">청킹 전략</span><span class="cs">180분 · 데모 1 · 코드 슬라이드 5 · 루브릭 포함</span></a>
+            <div class="card disabled"><span class="ci">🧠</span><span class="cn">01–03주차 · 준비 중</span><span class="ct">LLM 기초 · 프롬프트 · 파싱</span><span class="cs">—</span></div>
+            <div class="card disabled"><span class="ci">🧭</span><span class="cn">05–12주차 · 준비 중</span><span class="ct">임베딩부터 팀 프로젝트까지</span><span class="cs">—</span></div>
+          </div>
+
+          <div class="callout">
+            <span class="callout__title">정답 공개 범위</span>
+            <p>이 사이트는 공개 저장소에서 배포되므로 교사용 페이지도 누구나 열 수 있다. 정답을 비공개로 두어야 하는 과제는 부록 대신 별도 채널로 배포한다.</p>
+          </div>
+        </article>
       </div>
-    </section>
-
-    <section aria-labelledby="decks-title">
-      <h2 id="decks-title">주차별 슬라이드</h2>
-      <ul class="week-list">
-        <li><a class="week-item is-core" href="../weeks/w04/teacher.html"><span class="week-item__no">04</span><span><span class="week-item__title">청킹 전략</span><span class="week-item__meta">슬라이드 11장 + 부록 9장 · 180분</span></span><span class="week-item__side"><span class="badge badge--accent">공개</span></span></a></li>
-        <li><div class="week-item" aria-disabled="true"><span class="week-item__no">01–03</span><span><span class="week-item__title">LLM 기초 · 프롬프트 · 파싱</span></span><span class="week-item__side"><span class="badge">준비 중</span></span></div></li>
-        <li><div class="week-item" aria-disabled="true"><span class="week-item__no">05–12</span><span><span class="week-item__title">임베딩 · 벡터DB · 최소 RAG · 하이브리드 · 평가 · 리팩터링 · 웹 UI · 발표</span></span><span class="week-item__side"><span class="badge">준비 중</span></span></div></li>
-      </ul>
-    </section>
-  </main>
-
-  <footer class="site-footer">
-    RAG Lab · 한국폴리텍대학 분당융합기술교육원 AI응용소프트웨어과
-  </footer>
+    </main>
+  </div>
 </body>
 </html>

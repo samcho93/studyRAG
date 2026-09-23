@@ -1,88 +1,114 @@
-// Right-hand "실습 결과" panel.
-// Widgets and code runners register an output node with an inline fallback host.
-// On wide screens the node lives in the panel as a card; below 1000px it moves
-// back next to its source so phones never need a second column.
+// Right-hand "실행 결과" terminal (built by site.js).
+//  - Live widget output is pinned at the top as a page-themed card.
+//  - Code runs append to a chronological log with a separator line, like the
+//    console in the sibling course sites.
+// Below 860px the terminal is hidden: output renders inline next to its source.
 
-const mq = matchMedia('(max-width: 999px)');
-const cards = new Map();
+const mq = matchMedia('(max-width: 860px)');
+const pinned = new Map();
 
-function panelBody() {
-  return document.querySelector('[data-result-body]');
+const $ = (sel) => document.querySelector(sel);
+
+function syncWelcome() {
+  const welcome = $('[data-console-welcome]');
+  if (!welcome) return;
+  const hasPinned = $('[data-console-pinned]')?.children.length > 0;
+  const hasLog = $('[data-console-log]')?.children.length > 0;
+  welcome.hidden = hasPinned || hasLog;
 }
 
-function syncEmpty() {
-  const body = panelBody();
-  if (!body) return;
-  const empty = body.querySelector('.result-empty');
-  if (empty) empty.hidden = body.querySelector('.result-card') !== null;
-}
-
-function place(entry) {
-  const body = panelBody();
-  if (!mq.matches && body) {
-    entry.content.append(entry.node);
-    // newest output on top, right under the panel header
-    if (!entry.card.isConnected) body.querySelector('.result-empty')?.after(entry.card) ?? body.prepend(entry.card);
+function placePinned(entry) {
+  const host = $('[data-console-pinned]');
+  if (!mq.matches && host) {
+    entry.body.append(entry.node);
+    if (!entry.card.isConnected) host.append(entry.card);
   } else {
     entry.inlineHost.append(entry.node);
     entry.card.remove();
   }
-  syncEmpty();
+  syncWelcome();
 }
 
 /**
- * Register an output node.
- * @param {string} id stable key (re-registering replaces the node)
+ * Pin a live output node (e.g. a widget's result view) to the terminal.
+ * @param {string} id
  * @param {{ title: string, node: HTMLElement, inlineHost: HTMLElement }} opts
  */
 export function registerOutput(id, { title, node, inlineHost }) {
-  let entry = cards.get(id);
+  let entry = pinned.get(id);
   if (!entry) {
-    const card = document.createElement('details');
-    card.className = 'result-card';
-    card.open = true;
-    card.innerHTML = '<summary></summary><div class="result-card__body"></div>';
-    entry = { card, content: card.querySelector('.result-card__body'), inlineHost, node };
-    cards.set(id, entry);
+    const card = document.createElement('section');
+    card.className = 'rich-widget';
+    card.innerHTML = '<div class="rich-widget__head"></div><div class="rich-widget__body"></div>';
+    entry = { card, body: card.querySelector('.rich-widget__body') };
+    pinned.set(id, entry);
   }
-  entry.card.querySelector('summary').textContent = title;
+  entry.card.querySelector('.rich-widget__head').textContent = title;
   entry.node = node;
   entry.inlineHost = inlineHost;
-  entry.content.replaceChildren();
-  place(entry);
+  entry.body.replaceChildren();
+  placePinned(entry);
   return entry;
 }
 
-/** Remove a registered output (e.g. on widget unmount). */
 export function unregisterOutput(id) {
-  const entry = cards.get(id);
+  const entry = pinned.get(id);
   if (!entry) return;
   entry.card.remove();
   entry.node.remove();
-  cards.delete(id);
-  syncEmpty();
+  pinned.delete(id);
+  syncWelcome();
 }
 
-/** Bring a card into view and flash it briefly. */
+/** Scroll a pinned output into view and flash it. */
 export function focusOutput(id) {
-  const entry = cards.get(id);
+  const entry = pinned.get(id);
   if (!entry || mq.matches) return;
-  entry.card.open = true;
   entry.card.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
   entry.card.classList.add('is-flash');
   setTimeout(() => entry.card.classList.remove('is-flash'), 900);
 }
 
-mq.addEventListener('change', () => cards.forEach(place));
+const STATE_LABEL = { idle: '대기', running: '실행 중', done: '완료', error: '오류' };
+
+export function setRunState(state) {
+  const el = $('[data-run-state]');
+  if (!el) return;
+  el.className = `run-state ${state === 'idle' ? '' : state}`.trim();
+  el.textContent = STATE_LABEL[state] ?? state;
+}
+
+/**
+ * Start a new run block. Returns the element to write output lines into.
+ * @param {string} title
+ * @param {HTMLElement} inlineHost used on narrow screens (replaced on every run)
+ */
+export function startRun(title, inlineHost) {
+  const out = document.createElement('div');
+  const log = $('[data-console-log]');
+  if (!mq.matches && log) {
+    const time = new Date().toLocaleTimeString('en-GB', { hour12: false });
+    log.insertAdjacentHTML('beforeend', `<span class="run-sep">── ${escapeHtml(title)} · ${time} ──</span>`);
+    log.append(out);
+    syncWelcome();
+    const scroller = $('[data-console]');
+    requestAnimationFrame(() => scroller?.scrollTo({ top: scroller.scrollHeight, behavior: 'smooth' }));
+  } else {
+    inlineHost.replaceChildren(out);
+  }
+  setRunState('running');
+  return out;
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+}
+
+mq.addEventListener('change', () => pinned.forEach(placePinned));
 
 document.addEventListener('click', (e) => {
-  if (!e.target.closest('[data-result-clear]')) return;
-  for (const [id, entry] of cards) {
-    if (entry.card.dataset.clearable !== undefined) unregisterOutput(id);
-  }
+  if (!e.target.closest('[data-console-clear]')) return;
+  $('[data-console-log]')?.replaceChildren();
+  setRunState('idle');
+  syncWelcome();
 });
-
-export function markClearable(id) {
-  const entry = cards.get(id);
-  if (entry) entry.card.dataset.clearable = '';
-}

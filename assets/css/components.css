@@ -500,6 +500,17 @@
   font-size: var(--text-xl);
 }
 
+.doc h2 .section-num {
+  margin-right: 8px;
+  color: var(--color-accent);
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+}
+
+.doc h2 .section-num::after {
+  content: ".";
+}
+
 .doc h3 {
   display: flex;
   align-items: center;
