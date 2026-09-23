@@ -9,11 +9,14 @@
 html {
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
-  scroll-padding-top: calc(var(--header-h) + var(--space-4));
+}
+
+html,
+body {
+  margin: 0;
 }
 
 body {
-  margin: 0;
   min-height: 100vh;
   background: var(--color-bg);
   color: var(--color-text);
@@ -22,6 +25,7 @@ body {
   line-height: var(--leading-body);
   word-break: keep-all;
   overflow-wrap: break-word;
+  -webkit-font-smoothing: antialiased;
 }
 
 h1,
@@ -29,21 +33,7 @@ h2,
 h3,
 h4 {
   line-height: var(--leading-tight);
-  font-weight: var(--weight-bold);
-  margin: var(--space-6) 0 var(--space-3);
-}
-
-h1 {
-  font-size: var(--text-3xl);
-  margin-top: 0;
-}
-
-h2 {
-  font-size: var(--text-xl);
-}
-
-h3 {
-  font-size: var(--text-lg);
+  letter-spacing: -0.01em;
 }
 
 p,
@@ -52,25 +42,11 @@ ol,
 table,
 pre,
 figure {
-  margin: 0 0 var(--space-4);
-}
-
-ul,
-ol {
-  padding-left: 1.4em;
-}
-
-li + li {
-  margin-top: var(--space-1);
+  margin: 0 0 var(--space-3);
 }
 
 a {
   color: var(--color-accent);
-  text-underline-offset: 3px;
-}
-
-a:hover {
-  color: var(--color-accent-hover);
 }
 
 img,
@@ -83,48 +59,15 @@ code,
 pre,
 kbd {
   font-family: var(--font-mono);
-  font-size: 0.92em;
 }
 
-:not(pre) > code {
-  background: var(--color-code-bg);
+kbd {
+  font-size: 0.82em;
+  padding: 1px 6px;
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  padding: 0.05em 0.35em;
-}
-
-pre {
-  background: var(--color-code-bg);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  padding: var(--space-4);
-  overflow-x: auto;
-  line-height: 1.6;
-}
-
-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: var(--text-sm);
-}
-
-th,
-td {
-  border-bottom: 1px solid var(--color-border);
-  padding: var(--space-2) var(--space-3);
-  text-align: left;
-  vertical-align: top;
-}
-
-th {
-  font-weight: var(--weight-bold);
+  border-bottom-width: 2px;
+  border-radius: 4px;
   background: var(--color-surface-2);
-}
-
-hr {
-  border: 0;
-  border-top: 1px solid var(--color-border);
-  margin: var(--space-6) 0;
 }
 
 button,
@@ -153,6 +96,14 @@ textarea {
   overflow: hidden;
   clip: rect(0 0 0 0);
   white-space: nowrap;
+}
+
+.muted {
+  color: var(--color-text-muted);
+}
+
+.spacer {
+  flex: 1;
 }
 
 @media (prefers-reduced-motion: reduce) {
