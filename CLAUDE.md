@@ -201,6 +201,7 @@ export function unmount(el) { /* 리스너·모델 정리 */ }
 
 - 16:9 슬라이드(`<section class="slide">`) + 슬라이드마다 교사 노트(`<aside class="notes">`)
 - 단축키: `←` `→` 이동 · `F` 전체 화면 · `N` 노트 · `B` 가리기 · `T` 타이머 · `P` 발표자 창
+- 판서(`site/ink.js`): `D` 펜 · `H` 형광펜 · `L` 레이저 · `E` 지우개 · `Z` 되돌리기 · `C` 지우기 · `Esc` 끄기
 - 데모 슬라이드(`slide--demo`)에 실제 위젯을 넣고, 코드 슬라이드(`pre[data-run]`)는 ▶ 실행 가능
 - 아래 1~5는 덱 끝의 **부록 슬라이드**(`data-appendix`)로 넣는다
 

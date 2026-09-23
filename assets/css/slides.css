@@ -90,6 +90,103 @@
   color: var(--color-success);
 }
 
+/* ---------- Whiteboard ink row ---------- */
+.ink-row {
+  border-top: 1px dashed var(--color-border);
+  background: var(--color-surface-2);
+}
+
+.ink-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding-right: 4px;
+  color: var(--color-text-muted);
+  font-size: 12.5px;
+  font-weight: var(--weight-heavy);
+}
+
+.ink-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 6px;
+  border-left: 1px solid var(--color-border);
+}
+
+.ink-color {
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 2px solid var(--color-border);
+  border-radius: 50%;
+  background: var(--c);
+  cursor: pointer;
+}
+
+.ink-color:hover {
+  transform: scale(1.1);
+}
+
+.ink-color[aria-pressed="true"] {
+  border-color: var(--color-text);
+  box-shadow: 0 0 0 2px var(--color-accent-soft);
+}
+
+.ink-width {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 24px;
+  padding: 0;
+  border: 1px solid var(--color-border);
+  border-radius: 7px;
+  background: var(--color-surface);
+  cursor: pointer;
+}
+
+.ink-width i {
+  display: block;
+  border-radius: 50%;
+  background: var(--color-text);
+}
+
+.ink-width[aria-pressed="true"] {
+  border-color: var(--color-accent);
+  background: var(--color-accent-soft);
+}
+
+.ink-canvas {
+  position: absolute;
+  inset: 0;
+  z-index: 12;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  touch-action: none;
+}
+
+.deck-stage.inking .ink-canvas {
+  pointer-events: auto;
+}
+
+.deck-viewport:has(.deck-stage.inking) .edge {
+  display: none;
+}
+
+.deck-stage[data-tool="pen"] .ink-canvas,
+.deck-stage[data-tool="marker"] .ink-canvas {
+  cursor: crosshair;
+}
+
+.deck-stage[data-tool="laser"] .ink-canvas {
+  cursor: none;
+}
+
+.deck-stage[data-tool="eraser"] .ink-canvas {
+  cursor: cell;
+}
+
 .deck-progress {
   height: 3px;
   background: var(--color-border);
@@ -104,6 +201,9 @@
 }
 
 @media (max-width: 1100px) {
+  .ink-label .lbl {
+    display: none;
+  }
   .dk-btn .lbl {
     display: none;
   }
@@ -666,6 +766,7 @@
   .topbar,
   .deck-bar,
   .deck-progress,
+  .ink-canvas,
   .notes-pane,
   .edge {
     display: none !important;

@@ -4,7 +4,11 @@
 //
 // Keys: ← → / Space / PageUp PageDown · Home End · F fullscreen · N notes
 //       B blackout · T timer · P presenter window
-// A second window opened with P (?presenter) stays in sync via BroadcastChannel.
+//       판서: D pen · H highlighter · L laser · E eraser · Z undo · C clear · Esc stop
+// A second window opened with P (?presenter) stays in sync via BroadcastChannel
+// (slide position and ink strokes).
+
+import { createInk } from './ink.js';
 
 const W = 1280;
 const H = 720;
@@ -51,6 +55,16 @@ export function initDeck(root = document.querySelector('[data-deck]')) {
     <button type="button" class="edge edge-next" data-act="next" aria-label="다음 슬라이드">›</button>
     <div class="deck-blackout" hidden></div>`);
   const blackout = viewport.querySelector('.deck-blackout');
+
+  // ---------- whiteboard ink (second toolbar row) ----------
+  const inkRow = document.createElement('div');
+  inkRow.className = 'deck-row ink-row';
+  root.querySelector('.deck-bar').append(inkRow);
+  const ink = createInk({
+    row: inkRow,
+    stage,
+    onStrokes: (i, strokes) => channel?.postMessage({ type: 'ink', index: i, strokes }),
+  });
 
   slides.forEach((s, i) => {
     if (s.classList.contains('slide--title') || s.classList.contains('slide--demo')) return;
@@ -101,6 +115,7 @@ export function initDeck(root = document.querySelector('[data-deck]')) {
     progress.style.width = `${((index + 1) / slides.length) * 100}%`;
     history.replaceState(null, '', `${location.search}#${index + 1}`);
     renderNotes();
+    ink.setSlide(index);
     navSecs?.querySelectorAll('[data-go]').forEach((b) => b.setAttribute('aria-current', String(Number(b.dataset.go) === index)));
     if (broadcast) channel?.postMessage({ type: 'go', index });
   }
@@ -189,6 +204,10 @@ export function initDeck(root = document.querySelector('[data-deck]')) {
     if (e.ctrlKey || e.metaKey || e.altKey) return;
     // widgets, code boxes and the nav search keep their own keyboard handling
     if (e.target.closest('input, select, textarea, [contenteditable], summary')) return;
+    if (ink.handleKey(e)) {
+      e.preventDefault();
+      return;
+    }
     const k = e.key;
     if (k === 'ArrowRight' || k === 'PageDown' || (k === ' ' && !e.target.closest('button, a'))) {
       e.preventDefault();
@@ -209,7 +228,7 @@ export function initDeck(root = document.querySelector('[data-deck]')) {
   let touchX = null;
   viewport.addEventListener('touchstart', (e) => { touchX = e.touches[0].clientX; }, { passive: true });
   viewport.addEventListener('touchend', (e) => {
-    if (touchX === null || e.target.closest('.widget, .code-block')) return;
+    if (touchX === null || ink.tool !== 'pointer' || e.target.closest('.widget, .code-block')) return;
     const dx = e.changedTouches[0].clientX - touchX;
     if (Math.abs(dx) > 60) go(index + (dx < 0 ? 1 : -1));
     touchX = null;
@@ -217,6 +236,7 @@ export function initDeck(root = document.querySelector('[data-deck]')) {
 
   channel?.addEventListener('message', (e) => {
     if (e.data?.type === 'go') go(e.data.index, { broadcast: false });
+    if (e.data?.type === 'ink') ink.setStrokes(e.data.index, e.data.strokes);
     if (e.data?.type === 'hello' && !isPresenter) channel.postMessage({ type: 'go', index });
   });
   window.addEventListener('hashchange', () => go(readHash()));
