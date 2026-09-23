@@ -163,7 +163,8 @@ export function initDeck(root = document.querySelector('[data-deck]')) {
 
   root.addEventListener('click', (e) => {
     const act = e.target.closest('[data-act]')?.dataset.act;
-    if (act) actions[act]();
+    // runner buttons inside slides share the data-act attribute; only handle deck actions
+    if (Object.hasOwn(actions, act)) actions[act]();
   });
   document.addEventListener('keydown', (e) => {
     if (e.ctrlKey || e.metaKey || e.altKey) return;
