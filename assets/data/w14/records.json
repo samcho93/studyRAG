@@ -1,0 +1,753 @@
+{
+  "version": 1,
+  "description": "응용 2 · 조건 검색용 구조화 레코드. 2학기 시간표(broken-table을 행 단위로 복원), RAG 교과목 안내, 실습실 규정, 장학금 안내(OCR 오류 교정)는 공통 문서셋에서 옮겼다. synthetic: true인 레코드(1학기 시간표, RAG 외 과목의 학점·담당)는 조건 검색 실습을 위해 만든 가상 데이터다.",
+  "periods": "이 실습에서는 1~3교시를 오전(9~12시), 4~6교시를 오후(13시 이후)로 본다.",
+  "schema": {
+    "type": {
+      "label": "유형",
+      "kind": "enum",
+      "values": [
+        "timetable",
+        "course",
+        "facility",
+        "scholarship"
+      ]
+    },
+    "semester": {
+      "label": "학기",
+      "kind": "int",
+      "min": 1,
+      "max": 2
+    },
+    "day": {
+      "label": "요일",
+      "kind": "enum",
+      "values": [
+        "월",
+        "화",
+        "수",
+        "목",
+        "금"
+      ]
+    },
+    "periodStart": {
+      "label": "시작 교시",
+      "kind": "int",
+      "min": 1,
+      "max": 6
+    },
+    "periodEnd": {
+      "label": "끝 교시",
+      "kind": "int",
+      "min": 1,
+      "max": 6
+    },
+    "room": {
+      "label": "강의실",
+      "kind": "enum",
+      "values": [
+        "305",
+        "306",
+        "외부 산업체"
+      ]
+    },
+    "professor": {
+      "label": "담당",
+      "kind": "enum",
+      "values": [
+        "공동",
+        "김 교수",
+        "박 교수",
+        "이 교수",
+        "조 교수",
+        "최 교수"
+      ]
+    },
+    "credits": {
+      "label": "학점",
+      "kind": "int",
+      "min": 1,
+      "max": 4
+    }
+  },
+  "records": [
+    {
+      "id": "t2-mon-1",
+      "text": "2학기 월요일 1~3교시에는 딥러닝 수업이 305호에서 열린다. 담당은 김 교수다.",
+      "meta": {
+        "type": "timetable",
+        "semester": 2,
+        "day": "월",
+        "periodStart": 1,
+        "periodEnd": 3,
+        "room": "305",
+        "professor": "김 교수",
+        "course": "딥러닝"
+      },
+      "source": "broken-table",
+      "synthetic": false
+    },
+    {
+      "id": "t2-mon-4",
+      "text": "2학기 월요일 4~6교시에는 자연어 처리 수업이 306호에서 열린다. 담당은 이 교수다.",
+      "meta": {
+        "type": "timetable",
+        "semester": 2,
+        "day": "월",
+        "periodStart": 4,
+        "periodEnd": 6,
+        "room": "306",
+        "professor": "이 교수",
+        "course": "자연어 처리"
+      },
+      "source": "broken-table",
+      "synthetic": false
+    },
+    {
+      "id": "t2-tue-1",
+      "text": "2학기 화요일 1~3교시에는 검색증강생성(RAG) 시스템 구축 수업이 305호에서 열린다. 담당은 조 교수다.",
+      "meta": {
+        "type": "timetable",
+        "semester": 2,
+        "day": "화",
+        "periodStart": 1,
+        "periodEnd": 3,
+        "room": "305",
+        "professor": "조 교수",
+        "course": "검색증강생성(RAG) 시스템 구축"
+      },
+      "source": "broken-table",
+      "synthetic": false
+    },
+    {
+      "id": "t2-tue-4",
+      "text": "2학기 화요일 4~6교시에는 팀 프로젝트 수업이 306호에서 열린다. 여러 교수가 공동으로 담당한다.",
+      "meta": {
+        "type": "timetable",
+        "semester": 2,
+        "day": "화",
+        "periodStart": 4,
+        "periodEnd": 6,
+        "room": "306",
+        "professor": "공동",
+        "course": "팀 프로젝트"
+      },
+      "source": "broken-table",
+      "synthetic": false
+    },
+    {
+      "id": "t2-wed-1",
+      "text": "2학기 수요일 1~6교시에는 현장 실습 수업이 외부 산업체에서 진행된다. 담당 교수는 따로 없다.",
+      "meta": {
+        "type": "timetable",
+        "semester": 2,
+        "day": "수",
+        "periodStart": 1,
+        "periodEnd": 6,
+        "room": "외부 산업체",
+        "professor": null,
+        "course": "현장 실습"
+      },
+      "source": "broken-table",
+      "synthetic": false
+    },
+    {
+      "id": "t2-thu-1",
+      "text": "2학기 목요일 1~3교시에는 MLOps 수업이 305호에서 열린다. 담당은 박 교수다.",
+      "meta": {
+        "type": "timetable",
+        "semester": 2,
+        "day": "목",
+        "periodStart": 1,
+        "periodEnd": 3,
+        "room": "305",
+        "professor": "박 교수",
+        "course": "MLOps"
+      },
+      "source": "broken-table",
+      "synthetic": false
+    },
+    {
+      "id": "t2-thu-4",
+      "text": "2학기 목요일 4~6교시에는 자격증 대비 수업이 306호에서 열린다. 담당은 이 교수다.",
+      "meta": {
+        "type": "timetable",
+        "semester": 2,
+        "day": "목",
+        "periodStart": 4,
+        "periodEnd": 6,
+        "room": "306",
+        "professor": "이 교수",
+        "course": "자격증 대비"
+      },
+      "source": "broken-table",
+      "synthetic": false
+    },
+    {
+      "id": "t2-fri-1",
+      "text": "2학기 금요일 1~3교시에는 캡스톤 멘토링 수업이 305호에서 열린다. 여러 교수가 공동으로 담당한다.",
+      "meta": {
+        "type": "timetable",
+        "semester": 2,
+        "day": "금",
+        "periodStart": 1,
+        "periodEnd": 3,
+        "room": "305",
+        "professor": "공동",
+        "course": "캡스톤 멘토링"
+      },
+      "source": "broken-table",
+      "synthetic": false
+    },
+    {
+      "id": "t1-mon-1",
+      "text": "1학기 월요일 1~3교시에는 파이썬 프로그래밍 수업이 305호에서 열린다. 담당은 최 교수다.",
+      "meta": {
+        "type": "timetable",
+        "semester": 1,
+        "day": "월",
+        "periodStart": 1,
+        "periodEnd": 3,
+        "room": "305",
+        "professor": "최 교수",
+        "course": "파이썬 프로그래밍"
+      },
+      "source": null,
+      "synthetic": true
+    },
+    {
+      "id": "t1-mon-4",
+      "text": "1학기 월요일 4~6교시에는 데이터 분석 수업이 306호에서 열린다. 담당은 김 교수다.",
+      "meta": {
+        "type": "timetable",
+        "semester": 1,
+        "day": "월",
+        "periodStart": 4,
+        "periodEnd": 6,
+        "room": "306",
+        "professor": "김 교수",
+        "course": "데이터 분석"
+      },
+      "source": null,
+      "synthetic": true
+    },
+    {
+      "id": "t1-tue-1",
+      "text": "1학기 화요일 1~3교시에는 머신러닝 기초 수업이 306호에서 열린다. 담당은 박 교수다.",
+      "meta": {
+        "type": "timetable",
+        "semester": 1,
+        "day": "화",
+        "periodStart": 1,
+        "periodEnd": 3,
+        "room": "306",
+        "professor": "박 교수",
+        "course": "머신러닝 기초"
+      },
+      "source": null,
+      "synthetic": true
+    },
+    {
+      "id": "t1-tue-4",
+      "text": "1학기 화요일 4~6교시에는 데이터베이스 수업이 305호에서 열린다. 담당은 박 교수다.",
+      "meta": {
+        "type": "timetable",
+        "semester": 1,
+        "day": "화",
+        "periodStart": 4,
+        "periodEnd": 6,
+        "room": "305",
+        "professor": "박 교수",
+        "course": "데이터베이스"
+      },
+      "source": null,
+      "synthetic": true
+    },
+    {
+      "id": "t1-wed-1",
+      "text": "1학기 수요일 1~3교시에는 수학 기초 수업이 306호에서 열린다. 담당은 이 교수다.",
+      "meta": {
+        "type": "timetable",
+        "semester": 1,
+        "day": "수",
+        "periodStart": 1,
+        "periodEnd": 3,
+        "room": "306",
+        "professor": "이 교수",
+        "course": "수학 기초"
+      },
+      "source": null,
+      "synthetic": true
+    },
+    {
+      "id": "t1-thu-1",
+      "text": "1학기 목요일 1~3교시에는 웹 프로그래밍 수업이 305호에서 열린다. 담당은 이 교수다.",
+      "meta": {
+        "type": "timetable",
+        "semester": 1,
+        "day": "목",
+        "periodStart": 1,
+        "periodEnd": 3,
+        "room": "305",
+        "professor": "이 교수",
+        "course": "웹 프로그래밍"
+      },
+      "source": null,
+      "synthetic": true
+    },
+    {
+      "id": "c-rag",
+      "text": "검색증강생성(RAG) 시스템 구축 과목은 2학기에 개설되는 3학점 과목이다. 주 1회 3시간씩 12주 동안 진행되며, 성적은 실습 과제 30%, 중간 점검 20%, 팀 프로젝트 40%, 수업 참여 10%로 평가한다.",
+      "meta": {
+        "type": "course",
+        "semester": 2,
+        "credits": 3,
+        "professor": "조 교수",
+        "course": "검색증강생성(RAG) 시스템 구축",
+        "grading": {
+          "실습과제": 30,
+          "중간점검": 20,
+          "팀프로젝트": 40,
+          "수업참여": 10
+        }
+      },
+      "source": "course-rag-syllabus",
+      "synthetic": false
+    },
+    {
+      "id": "c-dl",
+      "text": "딥러닝 과목은 2학기에 개설되는 3학점 과목이며 김 교수가 담당한다.",
+      "meta": {
+        "type": "course",
+        "semester": 2,
+        "credits": 3,
+        "professor": "김 교수",
+        "course": "딥러닝"
+      },
+      "source": "broken-table",
+      "synthetic": true
+    },
+    {
+      "id": "c-nlp",
+      "text": "자연어 처리 과목은 2학기에 개설되는 3학점 과목이며 이 교수가 담당한다.",
+      "meta": {
+        "type": "course",
+        "semester": 2,
+        "credits": 3,
+        "professor": "이 교수",
+        "course": "자연어 처리"
+      },
+      "source": "broken-table",
+      "synthetic": true
+    },
+    {
+      "id": "c-team",
+      "text": "팀 프로젝트 과목은 2학기에 개설되는 2학점 과목이며 여러 교수가 공동으로 담당한다.",
+      "meta": {
+        "type": "course",
+        "semester": 2,
+        "credits": 2,
+        "professor": "공동",
+        "course": "팀 프로젝트"
+      },
+      "source": "broken-table",
+      "synthetic": true
+    },
+    {
+      "id": "c-field",
+      "text": "현장 실습 과목은 2학기에 개설되는 4학점 과목이며 담당 교수 없이 산업체에서 진행한다.",
+      "meta": {
+        "type": "course",
+        "semester": 2,
+        "credits": 4,
+        "professor": null,
+        "course": "현장 실습"
+      },
+      "source": "broken-table",
+      "synthetic": true
+    },
+    {
+      "id": "c-mlops",
+      "text": "MLOps 과목은 2학기에 개설되는 2학점 과목이며 박 교수가 담당한다.",
+      "meta": {
+        "type": "course",
+        "semester": 2,
+        "credits": 2,
+        "professor": "박 교수",
+        "course": "MLOps"
+      },
+      "source": "broken-table",
+      "synthetic": true
+    },
+    {
+      "id": "c-cert",
+      "text": "자격증 대비 과목은 2학기에 개설되는 1학점 과목이며 이 교수가 담당한다.",
+      "meta": {
+        "type": "course",
+        "semester": 2,
+        "credits": 1,
+        "professor": "이 교수",
+        "course": "자격증 대비"
+      },
+      "source": "broken-table",
+      "synthetic": true
+    },
+    {
+      "id": "c-cap",
+      "text": "캡스톤 멘토링 과목은 2학기에 개설되는 1학점 과목이며 여러 교수가 공동으로 담당한다.",
+      "meta": {
+        "type": "course",
+        "semester": 2,
+        "credits": 1,
+        "professor": "공동",
+        "course": "캡스톤 멘토링"
+      },
+      "source": "broken-table",
+      "synthetic": true
+    },
+    {
+      "id": "c-py",
+      "text": "파이썬 프로그래밍 과목은 1학기에 개설되는 3학점 과목이며 최 교수가 담당한다.",
+      "meta": {
+        "type": "course",
+        "semester": 1,
+        "credits": 3,
+        "professor": "최 교수",
+        "course": "파이썬 프로그래밍"
+      },
+      "source": "dept-overview",
+      "synthetic": true
+    },
+    {
+      "id": "c-da",
+      "text": "데이터 분석 과목은 1학기에 개설되는 3학점 과목이며 김 교수가 담당한다.",
+      "meta": {
+        "type": "course",
+        "semester": 1,
+        "credits": 3,
+        "professor": "김 교수",
+        "course": "데이터 분석"
+      },
+      "source": "dept-overview",
+      "synthetic": true
+    },
+    {
+      "id": "c-ml",
+      "text": "머신러닝 기초 과목은 1학기에 개설되는 3학점 과목이며 박 교수가 담당한다.",
+      "meta": {
+        "type": "course",
+        "semester": 1,
+        "credits": 3,
+        "professor": "박 교수",
+        "course": "머신러닝 기초"
+      },
+      "source": "dept-overview",
+      "synthetic": true
+    },
+    {
+      "id": "c-math",
+      "text": "수학 기초 과목은 1학기에 개설되는 2학점 과목이며 이 교수가 담당한다.",
+      "meta": {
+        "type": "course",
+        "semester": 1,
+        "credits": 2,
+        "professor": "이 교수",
+        "course": "수학 기초"
+      },
+      "source": null,
+      "synthetic": true
+    },
+    {
+      "id": "c-db",
+      "text": "데이터베이스 과목은 1학기에 개설되는 2학점 과목이며 박 교수가 담당한다.",
+      "meta": {
+        "type": "course",
+        "semester": 1,
+        "credits": 2,
+        "professor": "박 교수",
+        "course": "데이터베이스"
+      },
+      "source": null,
+      "synthetic": true
+    },
+    {
+      "id": "c-web",
+      "text": "웹 프로그래밍 과목은 1학기에 개설되는 2학점 과목이며 이 교수가 담당한다.",
+      "meta": {
+        "type": "course",
+        "semester": 1,
+        "credits": 2,
+        "professor": "이 교수",
+        "course": "웹 프로그래밍"
+      },
+      "source": null,
+      "synthetic": true
+    },
+    {
+      "id": "f-305",
+      "text": "305호 실습실은 본관 3층에 있으며 GPU가 장착된 PC 30대가 있다.",
+      "meta": {
+        "type": "facility",
+        "room": "305",
+        "place": "305호"
+      },
+      "source": "dept-overview",
+      "synthetic": false
+    },
+    {
+      "id": "f-306",
+      "text": "306호 실습실은 본관 3층에 있으며 GPU가 장착된 PC 30대가 있다.",
+      "meta": {
+        "type": "facility",
+        "room": "306",
+        "place": "306호"
+      },
+      "source": "dept-overview",
+      "synthetic": false
+    },
+    {
+      "id": "f-hours",
+      "text": "실습실은 수업 시간 외에도 평일 오후 9시까지 개방된다.",
+      "meta": {
+        "type": "facility",
+        "place": "실습실",
+        "until": "21:00"
+      },
+      "source": "facility-rules",
+      "synthetic": false
+    },
+    {
+      "id": "f-weekend",
+      "text": "주말과 공휴일에는 이용일 이틀 전까지 학과 행정실에 신청한 학생만 실습실을 이용할 수 있다.",
+      "meta": {
+        "type": "facility",
+        "place": "실습실"
+      },
+      "source": "facility-rules",
+      "synthetic": false
+    },
+    {
+      "id": "f-gpu",
+      "text": "GPU 서버를 쓸 때는 공용 캘린더에 사용 시간을 등록해야 하며, 한 사람이 연속으로 사용할 수 있는 시간은 최대 12시간이다.",
+      "meta": {
+        "type": "facility",
+        "place": "GPU 서버",
+        "maxHours": 12
+      },
+      "source": "facility-rules",
+      "synthetic": false
+    },
+    {
+      "id": "f-food",
+      "text": "실습실 안에서는 음료를 포함한 모든 음식물 섭취가 금지된다.",
+      "meta": {
+        "type": "facility",
+        "place": "실습실"
+      },
+      "source": "facility-rules",
+      "synthetic": false
+    },
+    {
+      "id": "s-merit",
+      "text": "성적 우수 장학금은 직전 학기 평균 평점이 4.0 이상인 학생에게 수업료의 50%를 지급한다.",
+      "meta": {
+        "type": "scholarship",
+        "kind": "성적 우수",
+        "condition": "평점 4.0 이상",
+        "amount": "수업료의 50%"
+      },
+      "source": "broken-scan",
+      "synthetic": false
+    },
+    {
+      "id": "s-need",
+      "text": "가계 곤란 장학금은 소득 분위 3분위 이하 학생이 대상이며, 매 학기 개강 후 2주 이내에 신청한다.",
+      "meta": {
+        "type": "scholarship",
+        "kind": "가계 곤란",
+        "condition": "소득 3분위 이하",
+        "amount": null
+      },
+      "source": "broken-scan",
+      "synthetic": false
+    },
+    {
+      "id": "s-work",
+      "text": "근로 장학생은 학과 행정실 업무를 주 10시간 이내로 보조하고 시간당 장학금을 받는다.",
+      "meta": {
+        "type": "scholarship",
+        "kind": "근로",
+        "condition": "주 10시간 이내 업무 보조",
+        "amount": "시간당 지급"
+      },
+      "source": "broken-scan",
+      "synthetic": false
+    }
+  ],
+  "questions": [
+    {
+      "id": "p1",
+      "label": "화요일 305호",
+      "q": "화요일에 305호에서 하는 수업은?",
+      "kind": "조건",
+      "gold": {
+        "query": "",
+        "intent": "list",
+        "filter": {
+          "type": "timetable",
+          "day": "화",
+          "room": "305"
+        }
+      },
+      "note": "요일과 강의실이 동시에 맞아야 한다. 순수 검색은 “305호”나 “요일”이 겹치는 다른 행도 올린다.",
+      "answers": [
+        "t2-tue-1",
+        "t1-tue-4"
+      ]
+    },
+    {
+      "id": "p2",
+      "label": "2학기 305호 개수",
+      "q": "2학기에 305호에서 하는 수업은 몇 개야?",
+      "kind": "개수",
+      "gold": {
+        "query": "",
+        "intent": "count",
+        "filter": {
+          "type": "timetable",
+          "semester": 2,
+          "room": "305"
+        }
+      },
+      "note": "개수는 조건을 만족하는 전체 집합이 있어야 셀 수 있다. top-k는 항상 k개를 돌려준다.",
+      "answers": [
+        "t2-mon-1",
+        "t2-tue-1",
+        "t2-thu-1",
+        "t2-fri-1"
+      ]
+    },
+    {
+      "id": "p3",
+      "label": "이 교수 담당 모두",
+      "q": "이 교수가 담당하는 과목을 모두 알려줘",
+      "kind": "목록",
+      "gold": {
+        "query": "",
+        "intent": "list",
+        "filter": {
+          "type": "course",
+          "professor": "이 교수"
+        }
+      },
+      "note": "정답이 4개라 k=3이면 순수 검색은 재현율이 0.75를 넘을 수 없다.",
+      "answers": [
+        "c-nlp",
+        "c-cert",
+        "c-math",
+        "c-web"
+      ]
+    },
+    {
+      "id": "p4",
+      "label": "2학기 3학점 과목",
+      "q": "2학기 3학점 과목만 보여줘",
+      "kind": "목록",
+      "gold": {
+        "query": "",
+        "intent": "list",
+        "filter": {
+          "type": "course",
+          "semester": 2,
+          "credits": 3
+        }
+      },
+      "note": "“3학점”은 여러 과목 문장에 똑같이 들어 있어 단어 겹침으로는 학기를 구분하지 못한다.",
+      "answers": [
+        "c-rag",
+        "c-dl",
+        "c-nlp"
+      ]
+    },
+    {
+      "id": "p5",
+      "label": "⚠ 2학기 오전 (모호)",
+      "q": "2학기 오전 수업은?",
+      "kind": "범위",
+      "gold": {
+        "query": "",
+        "intent": "list",
+        "filter": {
+          "type": "timetable",
+          "semester": 2,
+          "periodStart": {
+            "lte": 3
+          }
+        }
+      },
+      "note": "“오전 수업”이 오전에 끝나는 수업인지, 오전에 걸쳐 있는 수업인지 모호하다. 여기서는 “오전에 걸쳐 있는 수업”을 정답으로 정했다(수요일 1~6교시 현장 실습 포함).",
+      "answers": [
+        "t2-mon-1",
+        "t2-tue-1",
+        "t2-wed-1",
+        "t2-thu-1",
+        "t2-fri-1"
+      ]
+    },
+    {
+      "id": "p6",
+      "label": "⚠ 306호 말고 305호",
+      "q": "306호 말고 305호에서 하는 2학기 수업은?",
+      "kind": "조건",
+      "gold": {
+        "query": "",
+        "intent": "list",
+        "filter": {
+          "type": "timetable",
+          "semester": 2,
+          "room": "305"
+        }
+      },
+      "note": "부정 표현(“말고”)을 규칙 파서가 이해하지 못하면 필터가 정반대가 된다.",
+      "answers": [
+        "t2-mon-1",
+        "t2-tue-1",
+        "t2-thu-1",
+        "t2-fri-1"
+      ]
+    },
+    {
+      "id": "p7",
+      "label": "⚠ 빈 결과",
+      "q": "목요일 305호 조 교수 수업은?",
+      "kind": "조건",
+      "gold": {
+        "query": "",
+        "intent": "list",
+        "filter": {
+          "type": "timetable",
+          "day": "목",
+          "room": "305",
+          "professor": "조 교수"
+        }
+      },
+      "note": "조건을 모두 만족하는 수업은 없다. 정답은 “없다”이고, 조건을 완화한 결과는 정답이 아니라 참고 정보다.",
+      "answers": []
+    },
+    {
+      "id": "p8",
+      "label": "조건 없는 질문",
+      "q": "GPU 서버는 한 사람이 최대 몇 시간 쓸 수 있나?",
+      "kind": "유사도",
+      "gold": {
+        "query": "GPU 서버는 한 사람이 최대 몇 시간 쓸 수 있나",
+        "intent": "search",
+        "filter": {}
+      },
+      "note": "조건이 없는 질문이다. 필터가 비어 있으면 셀프 쿼리는 순수 검색과 같다. 정답은 GPU 규정 레코드 하나로 정했다.",
+      "answers": [
+        "f-gpu"
+      ]
+    }
+  ]
+}

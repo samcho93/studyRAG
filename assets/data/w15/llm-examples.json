@@ -1,0 +1,76 @@
+{
+  "version": 1,
+  "description": "응용 3 퀴즈 생성기용 수업 예시. 실제 모델 호출 기록이 아니라 LLM이 흔히 내는 실수를 재현하도록 손으로 작성한 출력이다(예시 응답 · 수업용 작성 예시). sources는 이 출력을 만들 때 모델에게 준 근거 청크 id(문서id#청크번호, 재귀 분할 200자)다. raw가 있으면 모델이 돌려준 원문 문자열이고, 없으면 output을 JSON으로 직렬화해 원문으로 쓴다.",
+  "chunk": { "strategy": "recursive", "size": 200, "overlap": 0 },
+  "sets": [
+    {
+      "id": "bad",
+      "label": "실패 예시 · 환각/정답 둘/인용 오류",
+      "query": "수료 요건 GPU 실습실 RRF 성적",
+      "sources": ["dept-overview#2", "facility-rules#1", "rag-hybrid#1", "course-rag-syllabus#2"],
+      "notes": {
+        "Q1": "정상 문항(비교용)",
+        "Q2": "환각: 정답 100이 근거 문장에 없다(근거는 60)",
+        "Q3": "오답 선택지 '팀 프로젝트 최종 발표 통과'도 근거 문장에 있어 정답이 둘이다",
+        "Q4": "인용 청크 오류: 인용한 문장은 dept-overview#2가 아니라 facility-rules#1에 있다",
+        "Q5": "Q1과 거의 같은 문항(중복)",
+        "Q6": "스키마 위반: 객관식인데 choices가 없고 citation.quote가 비어 있다"
+      },
+      "output": {
+        "items": [
+          {
+            "type": "mcq",
+            "question": "RAG 교과목 성적에서 팀 프로젝트가 차지하는 비율은?",
+            "answer": "40%",
+            "choices": ["25%", "40%", "50%", "60%"],
+            "citation": { "chunk": "course-rag-syllabus#2", "quote": "성적 평가는 주차별 실습 과제 30%, 중간 점검 20%, 팀 프로젝트 40%, 수업 참여 10%로 구성된다." }
+          },
+          {
+            "type": "mcq",
+            "question": "RRF 점수를 계산할 때 k는 보통 얼마를 쓰나?",
+            "answer": "100",
+            "choices": ["30", "50", "100", "120"],
+            "citation": { "chunk": "rag-hybrid#1", "quote": "RRF 점수는 각 결과 목록에서의 순위 r에 대해 1/(k+r)을 더한 값이며, k는 보통 60을 쓴다." }
+          },
+          {
+            "type": "mcq",
+            "question": "다음 중 수료 요건에 해당하는 것은?",
+            "answer": "출석률 80% 이상",
+            "choices": ["출석률 80% 이상", "팀 프로젝트 최종 발표 통과", "산업기사 자격 취득", "중간 점검 통과"],
+            "citation": { "chunk": "dept-overview#2", "quote": "수료 요건은 출석률 80% 이상과 팀 프로젝트 최종 발표 통과다." }
+          },
+          {
+            "type": "mcq",
+            "question": "GPU 서버를 한 사람이 연속으로 사용할 수 있는 최대 시간은?",
+            "answer": "12시간",
+            "choices": ["6시간", "12시간", "24시간", "48시간"],
+            "citation": { "chunk": "dept-overview#2", "quote": "한 사람이 연속으로 사용할 수 있는 시간은 최대 12시간이다." }
+          },
+          {
+            "type": "mcq",
+            "question": "RAG 교과목 성적 중 팀 프로젝트가 차지하는 비율은?",
+            "answer": "40%",
+            "choices": ["35%", "40%", "45%", "70%"],
+            "citation": { "chunk": "course-rag-syllabus#2", "quote": "성적 평가는 주차별 실습 과제 30%, 중간 점검 20%, 팀 프로젝트 40%, 수업 참여 10%로 구성된다." }
+          },
+          {
+            "type": "mcq",
+            "question": "실습실 PC에는 무엇이 장착되어 있나?",
+            "answer": "GPU",
+            "citation": { "chunk": "dept-overview#2", "quote": "" }
+          }
+        ]
+      }
+    },
+    {
+      "id": "broken-json",
+      "label": "실패 예시 · JSON 형식 오류",
+      "query": "청킹 오버랩",
+      "sources": ["rag-chunking#1", "rag-chunking#2"],
+      "notes": {
+        "all": "코드 펜스(```json)로 감싸고, 마지막 항목 뒤에 쉼표를 남겨 JSON.parse가 실패한다"
+      },
+      "raw": "```json\n{\n  \"items\": [\n    {\n      \"type\": \"mcq\",\n      \"question\": \"실무에서 오버랩으로 흔히 두는 비율은 청크 크기의 몇 %인가?\",\n      \"answer\": \"10~20%\",\n      \"choices\": [\"1~2%\", \"10~20%\", \"40~50%\", \"80~90%\"],\n      \"citation\": { \"chunk\": \"rag-chunking#2\", \"quote\": \"실무에서는 청크 크기의 10~20%를 오버랩으로 두는 경우가 많다.\" }\n    },\n  ]\n}\n```"
+    }
+  ]
+}

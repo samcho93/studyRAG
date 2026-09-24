@@ -1,0 +1,598 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>응용 2 조건 검색 · 교사용 · RAG Lab</title>
+  <meta name="description" content="응용 2 조건 검색 교사용 슬라이드: 메타데이터 필터와 셀프 쿼리 강의 흐름, 교사 노트, Challenge 정답, 자주 막히는 지점, 토론 주제, 평가 루브릭.">
+  <script>try{var t=JSON.parse(localStorage.getItem('raglab:theme'));if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+  <link rel="stylesheet" crossorigin="anonymous" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&display=swap">
+  <link rel="stylesheet" href="../../assets/css/tokens.css">
+  <link rel="stylesheet" href="../../assets/css/base.css">
+  <link rel="stylesheet" href="../../assets/css/components.css">
+  <link rel="stylesheet" href="../../assets/css/slides.css">
+  <link rel="stylesheet" href="../../assets/css/w14.css">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%232450c4'/%3E%3Ccircle cx='14' cy='14' r='6' fill='none' stroke='white' stroke-width='3'/%3E%3Cpath d='M19 19l6 6' stroke='white' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E">
+  <script type="module" src="../../assets/js/site/site.js"></script>
+</head>
+<body>
+  <div class="layout" data-layout data-role="teacher" data-week="14" data-crumb="🧑‍🏫 교사용 › <b>응용 2 · 조건 검색</b>">
+    <main class="pane center" id="main">
+      <div class="slide-view" data-deck data-deck-title="응용 2 · 조건 검색">
+        <div class="deck-bar"><div class="deck-row" data-deck-controls></div></div>
+        <div class="deck-progress"><i></i></div>
+        <div class="deck-wrap">
+          <div class="deck-viewport">
+        <div class="deck-stage">
+
+          <!-- 1 -->
+          <section class="slide slide--title" data-title="표지">
+            <div class="kicker">검색증강생성(RAG) 시스템 구축 · 응용 실습 2</div>
+            <h1>조건 검색</h1>
+            <p>메타데이터 필터 · 셀프 쿼리</p>
+            <div class="deco" aria-hidden="true">🧮</div>
+            <aside class="notes">
+              <p><strong>오늘 흐름 (180분)</strong></p>
+              <table>
+                <tr><td>0:00–0:15</td><td>도입 · “화요일 305호 수업은?” 실패 보여 주기</td></tr>
+                <tr><td>0:15–0:55</td><td>조건 질문 유형 · 메타데이터 · 셀프 쿼리 · 사전/사후 필터</td></tr>
+                <tr><td>0:55–1:30</td><td>위젯 실습 + 관찰 질문 1~4</td></tr>
+                <tr><td>1:30–1:40</td><td>휴식</td></tr>
+                <tr><td>1:40–2:05</td><td>필터 실패·보안 · 관찰 질문 5~7</td></tr>
+                <tr><td>2:05–2:50</td><td>Challenge C1~C4 (C5는 과제)</td></tr>
+                <tr><td>2:50–3:00</td><td>정리 · 응용 3 예고</td></tr>
+              </table>
+              <p>LLM 키는 선택이다. 키가 없어도 규칙 파서와 예시 응답으로 전부 진행된다. T 키로 타이머를 시작한다.</p>
+            </aside>
+          </section>
+
+          <!-- 2 -->
+          <section class="slide" data-title="학습 목표">
+            <h2>오늘 할 수 있게 되는 것</h2>
+            <ol>
+              <li>유사도 질문과 조건 질문(개수 · 목록 · 범위)을 구별한다</li>
+              <li>질문을 <strong>필터 + 검색어</strong>로 나누는 셀프 쿼리를 만들고 스키마로 검증한다</li>
+              <li>사전/사후 필터와 빈 결과 완화를 정밀도 · 재현율로 비교한다</li>
+            </ol>
+            <aside class="notes">
+              <p>응용 1의 챗봇은 “비슷한 문장 찾기”만 했다. 오늘은 “조건에 맞는 것 고르기”를 붙인다. 3주차(파싱으로 표 행 복원) · 6주차(선필터/후필터) · 9주차(정밀도/재현율)가 한곳에서 만난다고 예고한다.</p>
+            </aside>
+          </section>
+
+          <!-- 3 -->
+          <section class="slide" data-title="질문으로 시작">
+            <h2>“화요일에 305호에서 하는 수업은?”</h2>
+            <p class="muted">BM25 top-3</p>
+            <ol>
+              <li>✓ 1학기 <strong>화요일</strong> 4~6교시 데이터베이스 · 305호</li>
+              <li>✓ 2학기 <strong>화요일</strong> 1~3교시 RAG 시스템 구축 · 305호</li>
+              <li>✗ 2학기 <strong>목요일</strong> 1~3교시 MLOps · 305호</li>
+            </ol>
+            <p>→ 검색은 <strong>얼마나 비슷한가</strong>로 순위를 매길 뿐, 조건을 확인하지 않는다</p>
+            <aside class="notes">
+              <p><strong>발문:</strong> “3등은 왜 올라왔을까?” 기대 답: “305호에서”가 겹치고, 한글 bigram “요일”도 겹친다(BM25 점수 10.76 · 10.11 · 9.30, 코드 슬라이드에서 직접 실행).</p>
+              <p>LLM이 이 3개를 받으면 목요일 수업까지 답에 섞을 수 있다. “검색 실패는 생성으로 복구되지 않는다”를 다시 가리킨다.</p>
+            </aside>
+          </section>
+
+          <!-- 4 -->
+          <section class="slide" data-title="검색은 개수를 모른다">
+            <h2>검색은 개수를 모른다</h2>
+            <table>
+              <thead><tr><th>유형</th><th>예</th><th>순수 검색의 문제</th></tr></thead>
+              <tbody>
+                <tr><td>개수</td><td>2학기 305호 수업은 몇 개?</td><td>항상 k개를 돌려준다 (정답 4)</td></tr>
+                <tr><td>목록</td><td>이 교수 담당 과목 모두</td><td>정답 4개, k=3이면 재현율 ≤ 0.75</td></tr>
+                <tr><td>범위</td><td>오전 수업 · 3학점 이상</td><td>숫자의 크고 작음을 모른다</td></tr>
+                <tr><td>유사도</td><td>GPU를 오래 써도 되나?</td><td>문제없음 — 필터가 필요 없다</td></tr>
+              </tbody>
+            </table>
+            <aside class="notes">
+              <p><strong>발문:</strong> “top-5로 올리면 ‘몇 개?’에 답할 수 있나?” → 5개를 돌려줄 뿐이다. 개수는 k가 정하지 데이터가 정하지 않는다.</p>
+              <p>마지막 줄을 꼭 짚는다. 모든 질문에 필터가 필요한 것은 아니다. 위젯의 “조건 없는 질문” 프리셋이 그 예다.</p>
+            </aside>
+          </section>
+
+          <!-- 5 -->
+          <section class="slide" data-title="메타데이터와 스키마">
+            <h2>메타데이터: 청킹 때 붙이는 속성</h2>
+            <div class="cols">
+              <div>
+                <pre><code>text: "2학기 화요일 1~3교시에는
+  RAG 시스템 구축 수업이
+  305호에서 열린다. …"
+meta: { type: "timetable",
+  semester: 2, day: "화",
+  periodStart: 1, periodEnd: 3,
+  room: "305",
+  professor: "조 교수" }</code></pre>
+              </div>
+              <div>
+                <p><strong>스키마 설계 원칙</strong></p>
+                <ul>
+                  <li>질문에 나오는 조건 = 필드</li>
+                  <li>값 정규화: “305호” → <code>"305"</code></li>
+                  <li>구간은 두 숫자로: 시작 · 끝 교시</li>
+                  <li>모호한 말은 정의를 적는다 (오전 = 1~3교시)</li>
+                </ul>
+              </div>
+            </div>
+            <aside class="notes">
+              <p><code>text</code>는 검색에, <code>meta</code>는 필터에 쓴다. 이 레코드는 3주차의 깨진 시간표를 행 단위로 복원한 결과다. 파싱에서 행 구조를 잃으면 메타데이터를 붙일 수 없다.</p>
+              <p>데이터 37개 중 1학기 시간표와 RAG 외 과목의 학점·담당은 <strong>가상 데이터</strong>(<code>synthetic: true</code>)라고 반드시 밝힌다. 학생이 실제 학사 정보로 오해하지 않게 한다.</p>
+              <p><strong>발문:</strong> “교시를 ‘1-3’ 문자열 하나로 저장하면 무엇을 못 하나?” → 범위 비교.</p>
+            </aside>
+          </section>
+
+          <!-- 6 -->
+          <section class="slide" data-title="셀프 쿼리">
+            <h2>셀프 쿼리: 질문 → 필터 + 검색어</h2>
+            <pre><code>"2학기에 305호에서 하는 수업은 몇 개야?"
+→ { "query": "", "intent": "count",
+    "filter": { "type": "timetable", "semester": 2, "room": "305" } }</code></pre>
+            <table>
+              <thead><tr><th></th><th>규칙 파서</th><th>LLM 파서</th></tr></thead>
+              <tbody>
+                <tr><td>장점</td><td>투명 · 무료 · 즉시</td><td>다양한 표현을 이해</td></tr>
+                <tr><td>약점</td><td>부정 · 모호한 표현</td><td>없는 필드 · 틀린 값을 지어냄</td></tr>
+                <tr><td>필수</td><td colspan="2"><strong>스키마 검증 후 실행</strong></td></tr>
+              </tbody>
+            </table>
+            <aside class="notes">
+              <p>intent가 중요하다. list/count는 top-k로 자르지 않고 필터 결과를 전부 쓴다. search만 top-k다.</p>
+              <p>LangChain의 SelfQueryRetriever가 이 구조의 대표 구현이다(LLM이 filter + query를 만든다). 오늘은 프레임워크 없이 원리를 직접 본다.</p>
+            </aside>
+          </section>
+
+          <!-- 7 -->
+          <section class="slide" data-title="사전 vs 사후 필터">
+            <h2>사전 필터 vs 사후 필터 <span class="muted">(6주차 복습)</span></h2>
+            <table>
+              <thead><tr><th>k</th><th>사전 필터 (필터 → 검색)</th><th>사후 필터 (검색 → 필터)</th></tr></thead>
+              <tbody>
+                <tr><td>1</td><td>1개</td><td><strong>0개</strong></td></tr>
+                <tr><td>3</td><td>3개</td><td>2개</td></tr>
+                <tr><td>5</td><td>4개</td><td>4개</td></tr>
+              </tbody>
+            </table>
+            <p class="muted">질문 “2학기 305호 수업 시간표”, 필터 type=timetable · semester=2 · room=305 (정답 4개)</p>
+            <aside class="notes">
+              <p>숫자는 Challenge C3 정답을 Node로 실행한 실제 값이다. k=1이면 1위가 1학기 305호 수업이라 사후 필터가 0개를 남긴다.</p>
+              <p>6주차에서 “HNSW와 선필터를 섞으면 그래프 탐색이 끊긴다”고 했던 것을 상기시킨다. 레코드가 수십 개면 사전 필터가 간단하고 정확하다. 사후 필터를 쓸 수밖에 없으면 k를 넉넉히 키운다.</p>
+            </aside>
+          </section>
+
+          <!-- 8 -->
+          <section class="slide" data-title="필터가 실패할 때">
+            <h2>필터가 실패할 때</h2>
+            <ul>
+              <li><strong>빈 결과</strong> — “목요일 305호 조 교수 수업” → 정답은 <em>없다</em>. 완화(담당 → 강의실 → …)는 참고용이며 반드시 밝힌다</li>
+              <li><strong>틀린 필터</strong> — “306호 말고 305호” → 규칙 파서가 room=306 → 재현율 <strong>0</strong> (순수 검색 0.75보다 나쁨)</li>
+              <li><strong>모호한 필터</strong> — “오전 수업”: <code>periodEnd ≤ 3</code>이면 수요일 1~6교시 현장 실습이 빠진다 → 재현율 0.8</li>
+            </ul>
+            <aside class="notes">
+              <p><strong>발문:</strong> “틀린 필터와 필터 없음, 어느 쪽이 나은가?” → 틀린 필터가 더 나쁘다. 확신 없는 조건은 검색어에 남겨 두는 편이 안전하다.</p>
+              <p>빈 결과에서 챗봇이 “목요일 305호에서는 박 교수의 MLOps가 있다”라고만 답하면 조 교수 질문에 거짓 답을 한 셈이다. “조건에 맞는 수업은 없다. 대신 …”이 정직한 답이다.</p>
+            </aside>
+          </section>
+
+          <!-- 9 -->
+          <section class="slide" data-title="보안: 허용 목록 검증">
+            <h2>LLM이 만든 필터를 그대로 실행하지 않는다</h2>
+            <div class="cols">
+              <div>
+                <pre><code>{"filter": {
+  "$where": "1 == 1",
+  "credits": {"regex": "^3"},
+  "status": "개설",
+  "room": "305호" }}</code></pre>
+              </div>
+              <div>
+                <ul>
+                  <li>허용 <strong>필드</strong>만: 스키마의 8개</li>
+                  <li>허용 <strong>연산자</strong>만: eq · in · gte · lte</li>
+                  <li>허용 <strong>값</strong>만: enum · 정수 범위</li>
+                  <li>실패하면 실행하지 않는다</li>
+                  <li>권한 조건은 서버 코드가 덧붙인다</li>
+                </ul>
+              </div>
+            </div>
+            <aside class="notes">
+              <p>LLM 출력은 사용자 입력과 같은 급이다. 질문에 “필터에 $where를 넣어”라고 쓰면 LLM이 따라 할 수 있다. DB로 바로 넘기면 인젝션이다.</p>
+              <p>왼쪽 네 줄은 전부 거부된다(C4). “잘못된 부분만 빼고 실행”은 의도와 다른 조건이 걸려 위험하다는 점도 말한다.</p>
+            </aside>
+          </section>
+
+          <!-- 10 -->
+          <section class="slide slide--demo" data-title="데모: 조건 검색 · 셀프 쿼리">
+            <h2>데모 · 조건 검색 · 셀프 쿼리</h2>
+            <div id="deck-w14-widget"></div>
+            <aside class="notes">
+              <p><strong>시연 순서</strong> (결과는 오른쪽 실행 결과 창)</p>
+              <ol>
+                <li>“화요일 305호”: A에 빨간 ✗ MLOps(목요일). 판정 상자의 “어긴 조건: 요일=목”을 읽는다. B·C는 정확히 2개</li>
+                <li>“2학기 305호 개수”: k 슬라이더를 1→8로. A의 개수는 k를 따라가고 B의 “개수 답”은 4로 고정</li>
+                <li>“이 교수 담당 모두”: 필터 시점을 사후로 → 재현율 0.75. 사전으로 되돌린다</li>
+                <li>“⚠ 2학기 오전”: C의 “빠진 정답: t2-wed-1 현장 실습”. JSON의 <code>periodEnd</code>를 <code>periodStart</code>로 고쳐 즉시 1.00이 되는 것을 보인다</li>
+                <li>“⚠ 빈 결과”: C는 0개, B는 완화 결과. 완화 안내 문구를 읽는다</li>
+                <li>파서를 LLM으로 → “2학기 3학점 과목” 예시 응답이 <code>status</code> 필드로 검증 실패. “🛡 허용 안 된 필터 넣어 보기”도 누른다</li>
+              </ol>
+              <p>벡터 검색은 118MB라 수업 전에 한 번 받아 두거나 생략한다. BM25만으로 오늘 내용은 전부 된다.</p>
+            </aside>
+          </section>
+
+          <!-- 11 -->
+          <section class="slide" data-title="관찰 질문">
+            <h2>관찰 질문</h2>
+            <ol>
+              <li>순수 검색 top-3에서 조건을 어긴 레코드는? 어떤 조건을?</li>
+              <li>k를 바꾸면 A와 B의 개수는 각각 어떻게 변하나?</li>
+              <li>사후 필터로 바꾸면 “이 교수 담당 모두”의 재현율은?</li>
+              <li>“오전”의 두 해석은 결과가 어떻게 다른가?</li>
+              <li>“306호 말고 305호”에서 이긴 쪽은 셀프 쿼리인가 순수 검색인가?</li>
+              <li>빈 결과에 챗봇은 어떻게 답해야 정직한가?</li>
+              <li>LLM 예시 응답은 왜 검증에 실패했나?</li>
+            </ol>
+            <aside class="notes">
+              <p>1~4는 짝 활동 15분, 5~7은 휴식 후 전체 토론.</p>
+              <p>기대 답: 1) t2-thu-1, 요일=목 · 2) A는 k와 같고 B는 4 고정 · 3) 0.75 · 4) periodEnd ≤ 3은 4개, periodStart ≤ 3은 5개 · 5) 순수 검색(0.75 vs 0) · 6) “없다” + 완화 사실 공개 · 7) 스키마에 없는 <code>status</code> 필드.</p>
+            </aside>
+          </section>
+
+          <!-- 12 -->
+          <section class="slide" data-title="코드로 확인: 검색 vs 필터">
+            <h2>코드로 확인하기</h2>
+            <pre data-run="deck-filter" data-title="순수 검색 vs 필터"><code class="language-javascript">import { BM25 } from '/assets/js/core/bm25.js';
+const { records } = await (await fetch('/assets/data/w14/records.json')).json();
+const bm25 = new BM25().add(records.map((r) =&gt; ({ id: r.id, text: r.text })));
+const byId = new Map(records.map((r) =&gt; [r.id, r]));
+
+const q = '화요일에 305호에서 하는 수업은?';
+const filter = { type: 'timetable', day: '화', room: '305' };
+const pass = (r) =&gt; Object.entries(filter).every(([f, v]) =&gt; r.meta[f] === v);
+
+const pure = bm25.search(q, 3);
+console.log('순수 검색 top-3');
+for (const h of pure) console.log(pass(byId.get(h.id)) ? '  ✓' : '  ✗', h.id, h.score.toFixed(2));
+
+const exact = records.filter(pass);
+console.log(`필터만: ${exact.length}개 →`, exact.map((r) =&gt; `${r.meta.semester}학기 ${r.meta.course}`).join(', '));</code></pre>
+            <aside class="notes">
+              <p><strong>실행 결과:</strong> ✓ t1-tue-4 10.76 · ✓ t2-tue-1 10.11 · ✗ t2-thu-1 9.30 / 필터만: 2개 → 2학기 RAG 시스템 구축, 1학기 데이터베이스.</p>
+              <p>질문을 “2학기 화요일 305호 수업은?”으로 바꿔 다시 실행해 보인다. 필터에 <code>semester: 2</code>를 추가하면 1개로 줄어든다.</p>
+            </aside>
+          </section>
+
+          <!-- 13 -->
+          <section class="slide" data-title="Challenge 안내">
+            <h2>Challenge</h2>
+            <table>
+              <tbody>
+                <tr><td>C1 ★</td><td>규칙 파서 만들기 (요일 · 강의실 · 학기 · 교수 · 교시)</td></tr>
+                <tr><td>C2 ★★</td><td>필터 적용하기 (eq · in · gte · lte)</td></tr>
+                <tr><td>C3 ★★</td><td>사전 필터 + BM25 vs 사후 필터</td></tr>
+                <tr><td>C4 ★★★</td><td>LLM이 만든 필터 JSON 검증 (허용 목록)</td></tr>
+                <tr><td>C5 ★★★★</td><td>순수 검색 vs 셀프 쿼리 점수표 (과제)</td></tr>
+              </tbody>
+            </table>
+            <p class="muted">모델 · LLM 없이 records.json과 core/bm25.js만 쓴다</p>
+            <aside class="notes">
+              <p>C1~C3은 수업 중에 끝낸다. C4는 보안 관점이 핵심이라 모두가 시도하게 한다. C5는 과제로 내고 “셀프 쿼리가 더 나쁜 질문과 그 이유”를 한 문단으로 쓰게 한다. 정답은 부록 B.</p>
+            </aside>
+          </section>
+
+          <!-- 14 -->
+          <section class="slide" data-title="정리 & 다음 실습">
+            <h2>정리</h2>
+            <ul>
+              <li>조건 질문(개수 · 목록 · 범위)은 <strong>필터</strong>로, 나머지만 검색으로</li>
+              <li>메타데이터는 파싱 · 청킹 때 붙인다. 스키마가 필터의 한계를 정한다</li>
+              <li>LLM 필터는 <strong>허용 목록으로 검증한 뒤</strong> 실행한다</li>
+              <li>빈 결과는 “없다”, 완화는 밝히고, 틀린 필터는 검색보다 나쁘다</li>
+            </ul>
+            <h3>다음 실습 · 응용 3 · RAG 퀴즈 생성기</h3>
+            <p class="muted">검색한 근거로 퀴즈를 만들고, 정답이 정말 근거 안에 있는지 자동으로 검증한다</p>
+            <aside class="notes">
+              <p>응용 3도 LLM 키는 선택이다. 오늘 C4에서 한 “LLM 출력을 믿지 않고 검증한다”가 응용 3의 자동 검증으로 이어진다고 연결한다.</p>
+            </aside>
+          </section>
+
+          <!-- Appendix -->
+          <section class="slide" data-title="부록 A · 강의안" data-appendix>
+            <h2>부록 A · 강의안</h2>
+            <table>
+              <thead><tr><th>시간</th><th>활동</th><th>산출물</th></tr></thead>
+              <tbody>
+                <tr><td>15분</td><td>도입 · 순수 검색 실패 시연</td><td>—</td></tr>
+                <tr><td>40분</td><td>조건 질문 · 메타데이터 · 셀프 쿼리 · 사전/사후 필터</td><td>스키마 설계 1문제</td></tr>
+                <tr><td>35분</td><td>위젯 실습 · 관찰 1~4</td><td>짝 활동 메모</td></tr>
+                <tr><td>10분</td><td>휴식</td><td>—</td></tr>
+                <tr><td>25분</td><td>필터 실패 · 보안 · 관찰 5~7</td><td>—</td></tr>
+                <tr><td>45분</td><td>Challenge C1~C4</td><td>C4 출력 캡처</td></tr>
+                <tr><td>10분</td><td>정리 · 응용 3 예고</td><td>C5 과제 안내</td></tr>
+              </tbody>
+            </table>
+          </section>
+
+          <section class="slide" data-title="부록 B · C1 정답" data-appendix>
+            <h2>부록 B · C1 정답</h2>
+            <pre data-run="ans-c1" data-title="C1 정답"><code class="language-javascript">function parseSimple(q) {
+  const filter = {};
+  const sem = q.match(/([12])\s*학기/);
+  if (sem) filter.semester = Number(sem[1]);
+  const day = q.match(/([월화수목금])요일/);
+  if (day) filter.day = day[1];
+  const room = q.match(/(\d{3})\s*호/);
+  if (room) filter.room = room[1];
+  const prof = q.match(/([김이박조최])\s*교수/);
+  if (prof) filter.professor = `${prof[1]} 교수`;
+  const range = q.match(/(\d)\s*[-~]\s*(\d)\s*교시/);
+  if (range) {
+    filter.periodStart = { gte: Number(range[1]) };
+    filter.periodEnd = { lte: Number(range[2]) };
+  }
+  return filter;
+}
+
+for (const q of [
+  '화요일에 305호에서 하는 수업은?',
+  '2학기 목요일 1-3교시 수업',
+  '이 교수가 담당하는 수업',
+  '306호 말고 305호에서 하는 수업',
+]) console.log(q, '→', JSON.stringify(parseSimple(q)));</code></pre>
+            <aside class="notes">
+              <p><strong>실행 결과:</strong></p>
+              <ul>
+                <li>화요일에 305호에서 하는 수업은? → <code>{"day":"화","room":"305"}</code></li>
+                <li>2학기 목요일 1-3교시 수업 → <code>{"semester":2,"day":"목","periodStart":{"gte":1},"periodEnd":{"lte":3}}</code></li>
+                <li>이 교수가 담당하는 수업 → <code>{"professor":"이 교수"}</code></li>
+                <li>306호 말고 305호에서 하는 수업 → <code>{"room":"306"}</code> ← 틀림</li>
+              </ul>
+              <p><strong>왜:</strong> <code>match</code>는 처음 일치만 찾는다. 부정(“말고”)을 처리하려면 “N호 말고”를 먼저 지우는 규칙이 필요하지만, 표현(“빼고”, “아닌”, “제외”)이 끝없이 늘어난다. 이것이 LLM 파서를 쓰는 이유다. room을 숫자가 아니라 문자열로 두는 이유(“외부 산업체” 같은 값)도 짚는다.</p>
+            </aside>
+          </section>
+
+          <section class="slide" data-title="부록 B · C2 정답" data-appendix>
+            <h2>부록 B · C2 정답</h2>
+            <pre data-run="ans-c2" data-title="C2 정답"><code class="language-javascript">const { records } = await (await fetch('/assets/data/w14/records.json')).json();
+
+function matchCond(value, cond) {
+  if (cond !== null &amp;&amp; typeof cond === 'object') {
+    if ('in' in cond &amp;&amp; !cond.in.includes(value)) return false;
+    if ('gte' in cond &amp;&amp; !(typeof value === 'number' &amp;&amp; value &gt;= cond.gte)) return false;
+    if ('lte' in cond &amp;&amp; !(typeof value === 'number' &amp;&amp; value &lt;= cond.lte)) return false;
+    return true;
+  }
+  return value === cond; // eq
+}
+const applyFilter = (recs, filter) =&gt;
+  recs.filter((r) =&gt; Object.entries(filter).every(([field, cond]) =&gt; matchCond(r.meta[field], cond)));
+
+const tests = {
+  '화요일 305호': { type: 'timetable', day: '화', room: '305' },
+  '2학기 월·수 수업': { type: 'timetable', semester: 2, day: { in: ['월', '수'] } },
+  '3학점 이상 과목': { type: 'course', credits: { gte: 3 } },
+  '2학기 오전에 걸친 수업': { type: 'timetable', semester: 2, periodStart: { lte: 3 } },
+};
+for (const [name, f] of Object.entries(tests)) {
+  const hit = applyFilter(records, f);
+  console.log(`${name}: ${hit.length}개`, hit.map((r) =&gt; r.meta.course).join(', '));
+}</code></pre>
+            <aside class="notes">
+              <p><strong>실행 결과:</strong> 화요일 305호 2개(RAG 시스템 구축, 데이터베이스) · 2학기 월·수 3개(딥러닝, 자연어 처리, 현장 실습) · 3학점 이상 과목 7개(RAG, 딥러닝, 자연어 처리, 현장 실습, 파이썬 프로그래밍, 데이터 분석, 머신러닝 기초) · 2학기 오전에 걸친 수업 5개(딥러닝, RAG, 현장 실습, MLOps, 캡스톤 멘토링).</p>
+              <p><strong>왜:</strong> 범위 연산에서 <code>typeof value === 'number'</code>를 검사해야 필드가 없는 레코드(<code>undefined</code>)가 비교에서 이상하게 통과하지 않는다. 필드가 없는 레코드는 조건을 만족하지 않는 것으로 본다.</p>
+            </aside>
+          </section>
+
+          <section class="slide" data-title="부록 B · C3 정답" data-appendix>
+            <h2>부록 B · C3 정답</h2>
+            <pre data-run="ans-c3" data-title="C3 정답"><code class="language-javascript">import { BM25 } from '/assets/js/core/bm25.js';
+const { records } = await (await fetch('/assets/data/w14/records.json')).json();
+const bm25 = new BM25().add(records.map((r) =&gt; ({ id: r.id, text: r.text })));
+const byId = new Map(records.map((r) =&gt; [r.id, r]));
+
+const question = '2학기 305호 수업 시간표';
+const filter = { type: 'timetable', semester: 2, room: '305' };
+const ok = (r) =&gt; Object.entries(filter).every(([f, v]) =&gt; r.meta[f] === v);
+
+function preFilter(q, k) {
+  // rank all, keep only records that pass the filter, then cut to k
+  return bm25.search(q, records.length).filter((h) =&gt; ok(byId.get(h.id))).slice(0, k).map((h) =&gt; h.id);
+}
+function postFilter(q, k) {
+  // cut to k first, then filter — may return fewer than k
+  return bm25.search(q, k).filter((h) =&gt; ok(byId.get(h.id))).map((h) =&gt; h.id);
+}
+
+const rows = [];
+for (const k of [1, 3, 5, 8]) {
+  const pre = preFilter(question, k);
+  const post = postFilter(question, k);
+  rows.push({ k, pre: pre.length, post: post.length, preIds: pre.join(' '), postIds: post.join(' ') });
+}
+console.table(rows);</code></pre>
+            <aside class="notes">
+              <p><strong>실행 결과:</strong> k=1 → pre 1 (t2-thu-1) / post 0 · k=3 → pre 3 / post 2 (t2-thu-1, t2-mon-1) · k=5 → 4 / 4 · k=8 → 4 / 4.</p>
+              <p><strong>왜:</strong> 사후 필터는 top-k 안에 1학기 305호 수업이 섞이면 그만큼 잃는다. 조건에 맞는 것이 4개뿐이라 사전 필터도 k=5부터 4개에서 멈춘다(“k개를 채운다”는 조건에 맞는 것이 충분할 때만).</p>
+            </aside>
+          </section>
+
+          <section class="slide" data-title="부록 B · C4 정답" data-appendix>
+            <h2>부록 B · C4 정답</h2>
+            <pre data-run="ans-c4" data-title="C4 정답"><code class="language-javascript">const { schema } = await (await fetch('/assets/data/w14/records.json')).json();
+const OPS = ['eq', 'in', 'gte', 'lte'];
+
+function validate(obj) {
+  const errors = [];
+  if (!obj || typeof obj !== 'object' || Array.isArray(obj)) return ['객체가 아니다'];
+  for (const key of Object.keys(obj)) if (!['query', 'intent', 'filter'].includes(key)) errors.push(`최상위 키 거부: ${key}`);
+  if (obj.intent !== undefined &amp;&amp; !['search', 'list', 'count'].includes(obj.intent)) errors.push(`intent 거부: ${obj.intent}`);
+  const filter = obj.filter ?? {};
+  const checkValue = (field, spec, v) =&gt; {
+    if (spec.kind === 'enum' &amp;&amp; !spec.values.includes(v)) errors.push(`${field}: 허용 값 아님 ${JSON.stringify(v)}`);
+    if (spec.kind === 'int' &amp;&amp; (!Number.isInteger(v) || v &lt; spec.min || v &gt; spec.max)) errors.push(`${field}: 범위 밖 ${JSON.stringify(v)}`);
+  };
+  for (const [field, cond] of Object.entries(filter)) {
+    const spec = schema[field];
+    if (!spec) { errors.push(`필드 거부: ${field}`); continue; }
+    if (cond !== null &amp;&amp; typeof cond === 'object' &amp;&amp; !Array.isArray(cond)) {
+      for (const [op, v] of Object.entries(cond)) {
+        if (!OPS.includes(op)) errors.push(`${field}: 연산자 거부 ${op}`);
+        else if (op === 'in') Array.isArray(v) &amp;&amp; v.length ? v.forEach((x) =&gt; checkValue(field, spec, x)) : errors.push(`${field}: in은 배열`);
+        else if ((op === 'gte' || op === 'lte') &amp;&amp; spec.kind !== 'int') errors.push(`${field}: ${op}는 숫자 필드만`);
+        else checkValue(field, spec, v);
+      }
+    } else if (Array.isArray(cond)) errors.push(`${field}: 배열은 {"in": [...]}로`);
+    else checkValue(field, spec, cond);
+  }
+  return errors;
+}
+
+const llmOutputs = [
+  '{"query": "", "intent": "list", "filter": {"type": "timetable", "day": "화", "room": "305"}}',
+  '{"query": "", "intent": "list", "filter": {"type": "course", "semester": 2, "credits": 3, "status": "개설"}}',
+  '{"query": "", "filter": {"room": "305호"}}',
+  '{"filter": {"$where": "1 == 1"}}',
+  '{"filter": {"credits": {"regex": "^3"}}, "intent": "delete"}',
+  '{"filter": {"day": {"in": ["월", "수"]}, "periodStart": {"lte": 3}}}',
+  '다음은 요청한 JSON이다: {"filter": {"semester": 2}}',
+];
+for (const text of llmOutputs) {
+  let obj;
+  try {
+    obj = JSON.parse(text);
+  } catch {
+    console.log('✗ JSON 아님 →', text.slice(0, 30));
+    continue;
+  }
+  const errors = validate(obj);
+  console.log(errors.length ? '✗' : '✓', text, errors.length ? '→ ' + errors.join(' / ') : '');
+}</code></pre>
+            <aside class="notes">
+              <p><strong>실행 결과:</strong> ✓ 1번(화요일 305호) · ✗ status 필드 거부 · ✗ room “305호” 허용 값 아님 · ✗ $where 필드 거부 · ✗ intent “delete” 거부 + regex 연산자 거부 · ✓ 6번(day in + periodStart lte) · ✗ JSON 아님(설명 문장이 앞에 붙음).</p>
+              <p><strong>왜:</strong> 차단 목록(“$where 금지”)이 아니라 허용 목록으로 검사해야 처음 보는 공격도 막힌다. 마지막 응답은 위젯처럼 첫 <code>{</code>~마지막 <code>}</code>를 잘라 다시 파싱하는 방법도 있지만, 잘라낸 뒤에도 반드시 같은 검증을 거친다.</p>
+            </aside>
+          </section>
+
+          <section class="slide" data-title="부록 B · C5 정답" data-appendix>
+            <h2>부록 B · C5 정답</h2>
+            <pre data-run="ans-c5" data-title="C5 정답"><code class="language-javascript">import { BM25 } from '/assets/js/core/bm25.js';
+const { records, questions } = await (await fetch('/assets/data/w14/records.json')).json();
+const bm25 = new BM25().add(records.map((r) =&gt; ({ id: r.id, text: r.text })));
+const K = 3;
+
+// Rule-parser output for each preset question (the widget's parser, copied as data).
+const PARSED = {
+  p1: { intent: 'list', filter: { type: 'timetable', day: '화', room: '305' } },
+  p2: { intent: 'count', filter: { type: 'timetable', semester: 2, room: '305' } },
+  p3: { intent: 'list', filter: { type: 'course', professor: '이 교수' } },
+  p4: { intent: 'list', filter: { type: 'course', semester: 2, credits: 3 } },
+  p5: { intent: 'list', filter: { type: 'timetable', semester: 2, periodEnd: { lte: 3 } } }, // 오전 → 끝나는 시각으로 해석
+  p6: { intent: 'search', query: '305호에서', filter: { type: 'timetable', semester: 2, room: '306' } }, // 부정 실패
+  p7: { intent: 'list', filter: { type: 'timetable', day: '목', room: '305', professor: '조 교수' } },
+  p8: { intent: 'search', query: 'GPU 서버는 한 사람이 최대 시간 쓸 수', filter: {} },
+};
+
+const matchCond = (v, c) =&gt;
+  c !== null &amp;&amp; typeof c === 'object'
+    ? (!('in' in c) || c.in.includes(v)) &amp;&amp; (!('gte' in c) || v &gt;= c.gte) &amp;&amp; (!('lte' in c) || v &lt;= c.lte)
+    : v === c;
+const pass = (r, f) =&gt; Object.entries(f).every(([k, c]) =&gt; matchCond(r.meta[k], c));
+
+function selfQuery(q, p) {
+  const allowed = records.filter((r) =&gt; pass(r, p.filter));
+  const allowedIds = new Set(allowed.map((r) =&gt; r.id));
+  if (p.intent !== 'search' &amp;&amp; Object.keys(p.filter).length) return allowed.map((r) =&gt; r.id); // list/count: no top-k cut
+  return bm25.search(p.query || q, records.length).filter((h) =&gt; allowedIds.has(h.id)).slice(0, K).map((h) =&gt; h.id);
+}
+
+function pr(retrieved, gold) {
+  const g = new Set(gold);
+  const hits = retrieved.filter((id) =&gt; g.has(id)).length;
+  if (g.size === 0) return { p: retrieved.length ? 0 : 1, r: null };
+  return { p: retrieved.length ? hits / retrieved.length : 0, r: hits / g.size };
+}
+
+const rows = [];
+for (const item of questions) {
+  const pure = bm25.search(item.q, K).map((h) =&gt; h.id);
+  const sq = selfQuery(item.q, PARSED[item.id]);
+  const a = pr(pure, item.answers);
+  const b = pr(sq, item.answers);
+  rows.push({ id: item.id, gold: item.answers.length, pureP: a.p, pureR: a.r, sqN: sq.length, sqP: b.p, sqR: b.r });
+}
+const f2 = (v) =&gt; (v === null ? '—' : v.toFixed(2));
+console.table(rows.map((r) =&gt; ({ ...r, pureP: f2(r.pureP), pureR: f2(r.pureR), sqP: f2(r.sqP), sqR: f2(r.sqR) })));
+const mean = (key) =&gt; {
+  const vals = rows.map((r) =&gt; r[key]).filter((v) =&gt; v !== null);
+  return (vals.reduce((s, v) =&gt; s + v, 0) / vals.length).toFixed(3);
+};
+console.log(`평균 정밀도  순수 ${mean('pureP')}  셀프 쿼리 ${mean('sqP')}`);
+console.log(`평균 재현율  순수 ${mean('pureR')}  셀프 쿼리 ${mean('sqR')}  (p7은 정답이 없어 재현율 평균에서 뺀다)`);</code></pre>
+            <aside class="notes">
+              <p><strong>실행 결과 (K=3):</strong> 순수 P/R → p1 0.67/1.00 · p2 1.00/0.75 · p3 1.00/0.75 · p4 0.67/0.67 · p5 1.00/0.60 · p6 1.00/0.75 · p7 0.00/— · p8 0.33/1.00. 셀프 쿼리 → p1~p4 1.00/1.00 · p5 1.00/0.80 · <strong>p6 0.00/0.00</strong> · p7 1.00/— · p8 0.33/1.00.</p>
+              <p>평균 정밀도 순수 0.708 vs 셀프 쿼리 0.792 · 평균 재현율 0.788 vs 0.829 (p7 제외).</p>
+              <p><strong>해석:</strong> 파서가 맞으면 셀프 쿼리가 완승하지만, p6 한 문항의 틀린 필터가 평균을 크게 깎는다. p8은 필터가 없어 둘이 같다. “셀프 쿼리 = 무조건 좋음”이 아니라 “파서 품질이 곧 검색 품질”이라는 결론을 끌어낸다.</p>
+            </aside>
+          </section>
+
+          <section class="slide" data-title="부록 C · 자주 막히는 지점" data-appendix>
+            <h2>부록 C · 학생이 자주 막히는 지점</h2>
+            <table>
+              <thead><tr><th>증상</th><th>원인</th><th>대응</th></tr></thead>
+              <tbody>
+                <tr><td>room 필터가 하나도 안 맞는다</td><td><code>305</code>(숫자)로 비교</td><td>스키마 값은 문자열 <code>"305"</code></td></tr>
+                <tr><td>“2학기” 필터가 1학기도 통과</td><td><code>'2' == 2</code> 느슨한 비교 습관</td><td>항상 <code>===</code>, 파서에서 Number()</td></tr>
+                <tr><td>범위 조건에 과목 레코드도 통과</td><td><code>undefined &lt;= 3</code> 처리 누락</td><td>숫자인지 먼저 검사</td></tr>
+                <tr><td>C3 post가 pre보다 많다</td><td>post에서 search(q, 전체)</td><td>post는 search(q, k) 후 거른다</td></tr>
+                <tr><td>C4에서 $where가 통과</td><td>차단 목록으로 검사</td><td>스키마에 없으면 전부 거부</td></tr>
+                <tr><td>“가상 데이터가 실제 시간표냐”</td><td>synthetic 표시를 못 봄</td><td>레코드 표의 “가상” 열을 보여 준다</td></tr>
+              </tbody>
+            </table>
+          </section>
+
+          <section class="slide" data-title="부록 D · 토론 주제" data-appendix>
+            <h2>부록 D · 토론 주제</h2>
+            <ol>
+              <li>“오전 수업”처럼 모호한 조건은 파서가 정해야 하나, 사용자에게 되물어야 하나?</li>
+              <li>빈 결과에서 조건을 완화해 보여 주는 것은 친절인가, 오답인가?</li>
+              <li>틀린 필터의 위험을 줄이려면 필터와 순수 검색 결과를 어떻게 섞을 수 있을까? (예: 필터 결과가 0개면 검색으로 대체)</li>
+              <li>학생 개인 정보(성적 등)를 챗봇이 다룬다면 권한 필터는 어디서 걸어야 하나?</li>
+            </ol>
+          </section>
+
+          <section class="slide" data-title="부록 E · 평가 루브릭" data-appendix>
+            <h2>부록 E · 평가 루브릭</h2>
+            <table>
+              <thead><tr><th>항목</th><th>우수 (3)</th><th>보통 (2)</th><th>미흡 (1)</th></tr></thead>
+              <tbody>
+                <tr><td>파서 · 필터 (C1 · C2)</td><td>eq · in · 범위 모두, 한계 사례 설명</td><td>동작하나 범위·타입 처리 누락</td><td>동작하지 않음</td></tr>
+                <tr><td>사전/사후 (C3)</td><td>k별 표 + 차이 원인 설명</td><td>표만 제시</td><td>한쪽만 구현</td></tr>
+                <tr><td>검증 (C4)</td><td>허용 목록 · 7건 판정 정확</td><td>일부 우회 허용</td><td>검증 없음</td></tr>
+                <tr><td>측정 · 해석 (C5)</td><td>점수표 + 셀프 쿼리가 진 이유</td><td>점수표만</td><td>일부 질문만</td></tr>
+              </tbody>
+            </table>
+          </section>
+
+        </div>
+          </div>
+        </div>
+        <section class="notes-pane" aria-label="교사 노트">
+          <button type="button" class="notes-head"><span>🧑‍🏫 교사 노트</span><span class="spacer"></span><span class="notes-next"></span><span class="notes-toggle">▾ 접기</span></button>
+          <div class="notes-body"></div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <script type="module">
+    import { initDeck } from '../../assets/js/site/slides.js';
+    import { initRunners } from '../../assets/js/site/runner.js';
+    import { mount } from '../../assets/js/widgets/w14-self-query.js';
+    initRunners(document.querySelector('.deck-stage'));
+    initDeck();
+    mount(document.getElementById('deck-w14-widget'), { outputTitle: '조건 검색 결과 (데모 슬라이드)' });
+  </script>
+</body>
+</html>

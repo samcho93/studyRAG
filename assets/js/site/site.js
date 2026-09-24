@@ -4,7 +4,7 @@
 // Each page only ships <div class="layout" data-layout …><main class="pane center">…</main></div>;
 // everything around the content is generated here.
 
-import { PARTS, WEEKS, weekId } from './weeks.js';
+import { PARTS, WEEKS, weekId, weekLabel, weekChip } from './weeks.js';
 
 const ROOT = new URL('../../../', import.meta.url);
 const THEME_KEY = 'raglab:theme';
@@ -87,7 +87,7 @@ function buildNav(layout, { role, week, sections }) {
   const isHome = !week;
 
   const chapter = (w) => {
-    const no = String(w.no).padStart(2, '0');
+    const no = weekChip(w);
     const isCur = w.no === week;
     const side = !w.ready
       ? '<span class="pending">준비 중</span>'
@@ -137,7 +137,7 @@ function buildNav(layout, { role, week, sections }) {
       <a data-role="teacher" href="${teacherHref}"${role === 'teacher' ? ' aria-current="page"' : ''} title="교사용: PPT 슬라이드 + 교사 노트 + 정답">🧑‍🏫 교사용</a>
     </nav>
     <div class="progress-wrap">
-      <div class="progress-label"><span>학습 진도</span><span>${done.size} / ${WEEKS.length}주 · 공개 ${readyCount}주</span></div>
+      <div class="progress-label"><span>학습 진도</span><span>완료 ${done.size} / ${WEEKS.length} · 공개 ${readyCount}</span></div>
       <div class="progress" role="progressbar" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100" aria-label="학습 진도"><div class="progress-fill" style="width: ${pct}%"></div></div>
     </div>
     <input class="nav-search" type="search" placeholder="검색 (예: 청킹, 임베딩, 평가)" aria-label="목차 검색">
@@ -198,8 +198,8 @@ function buildTopbar(main, { role, week, crumb }) {
       <a href="${weekUrl(week, 'student')}"${role === 'student' ? ' aria-current="page"' : ''} title="문서 보기">📄 문서</a>
       <a href="${weekUrl(week, 'teacher')}"${role === 'teacher' ? ' aria-current="page"' : ''} title="슬라이드 보기 (PPT)">🖼️ 슬라이드</a>
     </nav>
-    ${prev ? `<a class="btn ghost small" href="${weekUrl(prev.no, role)}" title="이전 주차: ${esc(prev.title)}">◀</a>` : '<span class="btn ghost small" aria-disabled="true" style="opacity:.4">◀</span>'}
-    ${next ? `<a class="btn ghost small" href="${weekUrl(next.no, role)}" title="다음 주차: ${esc(next.title)}">▶</a>` : '<span class="btn ghost small" aria-disabled="true" style="opacity:.4" title="다음 주차 준비 중">▶</span>'}` : ''}`;
+    ${prev ? `<a class="btn ghost small" href="${weekUrl(prev.no, role)}" title="이전: ${weekLabel(prev)} · ${esc(prev.title)}">◀</a>` : '<span class="btn ghost small" aria-disabled="true" style="opacity:.4">◀</span>'}
+    ${next ? `<a class="btn ghost small" href="${weekUrl(next.no, role)}" title="다음: ${weekLabel(next)} · ${esc(next.title)}">▶</a>` : '<span class="btn ghost small" aria-disabled="true" style="opacity:.4" title="다음 주차 준비 중">▶</span>'}` : ''}`;
   main.prepend(bar);
 }
 
@@ -346,7 +346,7 @@ function bindWeekNav() {
   const next = ready.find((w) => w.no > no);
   const link = (w, cls, label) =>
     w
-      ? `<a class="${cls}" href="${weekUrl(w.no, role)}"><small>${label}</small>${w.no}주차 · ${esc(w.title)}</a>`
+      ? `<a class="${cls}" href="${weekUrl(w.no, role)}"><small>${label}</small>${weekLabel(w)} · ${esc(w.title)}</a>`
       : `<span class="${cls}"><small>${label}</small>${cls === 'prev' ? '처음 공개된 주차' : '다음 주차 준비 중'}</span>`;
   nav.innerHTML = link(prev, 'prev', '← 이전') + link(next, 'next', '다음 →');
 }

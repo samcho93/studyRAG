@@ -1,0 +1,617 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>응용 1 학과 안내 챗봇 · 교사용 · RAG Lab</title>
+  <meta name="description" content="응용 1 학과 안내 챗봇(멀티턴 대화형 RAG) 교사용 슬라이드: 강의 흐름, 교사 노트, Challenge 정답, 자주 막히는 지점, 토론 주제, 평가 루브릭.">
+  <script>try{var t=JSON.parse(localStorage.getItem('raglab:theme'));if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+  <link rel="stylesheet" crossorigin="anonymous" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&display=swap">
+  <link rel="stylesheet" href="../../assets/css/tokens.css">
+  <link rel="stylesheet" href="../../assets/css/base.css">
+  <link rel="stylesheet" href="../../assets/css/components.css">
+  <link rel="stylesheet" href="../../assets/css/slides.css">
+  <link rel="stylesheet" href="../../assets/css/w13.css">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%232450c4'/%3E%3Ccircle cx='14' cy='14' r='6' fill='none' stroke='white' stroke-width='3'/%3E%3Cpath d='M19 19l6 6' stroke='white' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E">
+  <script type="module" src="../../assets/js/site/site.js"></script>
+</head>
+<body>
+  <div class="layout" data-layout data-role="teacher" data-week="13" data-crumb="🧑‍🏫 교사용 › <b>응용 1 · 학과 안내 챗봇</b>">
+    <main class="pane center" id="main">
+      <div class="slide-view" data-deck data-deck-title="응용 1 · 학과 안내 챗봇">
+        <div class="deck-bar"><div class="deck-row" data-deck-controls></div></div>
+        <div class="deck-progress"><i></i></div>
+        <div class="deck-wrap">
+          <div class="deck-viewport">
+        <div class="deck-stage">
+
+          <!-- 1 -->
+          <section class="slide slide--title" data-title="표지">
+            <div class="kicker">검색증강생성(RAG) 시스템 구축 · 응용 실습 1</div>
+            <h1>학과 안내 챗봇</h1>
+            <p>멀티턴 대화형 RAG — “주말에는?”을 검색하면 무엇이 나올까</p>
+            <div class="deco" aria-hidden="true">💬</div>
+            <aside class="notes">
+              <p><strong>오늘 흐름 (180분)</strong></p>
+              <table>
+                <tr><td>0:00–0:15</td><td>도입 · “주말에는?” 실패 시연</td></tr>
+                <tr><td>0:15–0:55</td><td>단일 vs 대화형 · condense 프롬프트 · 규칙 기반 재작성 · 창 크기 · 되묻기 · 개인정보</td></tr>
+                <tr><td>0:55–1:30</td><td>위젯 실습 + 관찰 질문 1~4</td></tr>
+                <tr><td>1:30–1:40</td><td>휴식</td></tr>
+                <tr><td>1:40–2:00</td><td>관찰 5~6 · 코드로 확인</td></tr>
+                <tr><td>2:00–2:50</td><td>Challenge C1~C4 (C5는 과제)</td></tr>
+                <tr><td>2:50–3:00</td><td>정리 · 응용 2 예고</td></tr>
+              </table>
+              <p>선수 학습은 4~11주차(청킹·BM25·인용·평가)다. 키가 없어도 수업 전체가 진행된다. 키가 있는 학생은 LLM condense를 실제로 돌려 본다.</p>
+            </aside>
+          </section>
+
+          <!-- 2 -->
+          <section class="slide" data-title="학습 목표">
+            <h2>오늘 할 수 있게 되는 것</h2>
+            <ol>
+              <li>단일 질문 RAG와 대화형 RAG의 차이, 후속 질문이 검색에 실패하는 이유를 설명한다</li>
+              <li>규칙 기반 재작성과 condense 프롬프트를 만들고 원문 vs 재작성 hit@3로 효과를 잰다</li>
+              <li>기록 창 크기 · 되묻기 기준 · 개인정보 가리기 규칙을 정한다</li>
+            </ol>
+            <aside class="notes">
+              <p>“12주차 팀 프로젝트의 질의응답 서비스를 챗봇으로 바꾸면 무엇이 깨지나?”로 연다.</p>
+              <p>2번의 hit@3는 9주차 점수판의 지표 그대로다. 새 지표가 아니라 같은 자로 재작성 효과를 잰다는 점을 강조한다.</p>
+            </aside>
+          </section>
+
+          <!-- 3 -->
+          <section class="slide" data-title="질문으로 시작">
+            <h2>“주말에는?”</h2>
+            <p class="big-quote">실습실은 몇 시까지 열어? → <b>주말에는?</b> → <b>신청은 언제까지 해야 해?</b></p>
+            <table>
+              <thead><tr><th>검색한 질문</th><th>BM25 1위</th><th>챗봇의 답</th></tr></thead>
+              <tbody>
+                <tr><td>주말에는?</td><td>도서관 안내</td><td>토요일만 10~17시 ✗</td></tr>
+                <tr><td>신청은 언제까지 해야 해?</td><td>기숙사 안내</td><td>금요일 오후 6시까지 ✗</td></tr>
+              </tbody>
+            </table>
+            <p class="muted">인용도 붙어 있고 출처에 실제로 있는 문장이다 → 틀린 곳은 검색에 넣은 질문</p>
+            <aside class="notes">
+              <p><strong>발문:</strong> “친구에게 ‘주말에는?’이라고 물으면 친구는 어떻게 알아듣나?” → 앞 대화가 주제를 채운다. 검색기는 네 글자만 받는다.</p>
+              <p>“주말에는?” 원문 검색 상위 3은 도서관(5.29)·학사 행정(5.16)·통학 버스(5.13)다. 실습실 규정은 3위 안에 없다. “신청은…”은 기숙사(7.76)가 1위, 실습실 규정은 2위(6.27)다.</p>
+              <p>11주차 인용 검증기로도 못 잡는다는 점을 짚는다. 문장은 출처와 일치한다.</p>
+            </aside>
+          </section>
+
+          <!-- 4 -->
+          <section class="slide" data-title="단일 vs 대화형">
+            <h2>단일 질문 RAG vs 대화형 RAG</h2>
+            <table>
+              <thead><tr><th></th><th>단일 질문</th><th>대화형</th></tr></thead>
+              <tbody>
+                <tr><td>검색 질문</td><td>쓴 그대로</td><td>기록으로 <b>재작성한 독립 질문</b></td></tr>
+                <tr><td>상태</td><td>없음</td><td>대화 기록 (최근 N턴)</td></tr>
+                <tr><td>LLM 호출</td><td>답변 1번</td><td>재작성 1 + 답변 1</td></tr>
+                <tr><td>새 실패</td><td>—</td><td>엉뚱한 대상 · 비용 증가 · 개인정보 누적</td></tr>
+              </tbody>
+            </table>
+            <p class="muted">기록 전체를 검색어에 붙이면? → 주제가 섞여 점수가 흐려진다 (4주차 “큰 청크”)</p>
+            <aside class="notes">
+              <p>검색·생성·인용 코드는 그대로이고, 검색 앞에 한 단계가 더해질 뿐이라는 점을 그림으로 그린다(판서: D 키).</p>
+              <p><strong>발문:</strong> “기록을 통째로 검색하면 안 되나?” 기대 답: 세 질문의 단어가 섞여 엉뚱한 문서가 올라온다.</p>
+            </aside>
+          </section>
+
+          <!-- 5 -->
+          <section class="slide" data-title="condense 프롬프트">
+            <h2>condense 프롬프트</h2>
+            <pre><code>[system] 대화 기록과 마지막 질문을 읽고, 기록 없이도 뜻이 통하는
+검색용 독립 질문 한 문장으로 다시 쓴다. 대명사·생략을 구체적인 이름으로.
+답하지 말고 질문만. 모르면 '되묻기: '. 개인정보는 넣지 않는다.
+[user]  대화 기록 (최근 2턴):
+사용자: 실습실은 몇 시까지 열어?   챗봇: …평일 오후 9시까지 개방된다.
+사용자: 주말에는?                  챗봇: …사전 신청한 학생만 이용할 수 있다.
+마지막 질문: 신청은 언제까지 해야 해?
+독립 질문:</code></pre>
+            <p>챗봇 답변의 <code>[1]</code>은 지우고 넣는다 · 답변은 앞부분만 잘라도 된다</p>
+            <aside class="notes">
+              <p>핵심 규칙 두 개: “답하지 말 것”(안 쓰면 모델이 답을 써 버려 검색어가 길어진다), “모르면 되묻기”(추측 방지).</p>
+              <p>인용 번호를 지우는 이유: 이전 턴의 [1]과 이번 턴의 [1]은 다른 출처다. 재작성에는 필요 없고 모델을 헷갈리게 한다.</p>
+              <p>위젯 출력 창의 “condense 프롬프트”를 펼치면 창 크기에 따라 이 프롬프트가 실제로 어떻게 바뀌는지 보인다.</p>
+            </aside>
+          </section>
+
+          <!-- 6 -->
+          <section class="slide" data-title="규칙 기반 재작성">
+            <h2>규칙 기반 재작성 (키 없이)</h2>
+            <ol>
+              <li><b>대명사</b>: 거기서 음료는? → <b>도서관</b> 음료는?</li>
+              <li><b>생략</b>: 주말에는? → <b>실습실</b> 주말에는?</li>
+              <li><b>주제 전환</b>: 그럼 딥러닝은? → 딥러닝 <b>선수 과목은?</b></li>
+              <li>주제어를 못 찾으면 → <b>되묻기</b></li>
+            </ol>
+            <p><strong>한계</strong>: “거기는 몇 층에 있어?” → 실습실 ✗ (정답: 챗봇 답변 속 <b>학과 행정실</b>)</p>
+            <aside class="notes">
+              <p>주제어는 사전(ENTITIES)에 있는 단어만 인식한다. 사전 밖의 주제(“주차장”)는 모른다.</p>
+              <p>한계 사례가 가장 중요하다. 규칙은 사용자 질문만 본다. 행정실은 챗봇 답변에만 나왔다. 틀린 재작성은 이후 단계를 모두 엉뚱한 방향으로 이끈다. 규칙 결과 “실습실 몇 층에 있어?”는 실습실 규정을 1위(5.06)로 가져오지만 층 정보가 없어, 챗봇은 되묻는다. 그런데 선택지가 실습실 이용 규정·FAQ·딥러닝 교과목이라 정작 학과 행정실이 없다.</p>
+              <p>LLM condense는 답변도 기록에 넣으므로 이 경우를 푼다. 위젯에서 재작성 방식을 바꿔 보여 준다.</p>
+            </aside>
+          </section>
+
+          <!-- 7 -->
+          <section class="slide" data-title="기록 창과 토큰">
+            <h2>대화 기록 창 크기와 토큰</h2>
+            <table>
+              <thead><tr><th>창</th><th>“신청은 언제까지…”</th><th>“거기는 몇 층…”</th><th>프롬프트</th></tr></thead>
+              <tbody>
+                <tr><td>0턴</td><td>그대로 (기숙사 1위)</td><td>되묻기</td><td>300자</td></tr>
+                <tr><td>1턴</td><td>그대로 (기숙사 1위)</td><td>되묻기</td><td>352자</td></tr>
+                <tr><td>2턴</td><td>실습실 주말 신청… ✓</td><td>되묻기</td><td>403자</td></tr>
+                <tr><td>3턴</td><td>실습실 주말 신청… ✓</td><td>실습실 몇 층 ✗</td><td>459자</td></tr>
+              </tbody>
+            </table>
+            <p>창 N턴 → 턴마다 약 <code>s + N·c</code>자 · 창 없이 전체 → 대화 비용이 턴 수의 제곱으로</p>
+            <aside class="notes">
+              <p>작으면 주제를 잃고, 크면 비용과 엉뚱한 연결이 는다. 4번째 질문은 창이 작을 때 되묻고(안전) 클 때 틀린다(위험). “창이 클수록 좋다”가 아니다.</p>
+              <p>실무: 최근 N턴 + 글자/토큰 예산(C1). 예산을 넘으면 오래된 턴부터 버리고 중간을 건너뛰지 않는다. 토큰은 한국어 1자 ≈ 1토큰으로 어림한다(1주차 토큰 카운터 복습).</p>
+            </aside>
+          </section>
+
+          <!-- 8 -->
+          <section class="slide" data-title="인용 · 되묻기 · 개인정보">
+            <h2>인용 · 되묻기 · 개인정보</h2>
+            <div class="cols">
+              <div>
+                <h3>인용 · 되묻기</h3>
+                <p>턴마다 <b>다시 검색</b>하고 이번 출처에만 [n]</p>
+                <p>되묻기: 주제어 없음 또는 최고 점수 &lt; τ (위젯 τ = 3)</p>
+                <p>후보 문서 제목을 선택지로 보여 준다</p>
+              </div>
+              <div>
+                <h3>개인정보</h3>
+                <p>입력 즉시 <code>[학번]</code> <code>[전화번호]</code>로 가리고, 가린 문장만 기록·프롬프트에</p>
+                <p>기록은 메모리에만, 초기화로 삭제</p>
+              </div>
+            </div>
+            <aside class="notes">
+              <p><strong>발문:</strong> “학생이 학번을 말했다. 다음 턴 재작성 프롬프트에는 무엇이 실려 외부로 나가나?” → 가리지 않으면 매 턴 학번이 LLM 공급자에게 전송된다.</p>
+              <p>정규식은 형식이 정해진 정보만 잡는다(이름은 못 잡는다) → 안내문도 설계의 일부.</p>
+              <p>τ = 3은 C4에서 데이터로 다시 정한다. BM25 점수는 문서셋·질문 길이에 따라 달라 기준도 문서셋마다 다르다.</p>
+            </aside>
+          </section>
+
+          <!-- 9 -->
+          <section class="slide slide--demo" data-title="데모: 학과 안내 챗봇">
+            <h2>데모 · 원문 질문 vs 재작성 질문</h2>
+            <div id="deck-w13-widget"></div>
+            <aside class="notes">
+              <p><strong>시연 순서</strong> (A/B 비교와 점수판은 오른쪽 실행 결과 창에 나온다)</p>
+              <ol>
+                <li>“실습실 이용” 턴 2: (A) 도서관·행정실·통학 버스 ✗, (B) “실습실 주말에는?” 근거 ✓ 1위. (A)의 추출식 답을 읽어 준다</li>
+                <li>턴 3: (A)는 근거 2위지만 1위가 기숙사 → 추출식 답이 “금요일 오후 6시”. hit@3만 보면 성공인데 답은 틀린다</li>
+                <li>창 3 → 1: 턴 3은 1턴 전 “주말에는?”에 주제어가 없어 원문 그대로 검색 → 기숙사 1위, 턴 4는 되묻기. 창 0이면 전부 원문과 같다</li>
+                <li>턴 4: 규칙은 “실습실 몇 층” ✗ → 재작성 방식을 LLM condense로 바꾸면 예시 재작성 “학과 행정실은 몇 층에 있나?” ✓. condense 프롬프트를 펼쳐 챗봇 답변 속 “학과 행정실”을 가리킨다</li>
+                <li>“되묻기·개인정보”: 턴 1 되묻기, 턴 2 학번이 [학번]으로 가려짐</li>
+                <li>키가 있으면 “그럼 자연어 처리는?”을 직접 보내 LLM 재작성 결과를 규칙과 비교한다</li>
+              </ol>
+            </aside>
+          </section>
+
+          <!-- 10 -->
+          <section class="slide" data-title="관찰 질문">
+            <h2>관찰 질문</h2>
+            <ol>
+              <li>“주말에는?”의 (A) 상위 3개는? 턴 3은 (A)도 2위인데 왜 위험한가?</li>
+              <li>창을 3 → 0으로 줄이면 턴 3·4는 어떻게 되나?</li>
+              <li>턴 4에서 LLM 예시는 “거기”를 무엇으로 보았고, 규칙은 왜 못 하나?</li>
+              <li>“그럼 딥러닝은?”의 (A)는 문서는 맞는데 추출식 답은?</li>
+              <li>“주차장은 어디야?”와 “점심 메뉴 뭐야?” 중 되묻기에 걸리는 것은?</li>
+            </ol>
+            <aside class="notes">
+              <p>1~3은 짝 활동 10분, 4~5는 휴식 후 전체 토론.</p>
+              <p>1번 핵심: hit@3는 “근거가 3위 안에 있다”만 본다. 1위가 틀리면 추출식·LLM 답이 1위를 따라갈 수 있다 → C3 2단계 hit@1.</p>
+              <p>4번: 문서를 찾는 것(검색)과 질문에 맞는 문장을 고르는 것(생성)은 다르다. 원문 “그럼 딥러닝은?”에는 “선수 과목”이 없어 추출식이 “3학점 과목” 문장을 고른다.</p>
+              <p>5번: 대화 초기화 후 “주차장은 어디야?”는 3.45 ≥ 3이라 답해 버리고(엉뚱한 추출식), “점심 메뉴 뭐야?”는 2.45라 되묻는다. 초기화하지 않으면 규칙이 앞 주제(휴학)를 붙여 버린다 — 규칙의 한계.</p>
+            </aside>
+          </section>
+
+          <!-- 11 -->
+          <section class="slide" data-title="코드로 확인">
+            <h2>코드로 확인하기</h2>
+            <pre data-run="deck-rewrite" data-title="원문 vs 재작성 검색"><code class="language-javascript">import { chunk } from '/assets/js/core/chunker.js';
+import { BM25 } from '/assets/js/core/bm25.js';
+
+const corpus = await (await fetch('/assets/data/corpus/corpus.json')).json();
+const extra = await (await fetch('/assets/data/w13/dept-docs.json')).json();
+const docs = [...extra.shared.map((id) =&gt; corpus.documents.find((d) =&gt; d.id === id)), ...extra.documents];
+const chunks = docs.flatMap((d) =&gt; chunk(d.text, { strategy: 'recursive', size: 300 })
+  .map((c) =&gt; ({ id: `${d.id}#${c.index}`, text: `[${d.title}] ${c.text}` })));
+const bm = new BM25().add(chunks);
+
+for (const q of ['신청은 언제까지 해야 해?', '실습실 주말 신청은 언제까지 해야 해?']) {
+  console.log(`Q: ${q}`);
+  bm.search(q, 3).forEach((r, i) =&gt; console.log(`  ${i + 1}. ${r.id.padEnd(18)} ${r.score.toFixed(2)}  ${r.text.slice(0, 34)}…`));
+}</code></pre>
+            <aside class="notes">
+              <p>▶ 실행 결과: 원문 “신청은 언제까지 해야 해?” → <code>1. dorm-guide#0 7.76</code>, <code>2. facility-rules#0 6.27</code>, <code>3. shuttle-bus#0 5.80</code>. 재작성 “실습실 주말 신청은 언제까지 해야 해?” → <code>1. facility-rules#0 12.31</code>, <code>2. dorm-guide#0 8.93</code>, <code>3. shuttle-bus#0 7.06</code>.</p>
+              <p>청크 앞에 <code>[문서 제목]</code>을 붙여 색인하는 줄을 가리킨다(4주차 C5). 제목을 빼고 “RAG 과목 선수 과목은?”을 검색하면 선수 과목이 적힌 청크에 “RAG”가 없어 못 찾는다 — 질문을 바꿔 시연해도 좋다.</p>
+            </aside>
+          </section>
+
+          <!-- 12 -->
+          <section class="slide" data-title="Challenge 안내">
+            <h2>Challenge</h2>
+            <table>
+              <tbody>
+                <tr><td>C1 ★</td><td>대화 기록을 글자 예산에 맞게 자르기</td></tr>
+                <tr><td>C2 ★★</td><td>규칙 기반 질문 재작성기</td></tr>
+                <tr><td>C3 ★★</td><td>원문 vs 재작성 hit@3 (후속 질문 8쌍)</td></tr>
+                <tr><td>C4 ★★★</td><td>되묻기 기준 점수 τ 정하기</td></tr>
+                <tr><td>C5 ★★★★</td><td>condense 프롬프트 빌더 + 가짜 LLM (과제)</td></tr>
+              </tbody>
+            </table>
+            <p class="muted">모델·LLM 호출 없이 학생용 페이지의 코드 상자에서 바로 ▶ 실행한다</p>
+            <aside class="notes">
+              <p>C1~C3은 수업 안에 끝낸다. C3의 숫자(원문 0.375 vs 재작성 1.000)가 오늘의 결론이므로 모두가 실행해 보게 한다. 정답은 부록 B.</p>
+            </aside>
+          </section>
+
+          <!-- 13 -->
+          <section class="slide" data-title="정리 & 다음 실습">
+            <h2>정리</h2>
+            <ul>
+              <li>대화형 RAG = 검색 앞에 <strong>재작성(condense)</strong> 한 단계</li>
+              <li>규칙은 설명 가능, 답변 속 대상은 못 찾는다 · LLM은 풀지만 “답하지 말 것·되묻기”를 명시</li>
+              <li>창 = 최근 N턴 + 글자 예산 · 효과는 원문 vs 재작성 hit@3</li>
+              <li>인용은 턴마다 새로 · 모르면 되묻기 · 개인정보는 기록 전에 가리기</li>
+            </ul>
+            <h3>다음 · 응용 2 조건 검색</h3>
+            <p class="muted">“2학기 3학점 과목 중 팀 프로젝트 30% 이상은?” → 메타데이터 필터 · 셀프 쿼리</p>
+            <aside class="notes">
+              <p>오늘 교과목 문서 5개가 모두 “선수 과목”, “팀 프로젝트”를 갖고 있어 BM25가 구별하지 못했다. 다음 실습은 학기·학점 같은 메타데이터로 먼저 거르고, 자연어에서 필터 조건을 LLM이 뽑게 한다. 오늘의 재작성과 같은 자리(검색 바로 앞)라는 점을 연결한다.</p>
+            </aside>
+          </section>
+
+          <!-- Appendix -->
+          <section class="slide" data-title="부록 A · 강의안" data-appendix>
+            <h2>부록 A · 강의안</h2>
+            <table>
+              <thead><tr><th>시간</th><th>활동</th><th>산출물</th></tr></thead>
+              <tbody>
+                <tr><td>15분</td><td>도입 · “주말에는?” 실패 시연</td><td>틀린 답 2개의 원인</td></tr>
+                <tr><td>40분</td><td>개념: 단일 vs 대화형 · condense · 규칙 · 창 · 되묻기 · 개인정보</td><td>대명사·생략 표 채우기</td></tr>
+                <tr><td>35분</td><td>위젯 실습 · 관찰 질문 1~4</td><td>짝 활동 메모</td></tr>
+                <tr><td>10분</td><td>휴식</td><td>—</td></tr>
+                <tr><td>20분</td><td>관찰 5~6 · 코드로 확인</td><td>—</td></tr>
+                <tr><td>50분</td><td>Challenge C1~C4</td><td>C3 hit@3 표</td></tr>
+                <tr><td>10분</td><td>정리 · 응용 2 예고</td><td>—</td></tr>
+              </tbody>
+            </table>
+          </section>
+
+          <section class="slide" data-title="부록 B · C1 정답" data-appendix>
+            <h2>부록 B · C1 정답</h2>
+            <pre data-run="ans-c1" data-title="C1 정답"><code class="language-javascript">const history = [
+  { user: '실습실은 몇 시까지 열어?', bot: '실습실은 수업 시간 외에도 평일 오후 9시까지 개방된다 [1].' },
+  { user: '주말에는?', bot: '주말과 공휴일에는 사전 신청한 학생만 실습실을 이용할 수 있다 [1].' },
+  { user: '신청은 언제까지 해야 해?', bot: '이용일 이틀 전까지 학과 행정실에 신청한다 [1].' },
+  { user: '거기는 몇 층에 있어?', bot: '학과 행정실은 본관 2층 201호에 있다 [1].' },
+];
+const turnChars = (t) =&gt; t.user.length + t.bot.length;
+console.log('턴별 글자 수:', history.map(turnChars));
+
+function trimHistory(history, budget) {
+  const kept = [];
+  let used = 0;
+  for (let i = history.length - 1; i &gt;= 0; i--) {
+    const c = turnChars(history[i]);
+    if (used + c &gt; budget) break; // stop: skipping a turn would break the order
+    kept.unshift(history[i]);
+    used += c;
+  }
+  return { kept, used, dropped: history.length - kept.length };
+}
+
+for (const budget of [0, 40, 90, 200]) {
+  const r = trimHistory(history, budget);
+  console.log(`예산 ${budget}자 → ${r.kept.length}턴 유지 (${r.used}자), ${r.dropped}턴 버림:`, r.kept.map((t) =&gt; t.user));
+}
+
+// 2단계: 창 크기(최근 N턴)와 글자 예산을 함께 적용한다
+const trimByWindow = (h, n) =&gt; (n &gt; 0 ? h.slice(-n) : []);
+const r = trimHistory(trimByWindow(history, 3), 120);
+console.log('창 3턴 + 예산 120자 →', r.kept.map((t) =&gt; t.user), `${r.used}자`);</code></pre>
+            <aside class="notes">
+              <p><strong>실행 결과:</strong> 턴별 글자 수 <code>[49, 44, 42, 39]</code>. 예산 0자 → 0턴, 40자 → 1턴(39자), 90자 → 2턴(81자, “신청은…”과 “거기는…”), 200자 → 4턴(174자). 2단계 “창 3턴 + 예산 120자” → 2턴(81자). 창으로 3턴을 남겨도 합이 125자라 예산에서 한 턴이 더 빠진다.</p>
+              <p><strong>왜:</strong> 최근 턴이 가장 중요하므로 뒤에서부터 담는다. 예산을 넘는 턴을 건너뛰고 더 오래된 짧은 턴을 넣으면 대화 순서가 깨져 “거기”가 엉뚱한 턴을 가리킨다. 그래서 <code>continue</code>가 아니라 <code>break</code>다.</p>
+            </aside>
+          </section>
+
+          <section class="slide" data-title="부록 B · C2 정답" data-appendix>
+            <h2>부록 B · C2 정답</h2>
+            <pre data-run="ans-c2" data-title="C2 정답"><code class="language-javascript">const ENTITIES = ['가계 곤란 장학금', '장학금', 'RAG 과목', '딥러닝', '실습실', '도서관', '기숙사', '학과 행정실', '휴학'];
+const PRONOUNS = ['거기서', '거기는', '거기', '그거', '그건'];
+const MARKERS = ['그럼', '그리고', '근데'];
+
+function lastEntity(text) {
+  let best = null;
+  for (const e of [...ENTITIES].sort((a, b) =&gt; b.length - a.length)) {
+    const i = text.lastIndexOf(e);
+    if (i &gt;= 0 &amp;&amp; (!best || i &gt; best.i)) best = { e, i };
+  }
+  return best?.e ?? null;
+}
+
+function rewrite(history, q) {
+  let topic = null;
+  for (let i = history.length - 1; i &gt;= 0 &amp;&amp; !topic; i--) topic = lastEntity(history[i]);
+
+  const pron = PRONOUNS.find((p) =&gt; q.includes(p));
+  if (pron) return topic ? { query: q.replace(pron, topic), clarify: false } : { query: q, clarify: true };
+
+  const marker = MARKERS.find((m) =&gt; q.startsWith(`${m} `));
+  const body = marker ? q.slice(marker.length).trim() : q;
+
+  if (!lastEntity(body) &amp;&amp; topic) return { query: `${topic} ${body}`, clarify: false };
+  return { query: body, clarify: false };
+}
+
+const cases = [
+  [[], '실습실은 몇 시까지 열어?', '실습실은 몇 시까지 열어?'],
+  [['실습실은 몇 시까지 열어?'], '주말에는?', '실습실 주말에는?'],
+  [['실습실은 몇 시까지 열어?', '주말에는?'], '신청은 언제까지 해야 해?', '실습실 신청은 언제까지 해야 해?'],
+  [['도서관은 주말에도 열어?'], '거기서 음료는 마셔도 돼?', '도서관 음료는 마셔도 돼?'],
+  [['RAG 과목 팀 프로젝트는 몇 퍼센트야?'], '그럼 선수 과목은?', 'RAG 과목 선수 과목은?'],
+  [['RAG 과목 팀 프로젝트는 몇 퍼센트야?', '그럼 선수 과목은?'], '그럼 딥러닝은?', '딥러닝은?'],
+  [[], '그거 언제까지 내야 해?', '(되묻기)'],
+  [['실습실은 몇 시까지 열어?', '주말에는?', '신청은 언제까지 해야 해?'], '거기는 몇 층에 있어?', '실습실 몇 층에 있어?'],
+];
+let pass = 0;
+for (const [h, q, want] of cases) {
+  const r = rewrite(h, q);
+  const got = r.clarify ? '(되묻기)' : r.query;
+  pass += got === want;
+  console.log(`${got === want ? '✓' : '✗'} ${q}  →  ${got}${got === want ? '' : `   (기대: ${want})`}`);
+}
+console.log(`${pass}/${cases.length} 통과`);
+
+// 2단계: 주제만 바뀐 질문("그럼 딥러닝은?")은 바로 앞 질문의 나머지(속성)를 붙인다
+function rewrite2(history, q) {
+  const r = rewrite(history, q);
+  const prev = history[history.length - 1];
+  const onlyTopic = lastEntity(r.query) &amp;&amp; r.query.replace(lastEntity(r.query), '').replace(/[은는?\s]/g, '') === '';
+  if (!r.clarify &amp;&amp; prev &amp;&amp; onlyTopic) {
+    let attr = prev;
+    for (const m of MARKERS) if (attr.startsWith(`${m} `)) attr = attr.slice(m.length).trim();
+    const e = lastEntity(attr);
+    if (e) attr = attr.replace(e, '').trim();
+    return { query: `${lastEntity(r.query)} ${attr}`, clarify: false };
+  }
+  return r;
+}
+console.log('2단계:', rewrite2(cases[5][0], cases[5][1]).query);</code></pre>
+            <aside class="notes">
+              <p><strong>실행 결과:</strong> 8개 모두 ✓, <code>8/8 통과</code>. 2단계 <code>2단계: 딥러닝 선수 과목은?</code>.</p>
+              <p><strong>왜:</strong> 순서가 중요하다. 대명사를 먼저 처리하고(있으면 바꾸고 끝), 접속어를 뗀 뒤, 주제어가 없을 때만 앞 주제를 붙인다. topic은 최근 질문부터 거꾸로 찾는다.</p>
+              <p><strong>통과했지만 틀린 두 줄:</strong> 6번 “딥러닝은?”은 무엇을 묻는지(선수 과목) 잃었다 → 2단계의 속성 이어 붙이기. 8번 “실습실 몇 층”은 “거기”가 챗봇 답변의 학과 행정실인데 규칙은 사용자 질문만 본다 → LLM condense가 필요한 경우. 테스트를 통과하는 것과 사용자의 뜻을 맞히는 것은 다르다.</p>
+            </aside>
+          </section>
+
+          <section class="slide" data-title="부록 B · C3 정답" data-appendix>
+            <h2>부록 B · C3 정답</h2>
+            <pre data-run="ans-c3" data-title="C3 정답"><code class="language-javascript">import { chunk } from '/assets/js/core/chunker.js';
+import { BM25 } from '/assets/js/core/bm25.js';
+
+// 학과 문서셋 = 공통 코퍼스의 학과 문서 + 응용 1 추가 문서. 청크 앞에 문서 제목을 붙여 색인한다.
+const corpus = await (await fetch('/assets/data/corpus/corpus.json')).json();
+const extra = await (await fetch('/assets/data/w13/dept-docs.json')).json();
+const docs = [...extra.shared.map((id) =&gt; corpus.documents.find((d) =&gt; d.id === id)), ...extra.documents];
+const chunks = docs.flatMap((d) =&gt; chunk(d.text, { strategy: 'recursive', size: 300 })
+  .map((c) =&gt; ({ id: `${d.id}#${c.index}`, doc: d.id, raw: c.text, text: `[${d.title}] ${c.text}` })));
+const byId = new Map(chunks.map((c) =&gt; [c.id, c]));
+const bm = new BM25().add(chunks.map((c) =&gt; ({ id: c.id, text: c.text })));
+
+// 후속 질문 8쌍: 원문(followup) vs 사람이 쓴 독립 질문(rewrite). quote는 문서 원문에 그대로 있는 근거다.
+const PAIRS = [
+  { history: ['실습실은 몇 시까지 열어?'], followup: '주말에는?', rewrite: '실습실은 주말에도 이용할 수 있나?', evidence: { doc: 'facility-rules', quote: '주말과 공휴일에는 사전 신청한 학생만 이용할 수 있으며' } },
+  { history: ['실습실은 몇 시까지 열어?', '주말에는?'], followup: '신청은 언제까지 해야 해?', rewrite: '주말에 실습실을 이용하려면 언제까지 신청해야 하나?', evidence: { doc: 'facility-rules', quote: '신청은 이용일 이틀 전까지 학과 행정실에 한다' } },
+  { history: ['실습실은 몇 시까지 열어?', '주말에는?', '신청은 언제까지 해야 해?'], note: '거기 = 챗봇 답변의 학과 행정실', followup: '거기는 몇 층에 있어?', rewrite: '학과 행정실은 몇 층에 있나?', evidence: { doc: 'academic-admin', quote: '학과 행정실은 본관 2층 201호에 있으며' } },
+  { history: ['RAG 과목 팀 프로젝트는 몇 퍼센트야?'], followup: '그럼 선수 과목은?', rewrite: 'RAG 과목의 선수 과목은 무엇인가?', evidence: { doc: 'course-rag-syllabus', quote: '선수 과목은 파이썬 프로그래밍과 자연어 처리다' } },
+  { history: ['RAG 과목 팀 프로젝트는 몇 퍼센트야?', '그럼 선수 과목은?', '그럼 딥러닝은?'], followup: '몇 학점이야?', rewrite: '딥러닝 과목은 몇 학점인가?', evidence: { doc: 'course-dl-syllabus', quote: '딥러닝은 2학기에 개설되는 3학점 과목' } },
+  { history: ['성적 우수 장학금은 얼마나 받아?', '가계 곤란 장학금은 누가 받을 수 있어?'], followup: '신청 기간은?', rewrite: '가계 곤란 장학금의 신청 기간은 언제인가?', evidence: { doc: 'broken-scan', quote: '신청 기간은 매 학기 개강 후 2주 이내 이다' } },
+  { history: ['성적 우수 장학금은 얼마나 받아?', '가계 곤란 장학금은 누가 받을 수 있어?', '신청 기간은?'], followup: '문의는 어디로 해?', rewrite: '가계 곤란 장학금은 어디에 문의하나?', evidence: { doc: 'broken-scan', quote: '문의 : 학 생 지 원 팀' } },
+  { history: ['도서관은 주말에도 열어?'], followup: '거기서 음료는 마셔도 돼?', rewrite: '도서관 열람실에 음료를 가지고 들어갈 수 있나?', evidence: { doc: 'facility-library', quote: '뚜껑이 있는 음료만 가지고 들어갈 수 있으며' } },
+];
+
+// 근거 청크의 순위(1부터). 상위 k개 안에 없으면 0
+function evidenceRank(query, evidence, k = 3) {
+  const hits = bm.search(query, k);
+  const i = hits.findIndex((h) =&gt; { const c = byId.get(h.id); return c.doc === evidence.doc &amp;&amp; c.raw.includes(evidence.quote); });
+  return i + 1;
+}
+
+const rows = PAIRS.map((p) =&gt; ({ followup: p.followup, raw: evidenceRank(p.followup, p.evidence), rewrite: evidenceRank(p.rewrite, p.evidence) }));
+console.table(rows);
+const rate = (key, k) =&gt; rows.filter((r) =&gt; r[key] &gt;= 1 &amp;&amp; r[key] &lt;= k).length / rows.length;
+console.log(`hit@3  원문 ${rate('raw', 3).toFixed(3)}  재작성 ${rate('rewrite', 3).toFixed(3)}`);
+console.log(`hit@1  원문 ${rate('raw', 1).toFixed(3)}  재작성 ${rate('rewrite', 1).toFixed(3)}`);
+const lost = rows.filter((r) =&gt; r.raw === 0).map((r) =&gt; r.followup);
+console.log('원문으로는 상위 3개에도 못 들어간 질문:', lost);</code></pre>
+            <aside class="notes">
+              <p><strong>실행 결과:</strong> 순위(원문/재작성) = 주말에는? 0/1, 신청은… 2/1, 거기는… 0/1, 그럼 선수 과목은? 0/2, 몇 학점이야? 0/1, 신청 기간은? 0/1, 문의는… 2/1, 거기서 음료는… 2/1. <code>hit@3 원문 0.375 재작성 1.000</code>, <code>hit@1 원문 0.000 재작성 0.875</code>. 상위 3개에도 못 든 원문 5개: 주말에는?, 거기는 몇 층에 있어?, 그럼 선수 과목은?, 몇 학점이야?, 신청 기간은?</p>
+              <p><strong>왜:</strong> 원문도 3개는 hit@3로 “성공”하지만 셋 다 2위다. 1위는 모두 기숙사 안내다(“거기서 음료는…”은 기숙사 1.62, 도서관 1.59로 거의 동점). 그래서 추출식이나 LLM이 1위를 따르면 틀린 답이 된다. hit@1이 원문의 실패를 더 잘 드러낸다. 재작성의 “그럼 선수 과목은?”이 2위인 것은 선수 과목이 적힌 청크가 RAG 교과목의 두 번째 청크라서다. 위젯 점수판(규칙 기반, 창 3)은 이 8쌍 중 “거기는 몇 층” 하나만 놓친다(7/8).</p>
+            </aside>
+          </section>
+
+          <section class="slide" data-title="부록 B · C4 정답" data-appendix>
+            <h2>부록 B · C4 정답</h2>
+            <pre data-run="ans-c4" data-title="C4 정답"><code class="language-javascript">import { chunk } from '/assets/js/core/chunker.js';
+import { BM25 } from '/assets/js/core/bm25.js';
+
+const corpus = await (await fetch('/assets/data/corpus/corpus.json')).json();
+const extra = await (await fetch('/assets/data/w13/dept-docs.json')).json();
+const docs = [...extra.shared.map((id) =&gt; corpus.documents.find((d) =&gt; d.id === id)), ...extra.documents];
+const chunks = docs.flatMap((d) =&gt; chunk(d.text, { strategy: 'recursive', size: 300 })
+  .map((c) =&gt; ({ id: `${d.id}#${c.index}`, text: `[${d.title}] ${c.text}` })));
+const bm = new BM25().add(chunks);
+
+// 재작성까지 끝난 질문과 "되물어야 하는가" 정답 라벨 (문서에 답이 없거나 무엇을 묻는지 모르면 true)
+const LABELED = [
+  ['실습실 주말 신청은 언제까지 해야 해?', false], ['딥러닝 몇 학점이야?', false], ['가계 곤란 장학금 신청 기간은?', false],
+  ['도서관 음료는 마셔도 돼?', false], ['휴학원서는 언제까지 제출해야 하나?', false], ['통학 버스는 주말에도 다녀?', false],
+  ['수업은 몇 시에 끝나?', false], ['노트북 가져가도 돼?', false],
+  ['그거 언제까지 내야 해?', true], ['안녕', true], ['점심 메뉴 뭐야?', true], ['주차장은 어디야?', true],
+  ['거기는 몇 층에 있어?', true], ['교수님 연락처 알려줘', true],
+];
+const scored = LABELED.map(([q, shouldAsk]) =&gt; ({ q, shouldAsk, top: bm.search(q, 1)[0]?.score ?? 0 }));
+console.table(scored.map((r) =&gt; ({ ...r, top: +r.top.toFixed(2) })));
+
+// BM25 최고 점수가 tau보다 낮으면 되묻는다
+const decide = (top, tau) =&gt; top &lt; tau;
+
+function accuracy(tau) {
+  return scored.filter((r) =&gt; decide(r.top, tau) === r.shouldAsk).length / scored.length;
+}
+
+let best = { tau: 0, acc: -1 };
+const curve = [];
+for (let tau = 0; tau &lt;= 10; tau += 0.5) {
+  const acc = accuracy(tau);
+  curve.push(`${tau}:${acc.toFixed(2)}`);
+  if (acc &gt; best.acc) best = { tau, acc };
+}
+console.log(curve.join('  '));
+console.log(`가장 좋은 tau = ${best.tau} (정확도 ${best.acc.toFixed(3)})`);
+
+const wrong = (tau) =&gt; scored.filter((r) =&gt; decide(r.top, tau) !== r.shouldAsk)
+  .map((r) =&gt; `${r.q} (${r.top.toFixed(2)}, ${r.shouldAsk ? '되물어야 하는데 답함' : '답해야 하는데 되물음'})`);
+console.log('tau = 3 에서 틀린 질문:', wrong(3));
+console.log(`tau = ${best.tau} 에서 틀린 질문:`, wrong(best.tau));</code></pre>
+            <aside class="notes">
+              <p><strong>실행 결과:</strong> 점수는 답할 질문 4.43~19.07, 되물을 질문 0~3.92. 정확도 곡선 <code>0:0.57 … 3:0.86 3.5:0.93 4:1.00 4.5:0.93 …</code>, <code>가장 좋은 tau = 4 (정확도 1.000)</code>. τ = 3에서 틀린 질문: 주차장은 어디야?(3.45), 교수님 연락처 알려줘(3.92) — 둘 다 “되물어야 하는데 답함”. τ = 4에서는 없다.</p>
+              <p><strong>왜:</strong> 문서에 없는 질문에 답하는 실수(엉뚱한 추출식 답)가 괜한 되묻기보다 위험하다. 다만 14개로 정한 4는 과적합일 수 있다. 가장 가까운 정답 질문(수업은 몇 시에 끝나? 4.43)과의 간격이 0.5뿐이다 → 질문을 더 모아 다시 정하고, 문서셋이 바뀌면 다시 잰다. 위젯은 C4를 위해 3으로 둔다.</p>
+            </aside>
+          </section>
+
+          <section class="slide" data-title="부록 B · C5 정답" data-appendix>
+            <h2>부록 B · C5 정답</h2>
+            <pre data-run="ans-c5" data-title="C5 정답"><code class="language-javascript">const SYSTEM = '너는 학과 안내 챗봇의 질문 재작성기다. 대화 기록과 마지막 질문을 읽고, 기록 없이도 뜻이 통하는 검색용 독립 질문 한 문장으로 다시 쓴다. ' +
+  "대명사와 생략된 주제를 기록의 구체적인 이름으로 바꾼다. 답하지 말고 질문만 출력한다. 알 수 없으면 '되묻기: '로 시작한다.";
+
+const turns = [
+  { user: '실습실은 몇 시까지 열어?', bot: '실습실은 수업 시간 외에도 평일 오후 9시까지 개방된다 [1].' },
+  { user: '내 번호 010-1234-5678로 알림 줄 수 있어?', bot: '알림 기능은 없다. 학과 공지는 홈페이지에서 확인한다.' },
+  { user: '주말에는?', bot: '주말과 공휴일에는 사전 신청한 학생만 실습실을 이용할 수 있다 [1].' },
+  { user: '신청은 언제까지 해야 해?', bot: '이용일 이틀 전까지 학과 행정실에 신청한다 [1][2].' },
+];
+
+// ---- 가짜 LLM (수정하지 않는다): 프롬프트 규칙을 검사한 뒤, 기록에서 가장 최근 장소·주제를 찾아 대명사를 바꾼다
+function mockLLM({ system, messages }, { window, maxChars }) {
+  const text = messages.map((m) =&gt; m.content).join('\n');
+  if (!system) throw new Error('system 프롬프트가 없다');
+  if (/01[016789]-?\d{3,4}-?\d{4}|20\d{8}/.test(text)) throw new Error('프롬프트에 개인정보가 남아 있다');
+  if (/\[\d+\]/.test(text)) throw new Error('챗봇 답변의 인용 번호 [n]이 남아 있다 (재작성에는 필요 없다)');
+  const history = text.split('마지막 질문:')[0];
+  const userLines = (history.match(/^사용자:/gm) ?? []).length;
+  if (userLines &gt; window) throw new Error(`기록이 ${userLines}턴이다. 창 크기 ${window}턴을 넘었다`);
+  const lines = history.split('\n').filter((l) =&gt; /^(사용자|챗봇):/.test(l)).join('\n');
+  if (lines.length &gt; maxChars) throw new Error(`기록이 ${lines.length}자다. 예산 ${maxChars}자를 넘었다`);
+  const q = text.split('마지막 질문:')[1]?.split('\n')[0].trim() ?? '';
+  const places = [...history.matchAll(/학과 행정실|실습실|도서관/g)].map((m) =&gt; m[0]);
+  const topic = places[places.length - 1];
+  if (/거기|그거/.test(q)) return topic ? q.replace(/거기는|거기서|거기|그거/, topic) : `되묻기: “${q}”에서 무엇을 가리키는지 알려 줄 수 있나?`;
+  return topic &amp;&amp; !places.some((p) =&gt; q.includes(p)) ? `${topic} ${q}` : q;
+}
+
+const PII = [[/01[016789]-?\d{3,4}-?\d{4}/g, '[전화번호]'], [/(?&lt;!\d)20\d{8}(?!\d)/g, '[학번]']];
+const mask = (s) =&gt; PII.reduce((t, [re, tag]) =&gt; t.replace(re, tag), s);
+const stripCites = (s) =&gt; s.replace(/\s*\[\d+(?:\s*,\s*\d+)*\]/g, '');
+
+function buildCondensePrompt(turns, question, { window = 3, maxChars = 200 } = {}) {
+  const recent = window &gt; 0 ? turns.slice(-window) : [];
+  let lines = recent.map((t) =&gt; `사용자: ${mask(t.user)}\n챗봇: ${stripCites(mask(t.bot))}`);
+  while (lines.length &amp;&amp; lines.join('\n').length &gt; maxChars) lines.shift(); // oldest first
+  const history = lines.length ? `대화 기록 (최근 ${lines.length}턴):\n${lines.join('\n')}` : '대화 기록: (없음)';
+  const content = `${history}\n\n마지막 질문: ${mask(question)}\n\n독립 질문:`;
+  return { system: SYSTEM, messages: [{ role: 'user', content }] };
+}
+
+for (const opts of [{ window: 3, maxChars: 200 }, { window: 1, maxChars: 200 }, { window: 3, maxChars: 60 }]) {
+  const prompt = buildCondensePrompt(turns, '거기는 몇 층에 있어?', opts);
+  console.log(`--- window=${opts.window}, maxChars=${opts.maxChars}\n${prompt.messages[0].content}`);
+  try {
+    console.log('→ mockLLM:', mockLLM(prompt, opts));
+  } catch (err) {
+    console.warn('✗ 규칙 위반:', err.message);
+  }
+}
+
+// 비교: 기록을 가공하지 않고 통째로 보낸 프롬프트
+const naive = { system: SYSTEM, messages: [{ role: 'user', content: `${turns.map((t) =&gt; `사용자: ${t.user}\n챗봇: ${t.bot}`).join('\n')}\n\n마지막 질문: 거기는 몇 층에 있어?` }] };
+try {
+  mockLLM(naive, { window: 3, maxChars: 200 });
+} catch (err) {
+  console.warn('가공 없이 보낸 프롬프트 ✗', err.message);
+}</code></pre>
+            <aside class="notes">
+              <p><strong>실행 결과:</strong> window 3 → 기록 3턴(전화번호는 <code>[전화번호]</code>, [1]·[1][2] 없음), mockLLM <code>학과 행정실 몇 층에 있어?</code>. window 1 → 1턴(“신청은…” + “…학과 행정실에 신청한다.”), 같은 결과. maxChars 60 → 3턴이 예산을 넘어 오래된 턴부터 빠지고 1턴만 남아 같은 결과. 마지막 비교: 가공 없이 보낸 프롬프트 ✗ <code>프롬프트에 개인정보가 남아 있다</code>.</p>
+              <p><strong>왜:</strong> 가리기 → 인용 번호 지우기 → 창 → 예산 순서로 적용한다. 예산 검사는 가린 뒤의 길이로 한다. window 1에서도 답을 찾는 이유는 “학과 행정실”이 바로 앞 챗봇 답변에 있기 때문이다 — 규칙 기반과 달리 답변을 기록에 넣는 것이 condense의 힘이다.</p>
+            </aside>
+          </section>
+
+          <section class="slide" data-title="부록 C · 자주 막히는 지점" data-appendix>
+            <h2>부록 C · 학생이 자주 막히는 지점</h2>
+            <table>
+              <thead><tr><th>증상</th><th>원인</th><th>대응</th></tr></thead>
+              <tbody>
+                <tr><td>C1에서 오래된 짧은 턴이 끼어든다</td><td><code>break</code> 대신 <code>continue</code></td><td>순서가 깨지는 예를 보여 준다</td></tr>
+                <tr><td>C2 “RAG 과목”이 “RAG”로 잡힌다</td><td>짧은 이름을 먼저 찾음</td><td>긴 이름 먼저 (정렬 제공됨)</td></tr>
+                <tr><td>C2 “그럼 딥러닝은?”에 실습실이 붙는다</td><td>주제어 검사를 접속어 떼기 전에 함</td><td>body로 검사</td></tr>
+                <tr><td>C3 hit가 전부 0</td><td>청크 id로만 비교, 제목 붙은 text에서 quote 검색</td><td><code>raw</code>에서 quote를 찾는다</td></tr>
+                <tr><td>C5 예산 위반이 계속 난다</td><td>가리기 전 길이로 예산 계산 / 헤더 포함</td><td>가린 뒤 “사용자:·챗봇:” 줄만 센다</td></tr>
+                <tr><td>위젯이 안 뜬다</td><td><code>file://</code>로 열었다</td><td><code>python -m http.server</code></td></tr>
+              </tbody>
+            </table>
+          </section>
+
+          <section class="slide" data-title="부록 D · 토론 주제" data-appendix>
+            <h2>부록 D · 토론 주제</h2>
+            <ol>
+              <li>재작성이 틀릴 것 같을 때 “되묻기”와 “추측해서 답하기” 중 무엇이 나은가? 학과 챗봇과 쇼핑몰 챗봇에서 답이 같은가?</li>
+              <li>재작성한 독립 질문을 사용자에게 보여 줘야 하나? (“‘실습실 주말 이용 신청’으로 찾았다”) 장단점은?</li>
+              <li>대화 기록을 서버에 저장해 다음 날에도 이어 가면 좋은 점과 위험은? 무엇을 가리고 얼마나 보관해야 하나?</li>
+              <li>재작성 LLM과 답변 LLM을 같은 모델로 쓸 필요가 있나? 작은 모델로 재작성하면 무엇을 잃나?</li>
+            </ol>
+          </section>
+
+          <section class="slide" data-title="부록 E · 평가 루브릭" data-appendix>
+            <h2>부록 E · 평가 루브릭</h2>
+            <table>
+              <thead><tr><th>항목</th><th>우수 (3)</th><th>보통 (2)</th><th>미흡 (1)</th></tr></thead>
+              <tbody>
+                <tr><td>기록 관리 (C1)</td><td>창 + 예산 + 순서 보존</td><td>예산만</td><td>동작하지 않음</td></tr>
+                <tr><td>재작성 (C2)</td><td>8/8 + 속성 이어 붙이기 + 한계 설명</td><td>8/8</td><td>일부만</td></tr>
+                <tr><td>측정 (C3·C4)</td><td>hit@3·hit@1 + τ 선택 근거와 과적합 언급</td><td>숫자만 제시</td><td>계산 오류</td></tr>
+                <tr><td>프롬프트·개인정보 (C5)</td><td>규칙 위반 0 + 적용 순서 설명</td><td>일부 위반</td><td>개인정보가 남음</td></tr>
+              </tbody>
+            </table>
+          </section>
+
+        </div>
+          </div>
+        </div>
+        <section class="notes-pane" aria-label="교사 노트">
+          <button type="button" class="notes-head"><span>🧑‍🏫 교사 노트</span><span class="spacer"></span><span class="notes-next"></span><span class="notes-toggle">▾ 접기</span></button>
+          <div class="notes-body"></div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <script type="module">
+    import { initDeck } from '../../assets/js/site/slides.js';
+    import { initRunners } from '../../assets/js/site/runner.js';
+    import { mount } from '../../assets/js/widgets/w13-chatbot.js';
+    initRunners(document.querySelector('.deck-stage'));
+    initDeck();
+    mount(document.getElementById('deck-w13-widget'), { outputTitle: '원문 vs 재작성 검색 비교 (데모 슬라이드)' });
+  </script>
+</body>
+</html>

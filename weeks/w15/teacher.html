@@ -1,0 +1,623 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>응용 3 RAG 퀴즈 생성기 · 교사용 · RAG Lab</title>
+  <meta name="description" content="응용 실습 3 RAG 퀴즈 생성기 교사용 슬라이드: 강의 흐름, 교사 노트, Challenge 정답, 자주 막히는 지점, 토론 주제, 평가 루브릭.">
+  <script>try{var t=JSON.parse(localStorage.getItem('raglab:theme'));if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+  <link rel="stylesheet" crossorigin="anonymous" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&display=swap">
+  <link rel="stylesheet" href="../../assets/css/tokens.css">
+  <link rel="stylesheet" href="../../assets/css/base.css">
+  <link rel="stylesheet" href="../../assets/css/components.css">
+  <link rel="stylesheet" href="../../assets/css/slides.css">
+  <link rel="stylesheet" href="../../assets/css/w15.css">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%232450c4'/%3E%3Ccircle cx='14' cy='14' r='6' fill='none' stroke='white' stroke-width='3'/%3E%3Cpath d='M19 19l6 6' stroke='white' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E">
+  <script type="module" src="../../assets/js/site/site.js"></script>
+</head>
+<body>
+  <div class="layout" data-layout data-role="teacher" data-week="15" data-crumb="🧑‍🏫 교사용 › <b>응용 3 · RAG 퀴즈 생성기</b>">
+    <main class="pane center" id="main">
+      <div class="slide-view" data-deck data-deck-title="응용 3 · RAG 퀴즈 생성기">
+        <div class="deck-bar"><div class="deck-row" data-deck-controls></div></div>
+        <div class="deck-progress"><i></i></div>
+        <div class="deck-wrap">
+          <div class="deck-viewport">
+        <div class="deck-stage">
+
+          <!-- 1 -->
+          <section class="slide slide--title" data-title="표지">
+            <div class="kicker">검색증강생성(RAG) 시스템 구축 · 응용 실습 3</div>
+            <h1>RAG 퀴즈 생성기</h1>
+            <p>근거에서 문제를 만들고, 근거로 검사한다</p>
+            <div class="deco" aria-hidden="true">📝</div>
+            <aside class="notes">
+              <p><strong>오늘 흐름 (180분)</strong></p>
+              <table>
+                <tr><td>0:00–0:15</td><td>도입 · 응용 1~2 복습(검색한 청크로 “답”을 만들었다)</td></tr>
+                <tr><td>0:15–0:55</td><td>근거 없는 퀴즈의 실패 · 생성 → 검증 파이프라인 · JSON 스키마 · 검증 규칙</td></tr>
+                <tr><td>0:55–1:35</td><td>위젯 실습 + 관찰 질문 1~4</td></tr>
+                <tr><td>1:35–1:45</td><td>휴식</td></tr>
+                <tr><td>1:45–2:05</td><td>관찰 질문 5~7 · 사람 검토 · 교육용 활용 윤리</td></tr>
+                <tr><td>2:05–2:45</td><td>Challenge C1~C4 (C5는 과제)</td></tr>
+                <tr><td>2:45–3:00</td><td>PART 5 정리 · 팀 프로젝트 연결</td></tr>
+              </table>
+              <p>T 키로 타이머를 시작한다. LLM 키는 선택이다. 키가 없어도 규칙 기반 생성과 실패 예시로 수업 전체가 진행된다.</p>
+            </aside>
+          </section>
+
+          <!-- 2 -->
+          <section class="slide" data-title="학습 목표">
+            <h2>오늘 할 수 있게 되는 것</h2>
+            <ol>
+              <li>검색한 청크만 근거로 문항을 만들고, 청크 id + 근거 문장을 인용하게 한다</li>
+              <li>출력을 JSON 스키마로 검사하고, 정답·인용·오답을 자동 검증한다</li>
+              <li>자동 검증의 한계를 알고, 교사 검토와 윤리를 넣어 파이프라인을 설계한다</li>
+            </ol>
+            <aside class="notes">
+              <p>“RAG = 챗봇”이라는 고정관념을 깨는 시간이라고 먼저 말한다. 오늘의 산출물은 퀴즈 자체보다 <strong>검증기</strong>다.</p>
+            </aside>
+          </section>
+
+          <!-- 3 -->
+          <section class="slide" data-title="근거 없이 만든 퀴즈">
+            <h2>“청킹 퀴즈 5문제 만들어 줘”</h2>
+            <div class="callout callout--danger">
+              <span class="callout__title"><span class="chip warn">예시 응답 · 수업용 작성 예시</span></span>
+              <p>Q. 실무에서 오버랩은 보통 청크 크기의 몇 %? → <b>50%</b></p>
+              <p>Q. 재귀 분할의 기준은? → <b>의미 유사도</b></p>
+            </div>
+            <p>문서에는: “청크 크기의 <strong>10~20%</strong>” · “문단, 줄바꿈, 문장, 공백 순서로”</p>
+            <p class="muted">출처가 없다 → 교사가 한 문항씩 교재를 뒤져야 한다</p>
+            <aside class="notes">
+              <p><strong>발문:</strong> “이 두 문항, 맞는지 어떻게 확인하나?” 학생이 교재를 찾아보게 1분 준다.</p>
+              <p>이 예시는 실제 모델 호출 기록이 아니라 수업용으로 작성한 것이라고 분명히 말한다. 요점은 “근거 없이 만들면 확인 비용이 전부 사람에게 간다”는 것.</p>
+            </aside>
+          </section>
+
+          <!-- 4 -->
+          <section class="slide" data-title="틀린 문제는 오래 남는다">
+            <h2>틀린 답보다 틀린 문제가 더 오래 남는다</h2>
+            <ul>
+              <li>학생은 틀린 정답을 <strong>외운다</strong></li>
+              <li>평가에 쓰이면 <strong>점수</strong>가 틀어진다</li>
+              <li>응용 1~2: 검색한 청크로 <em>답</em>을 만들었다 → 오늘: 같은 청크로 <em>문제</em>를 만든다</li>
+            </ul>
+            <table>
+              <thead><tr><th>쓰임</th><th>근거로 검사하는 것</th></tr></thead>
+              <tbody>
+                <tr><td>질의응답 (응용 1)</td><td>답변 문장 ↔ 인용 청크</td></tr>
+                <tr><td>조건 검색 (응용 2)</td><td>결과 ↔ 메타데이터 조건</td></tr>
+                <tr><td><b>퀴즈 생성 (응용 3)</b></td><td>정답 ⊂ 인용 문장, 오답 ⊄ 인용 문장</td></tr>
+              </tbody>
+            </table>
+            <aside class="notes">
+              <p>RAG는 “근거 기반 생성” 전반에 쓰인다. 요약, 카드, 보고서 초안도 같은 구조다. 달라지는 것은 출력 모양과 검사 방법뿐이다.</p>
+            </aside>
+          </section>
+
+          <!-- 5 -->
+          <section class="slide" data-title="생성 → 검증 파이프라인">
+            <h2>생성 → 검증 파이프라인</h2>
+            <svg class="w15-fig" viewBox="0 0 640 236" role="img" aria-labelledby="w15-deck-fig-title" style="max-height: 460px">
+              <title id="w15-deck-fig-title">검색, 생성, 자동 검증, 교사 검토, 내보내기 순서의 파이프라인. 검증 실패 문항은 생성으로 돌아가고, 검증 기준은 검색된 청크다.</title>
+              <style>
+                .w15b { fill: var(--s-card); stroke: var(--s-line); }
+                .w15b-hot { fill: var(--color-accent-soft); stroke: var(--color-accent); }
+                .w15b-human { fill: var(--color-accent2-soft); stroke: var(--color-accent2); }
+                .w15t { font: 700 14px var(--font-sans); fill: var(--s-fg); }
+                .w15s { font: 12px var(--font-sans); fill: var(--s-muted); }
+                .w15a { stroke: var(--s-muted); stroke-width: 2; fill: none; }
+                .w15f { stroke: var(--color-danger); stroke-width: 2; fill: none; stroke-dasharray: 5 4; }
+                .w15d { stroke: var(--color-success); stroke-width: 2; fill: none; stroke-dasharray: 2 4; }
+                .w15ft { font: 600 12px var(--font-sans); fill: var(--color-danger); }
+                .w15dt { font: 600 12px var(--font-sans); fill: var(--color-success); }
+                .w15h { fill: var(--s-muted); }
+              </style>
+              <defs>
+                <marker id="w15-deck-arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="w15h" d="M0 0L10 5L0 10z"/></marker>
+              </defs>
+              <rect class="w15b" x="8" y="40" width="180" height="58" rx="10"/>
+              <text class="w15t" x="20" y="64">① 검색</text>
+              <text class="w15s" x="20" y="84">BM25 · 하이브리드, 상위 k</text>
+              <rect class="w15b-hot" x="230" y="40" width="180" height="58" rx="10"/>
+              <text class="w15t" x="242" y="64">② 생성</text>
+              <text class="w15s" x="242" y="84">규칙 또는 LLM → JSON</text>
+              <rect class="w15b-hot" x="452" y="40" width="180" height="58" rx="10"/>
+              <text class="w15t" x="464" y="64">③ 자동 검증</text>
+              <text class="w15s" x="464" y="84">형식·인용·정답·오답·중복</text>
+              <rect class="w15b-human" x="452" y="166" width="180" height="58" rx="10"/>
+              <text class="w15t" x="464" y="190">④ 교사 검토</text>
+              <text class="w15s" x="464" y="210">좋은 문제인가? 승인</text>
+              <rect class="w15b" x="230" y="166" width="180" height="58" rx="10"/>
+              <text class="w15t" x="242" y="190">⑤ 내보내기</text>
+              <text class="w15s" x="242" y="210">JSON · Markdown + 출처</text>
+              <path class="w15a" d="M188 69H226" marker-end="url(#w15-deck-arr)"/>
+              <path class="w15a" d="M410 69H448" marker-end="url(#w15-deck-arr)"/>
+              <path class="w15a" d="M580 98V162" marker-end="url(#w15-deck-arr)"/>
+              <path class="w15a" d="M452 195H414" marker-end="url(#w15-deck-arr)"/>
+              <path class="w15f" d="M520 40C520 22 330 22 330 36" marker-end="url(#w15-deck-arr)"/>
+              <text class="w15ft" x="336" y="13">실패 문항 → 다시 생성하거나 제외</text>
+              <path class="w15d" d="M98 98V128H520V102" marker-end="url(#w15-deck-arr)"/>
+              <text class="w15dt" x="110" y="146">검증 기준도 같은 근거 청크</text>
+            </svg>
+            <aside class="notes">
+              <p>초록 점선을 짚는다: <strong>생성에 준 청크가 곧 검증 기준</strong>이다. 근거를 안 주면 검증할 기준도 없다.</p>
+              <p>④가 사람인 이유는 슬라이드 8에서 다룬다. 지금은 “자동 검증 = 사람이 볼 문항을 줄이는 필터”라고만 말한다.</p>
+            </aside>
+          </section>
+
+          <!-- 6 -->
+          <section class="slide" data-title="구조화 출력: JSON 스키마">
+            <h2>구조화 출력: JSON 스키마</h2>
+            <div class="cols">
+              <div>
+                <pre><code>{ "items": [{
+  "type": "mcq",
+  "question": "…",
+  "answer": "10~20%",
+  "choices": ["1~2%", "10~20%", …],
+  "citation": {
+    "chunk": "rag-chunking#2",
+    "quote": "실무에서는 청크 크기의 10~20%를 …"
+  }
+}] }</code></pre>
+              </div>
+              <div>
+                <ol>
+                  <li><strong>파싱</strong> — 펜스·앞뒤 설명 제거 후 <code>JSON.parse</code></li>
+                  <li><strong>스키마</strong> — 필드·타입·선택지 3~5개·정답 포함</li>
+                  <li><strong>내용</strong> — 인용과 정답이 근거와 맞는가</li>
+                </ol>
+                <p class="muted">LLM의 흔한 실수: ```json 펜스, “다음은 퀴즈다”, 끝 쉼표, 필드 누락</p>
+              </div>
+            </div>
+            <aside class="notes">
+              <p>“사람이 읽는 문단은 코드가 검사할 수 없다. 필드가 있어야 필드별 규칙을 건다.” 구조화 출력(structured output)이라는 용어를 한 번 소개한다.</p>
+              <p>공급자별 JSON 모드/스키마 강제 기능이 있지만 이 사이트는 공급자 공통으로 프롬프트 + 검증 방식을 쓴다. JSON 모드를 써도 <em>내용</em> 검증은 여전히 필요하다고 강조한다.</p>
+            </aside>
+          </section>
+
+          <!-- 7 -->
+          <section class="slide" data-title="인용 강제 · 검증 규칙">
+            <h2>인용 강제와 자동 검증 규칙</h2>
+            <p>인용 = <strong>청크 id</strong> + 청크에서 <strong>글자 그대로</strong> 복사한 문장</p>
+            <table>
+              <thead><tr><th>규칙</th><th>잡는 실수</th></tr></thead>
+              <tbody>
+                <tr><td>인용 청크 ∈ 근거로 준 청크</td><td>없는/검색 안 된 청크</td></tr>
+                <tr><td>인용 문장 ⊂ 그 청크</td><td>지어낸 문장, 엉뚱한 청크</td></tr>
+                <tr><td>정답 ⊂ 인용 문장</td><td>정답 환각</td></tr>
+                <tr><td>오답 ⊄ 인용 문장 (정답 제외)</td><td>정답이 둘</td></tr>
+                <tr><td>bigram 자카드 ≥ 0.7</td><td>중복 문항</td></tr>
+                <tr><td>문서 유형·“5O%” 패턴</td><td>깨진 문서</td></tr>
+              </tbody>
+            </table>
+            <aside class="notes">
+              <p>“글자 그대로”여야 문자열 비교로 검사할 수 있다. 11주차 인용 하이라이트와 같은 원리다.</p>
+              <p>숫자 비교 주의: “2시간”은 “12시간” 안에 문자열로 들어 있다. 위젯은 숫자 앞뒤에 다른 숫자가 붙지 않도록 검사한다. Challenge C3에서 학생이 단순 <code>includes</code>로 풀면 이 함정을 토론거리로 쓴다.</p>
+            </aside>
+          </section>
+
+          <!-- 8 -->
+          <section class="slide" data-title="검증의 한계">
+            <h2>검증 통과 ≠ 좋은 문제</h2>
+            <ul>
+              <li>“____ 크기에는 정답이 없다.” (정답: 청크) → 모든 규칙 통과, 그러나 사소한 빈칸</li>
+              <li>숫자가 나열된 문장: 오답 “30%”가 문장에 있으면 <strong>과잉 경고</strong></li>
+              <li>어순을 바꾼 중복: 자카드 <strong>0.45</strong> → 못 잡음</li>
+            </ul>
+            <pre><code>J(A, B) = |A ∩ B| / |A ∪ B|     (두 글자 조각 집합)
+"…성적에서 팀 프로젝트가…" vs "…성적 중 팀 프로젝트가…"  → 0.79</code></pre>
+            <p class="muted">규칙은 “근거와 모순되지 않는다”만 보장한다 → 마지막은 사람</p>
+            <aside class="notes">
+              <p><strong>발문:</strong> “검증기를 더 똑똑하게 만들면 교사 검토를 없앨 수 있나?” LLM으로 검증(LLM-as-judge)하자는 답이 나오면: 그것도 또 하나의 생성이라 검증이 필요하다. 교육 현장에서는 책임 소재 때문에 사람 승인이 남는다.</p>
+            </aside>
+          </section>
+
+          <!-- 9 -->
+          <section class="slide slide--demo" data-title="데모: RAG 퀴즈 생성기">
+            <h2>데모 · RAG 퀴즈 생성기</h2>
+            <div id="deck-w15-widget"></div>
+            <aside class="notes">
+              <p><strong>시연 순서</strong> (검증 결과와 근거 청크는 오른쪽 실행 결과 창)</p>
+              <ol>
+                <li>처음 화면: 주제 “청킹”, 규칙 기반, 5문항 모두 초록. 결과 창에서 인용 문장이 하이라이트된 것을 보여 준다. 오답(재귀 분할, 청킹 등)은 같은 “청킹” 분류 용어에서 왔다.</li>
+                <li>“실습실 규정” → 검색 1·2위가 FAQ(broken-mixed) 중복 문단 → Q1·Q2 같은 문항, 경고(유사도 1.00, 깨진 문서).</li>
+                <li>“장학금 (스캔 깨짐)” → Q2 “1O시간”, Q3 “5O%”, Q4 “2l4”가 빨간 실패(OCR 의심). 규칙 생성기는 글자를 그대로 복사하므로 OCR 오류도 복사한다.</li>
+                <li>생성 방식 “실패 예시” → Q2 환각(100 vs 60), Q3 정답 둘, Q4 인용 청크 오류(facility-rules#1에 있다), Q5 중복 경고(0.79), Q6 스키마 위반.</li>
+                <li>예시 세트 “JSON 형식 오류” → 끝 쉼표 하나로 파싱 실패, 문항 0개.</li>
+                <li>“퀴즈 풀기”로 풀고 채점 → 실패 문항은 자동 제외. JSON 내려받기로 <code>verify</code>/<code>review</code> 필드를 보여 준다.</li>
+              </ol>
+              <p>키가 있으면 마지막에 “LLM 생성”을 한 번 시연한다. 결과가 매번 다르므로 검증 결과를 학생과 함께 읽는다.</p>
+            </aside>
+          </section>
+
+          <!-- 10 -->
+          <section class="slide" data-title="관찰 질문">
+            <h2>관찰 질문</h2>
+            <ol>
+              <li>초록 문항의 인용 문장을 근거 청크에서 찾는다. 오답은 어디서 왔나?</li>
+              <li>“실습실 규정”의 중복 문항은 생성기 탓인가, 데이터 탓인가?</li>
+              <li>규칙 생성기는 왜 “5O%”를 정답으로 썼나?</li>
+              <li>실패 예시 Q2~Q4는 각각 어떤 규칙에 걸렸나? Q5는 왜 경고인가?</li>
+              <li>JSON 형식 오류: 쉼표 하나로 몇 문항을 잃었나?</li>
+              <li>검증은 통과했지만 승인하지 않을 문항을 찾는다</li>
+            </ol>
+            <aside class="notes">
+              <p>1~4는 짝 활동 15분, 5~6은 휴식 후 전체 토론.</p>
+              <p>2번 기대 답: 데이터(3주차 파싱) 문제다. 생성기는 받은 청크를 충실히 썼다. 중복 제거는 색인 전에 하는 것이 맞고, 검증기의 중복 검사는 마지막 안전망이다.</p>
+              <p>6번 기대 답: “____ 크기에는 정답이 없다”, 표 깨짐 문서의 긴 문항, “생성된 수치” 오답이 어색한 문항.</p>
+            </aside>
+          </section>
+
+          <!-- 11 -->
+          <section class="slide" data-title="코드로 확인: 두 규칙">
+            <h2>코드로 확인하기 · 정답 ⊂ 근거, 오답 ⊄ 근거</h2>
+            <pre data-run="deck-verify" data-title="검증 규칙 두 개"><code class="language-javascript">const quote = '한 사람이 연속으로 사용할 수 있는 시간은 최대 12시간이다.';
+const items = [
+  { answer: '12시간', choices: ['6시간', '12시간', '24시간'] },
+  { answer: '24시간', choices: ['12시간', '24시간', '48시간'] },
+];
+for (const it of items) {
+  const inSource = quote.includes(it.answer);
+  const rest = quote.split(it.answer).join(' ');
+  const alsoCorrect = it.choices.filter((c) =&gt; c !== it.answer &amp;&amp; rest.includes(c));
+  console.log(it.answer, { inSource, alsoCorrect });
+}</code></pre>
+            <aside class="notes">
+              <p><strong>실행 결과:</strong> <code>12시간 { inSource: true, alsoCorrect: [] }</code>, <code>24시간 { inSource: false, alsoCorrect: [ '12시간' ] }</code>.</p>
+              <p>두 번째 문항은 정답을 잘못 고르고(환각), 진짜 정답을 오답 자리에 넣은 경우다. 규칙 두 개가 동시에 걸린다. <code>quote.split(answer)</code>로 정답을 먼저 지우는 이유를 묻는다(오답이 정답의 일부일 때 오탐 방지).</p>
+            </aside>
+          </section>
+
+          <!-- 12 -->
+          <section class="slide" data-title="사람 검토와 윤리">
+            <h2>사람 검토와 교육용 활용 윤리</h2>
+            <div class="cols">
+              <div>
+                <h3>교사 검토에서 보는 것</h3>
+                <ul>
+                  <li>답이 하나로 정해지는가</li>
+                  <li>학습 목표와 관련 있는가</li>
+                  <li>오답이 그럴듯하되 명백히 틀렸나</li>
+                  <li>깨진 문서 문항은 원본 확인</li>
+                </ul>
+              </div>
+              <div>
+                <h3>윤리</h3>
+                <ul>
+                  <li><strong>저작권</strong> — 원문 권리 확인, 출처 표기</li>
+                  <li><strong>정답 오류 책임</strong> — 배포한 사람이 진다</li>
+                  <li><strong>개인정보</strong> — 학생 정보는 프롬프트 금지</li>
+                </ul>
+              </div>
+            </div>
+            <aside class="notes">
+              <p>빈칸 문제는 원문 문장을 거의 그대로 옮긴다. 교재·유료 자료를 대량으로 넣어 배포하면 복제가 된다는 점을 짚는다. 이 사이트의 문서셋은 수업용으로 작성한 자료다.</p>
+              <p>“AI가 만든 문제가 틀렸으면 누구 책임인가?” — 짧게 묻고 답을 듣는다. 결론: 평가에 쓰기 전 검토, 오류 신고 경로, “자동 생성 문항” 표시.</p>
+            </aside>
+          </section>
+
+          <!-- 13 -->
+          <section class="slide" data-title="Challenge 안내">
+            <h2>Challenge</h2>
+            <table>
+              <tbody>
+                <tr><td>C1 ★</td><td>문장 하나로 빈칸 문제 만들기</td></tr>
+                <tr><td>C2 ★★</td><td>같은 종류의 오답 뽑기 (근거 문장 값 제외)</td></tr>
+                <tr><td>C3 ★★★</td><td>검증기 세 규칙 (실패 예시 네 문항)</td></tr>
+                <tr><td>C4 ★★★</td><td>가짜 LLM 출력의 JSON 스키마 검증</td></tr>
+                <tr><td>C5 ★★★★</td><td>bigram 자카드로 중복 문항 걸러 내기 (과제)</td></tr>
+              </tbody>
+            </table>
+            <p class="muted">모델·API 없이 워커에서 실행된다. LLM 출력은 mockLLM()이 대신한다</p>
+            <aside class="notes">
+              <p>C1~C3은 모두 끝내야 한다. C3 결과 표를 캡처해 제출하게 한다. 정답은 부록 B.</p>
+            </aside>
+          </section>
+
+          <!-- 14 -->
+          <section class="slide" data-title="정리 & PART 5 마무리">
+            <h2>정리 · PART 5 마무리</h2>
+            <ul>
+              <li>RAG = 근거 기반 생성. 근거는 <strong>재료이자 검증 기준</strong></li>
+              <li>JSON 스키마 + 인용 강제 → 파싱 · 스키마 · 내용 순서로 코드가 검사</li>
+              <li>자동 검증은 필터, <strong>최종 승인은 사람</strong></li>
+            </ul>
+            <table>
+              <tbody>
+                <tr><td>응용 1</td><td>학과 안내 챗봇</td><td>멀티턴 · 질문 재작성</td></tr>
+                <tr><td>응용 2</td><td>조건 검색</td><td>메타데이터 필터 · 셀프 쿼리</td></tr>
+                <tr><td>응용 3</td><td>퀴즈 생성기</td><td>구조화 출력 · 자동 검증 · 사람 검토</td></tr>
+              </tbody>
+            </table>
+            <p class="muted">팀 프로젝트: 생성 → 검증 단계 추가 · 승인한 문항으로 골든셋 초안 만들기</p>
+            <aside class="notes">
+              <p>세 실습의 뼈대가 같다는 것(검색 → 가공/조건 → 생성 → 검증)을 칠판에 그린다.</p>
+              <p>팀 프로젝트 연결: 퀴즈 문항의 question/answer/citation.quote는 골든셋의 질문/정답/근거와 같은 모양이다. 승인한 문항만 골든셋에 넣고 12주차 팀 결과 보드 형식으로 Recall@k를 잰다. 발표에서 검증기가 잡은 실패 사례를 하나 보여 주게 한다.</p>
+            </aside>
+          </section>
+
+          <!-- Appendix -->
+          <section class="slide" data-title="부록 A · 강의안" data-appendix>
+            <h2>부록 A · 강의안</h2>
+            <table>
+              <thead><tr><th>시간</th><th>활동</th><th>산출물</th></tr></thead>
+              <tbody>
+                <tr><td>15분</td><td>도입 · 응용 1~2 복습 · 근거 없는 퀴즈 확인</td><td>—</td></tr>
+                <tr><td>40분</td><td>개념: 파이프라인 · JSON 스키마 · 인용 · 검증 규칙과 한계</td><td>규칙 표 메모</td></tr>
+                <tr><td>40분</td><td>위젯 실습 · 관찰 질문 1~4</td><td>짝 활동 메모</td></tr>
+                <tr><td>10분</td><td>휴식</td><td>—</td></tr>
+                <tr><td>20분</td><td>관찰 5~7 · 사람 검토 · 윤리 토론</td><td>—</td></tr>
+                <tr><td>40분</td><td>Challenge C1~C4</td><td>C3 결과 표</td></tr>
+                <tr><td>15분</td><td>PART 5 정리 · 팀 프로젝트 연결</td><td>팀별 아이디어 한 줄</td></tr>
+              </tbody>
+            </table>
+          </section>
+
+          <section class="slide" data-title="부록 B · C1 정답" data-appendix>
+            <h2>부록 B · C1 정답</h2>
+            <pre data-run="ans-c1" data-title="C1 정답"><code class="language-javascript">const PATTERN = /(?:오전|오후)\s?\d+시(?!간)|\d+(?:~\d+)?%|\d+시간/;
+
+function makeCloze(sentence) {
+  const m = sentence.match(PATTERN);
+  if (!m) return null;
+  return {
+    question: sentence.slice(0, m.index) + '____' + sentence.slice(m.index + m[0].length),
+    answer: m[0],
+  };
+}
+
+const samples = [
+  '수료 요건은 출석률 80% 이상과 팀 프로젝트 최종 발표 통과다.',
+  '한 사람이 연속으로 사용할 수 있는 시간은 최대 12시간이다.',
+  '실습실은 수업 시간 외에도 평일 오후 9시까지 개방된다.',
+  '청킹은 긴 문서를 검색 단위로 자르는 과정이다.',
+];
+for (const s of samples) console.log(makeCloze(s));</code></pre>
+            <aside class="notes">
+              <p><strong>실행 결과:</strong> <code>{ question: '수료 요건은 출석률 ____ 이상과 …', answer: '80%' }</code>, <code>'…최대 ____이다.' / '12시간'</code>, <code>'…평일 ____까지 개방된다.' / '오후 9시'</code>, 마지막 <code>null</code>.</p>
+              <p><strong>왜:</strong> 정답을 원문에서 잘라 오므로 “정답 ⊂ 근거 문장”이 구조적으로 보장된다. 이것이 규칙 기반 생성의 장점이다. 정규식 순서에 주의: <code>\d+시</code>를 먼저 두면 “12시간”의 “12시”가 잡힌다 → <code>(?!간)</code>으로 막는다.</p>
+            </aside>
+          </section>
+
+          <section class="slide" data-title="부록 B · C2 정답" data-appendix>
+            <h2>부록 B · C2 정답</h2>
+            <pre data-run="ans-c2" data-title="C2 정답"><code class="language-javascript">const corpus = await (await fetch('/assets/data/corpus/corpus.json')).json();
+const PCT = /\d+(?:~\d+)?%/g;
+
+// every percent value in the healthy documents (broken OCR docs would leak "5O%")
+const pool = [...new Set(corpus.documents
+  .filter((d) =&gt; d.type !== 'broken')
+  .flatMap((d) =&gt; d.text.match(PCT) ?? []))];
+console.log('pool:', pool);
+
+const first = (s) =&gt; Number(s.match(/\d+/)[0]);
+
+function pickDistractors(answer, sentence, n = 3) {
+  return pool
+    .filter((v) =&gt; v !== answer &amp;&amp; !sentence.includes(v)) // never a second correct answer
+    .sort((a, b) =&gt; Math.abs(first(a) - first(answer)) - Math.abs(first(b) - first(answer)))
+    .slice(0, n);
+}
+
+const cases = [
+  ['80%', '수료 요건은 출석률 80% 이상과 팀 프로젝트 최종 발표 통과다.'],
+  ['30%', '성적 평가는 주차별 실습 과제 30%, 중간 점검 20%, 팀 프로젝트 40%, 수업 참여 10%로 구성된다.'],
+];
+for (const [answer, sentence] of cases) {
+  const ds = pickDistractors(answer, sentence);
+  console.log(answer, '→', ds, ds.length &lt; 3 ? '⚠ 같은 종류가 부족하다' : '');
+}</code></pre>
+            <aside class="notes">
+              <p><strong>실행 결과:</strong> <code>pool: [80%, 30%, 20%, 40%, 10%, 10~20%]</code>, <code>80% → [40%, 30%, 20%]</code>, <code>30% → [10~20%, 80%] ⚠ 같은 종류가 부족하다</code>.</p>
+              <p><strong>왜:</strong> 두 번째 문장에는 20%·40%·10%가 모두 들어 있어 오답으로 쓸 수 없다. 위젯은 이때 숫자를 옮겨(30% → 60%) “생성된 수치”로 채우고 표시한다. 깨진 문서를 뺀 이유: “5O%”가 다른 문항의 오답으로 퍼진다.</p>
+            </aside>
+          </section>
+
+          <section class="slide" data-title="부록 B · C3 정답" data-appendix>
+            <h2>부록 B · C3 정답</h2>
+            <pre data-run="ans-c3" data-title="C3 정답"><code class="language-javascript">import { chunk } from '/assets/js/core/chunker.js';
+
+const corpus = await (await fetch('/assets/data/corpus/corpus.json')).json();
+const chunks = new Map();
+for (const d of corpus.documents)
+  for (const c of chunk(d.text, { strategy: 'recursive', size: 200 })) chunks.set(`${d.id}#${c.index}`, c.text);
+
+const squash = (s) =&gt; String(s).replace(/\s+/g, ' ').trim();
+
+function answerInSource(item) {
+  return squash(item.citation.quote).includes(squash(item.answer));
+}
+function spanExists(item) {
+  const text = chunks.get(item.citation.chunk);
+  return text != null &amp;&amp; squash(text).includes(squash(item.citation.quote));
+}
+function distractorsOk(item) {
+  // remove the answer first so text inside the answer is not counted as a distractor hit
+  const rest = squash(item.citation.quote).split(squash(item.answer)).join(' ');
+  return item.choices.filter((c) =&gt; c !== item.answer).every((c) =&gt; !rest.includes(squash(c)));
+}
+
+const items = [
+  { id: 'Q1', answer: '40%', choices: ['25%', '40%', '50%', '60%'],
+    citation: { chunk: 'course-rag-syllabus#2', quote: '성적 평가는 주차별 실습 과제 30%, 중간 점검 20%, 팀 프로젝트 40%, 수업 참여 10%로 구성된다.' } },
+  { id: 'Q2', answer: '100', choices: ['30', '50', '100', '120'],
+    citation: { chunk: 'rag-hybrid#1', quote: 'RRF 점수는 각 결과 목록에서의 순위 r에 대해 1/(k+r)을 더한 값이며, k는 보통 60을 쓴다.' } },
+  { id: 'Q3', answer: '출석률 80% 이상', choices: ['출석률 80% 이상', '팀 프로젝트 최종 발표 통과', '산업기사 자격 취득', '중간 점검 통과'],
+    citation: { chunk: 'dept-overview#2', quote: '수료 요건은 출석률 80% 이상과 팀 프로젝트 최종 발표 통과다.' } },
+  { id: 'Q4', answer: '12시간', choices: ['6시간', '12시간', '24시간', '48시간'],
+    citation: { chunk: 'dept-overview#2', quote: '한 사람이 연속으로 사용할 수 있는 시간은 최대 12시간이다.' } },
+];
+
+console.table(items.map((it) =&gt; ({
+  id: it.id,
+  answerInSource: answerInSource(it),
+  spanExists: spanExists(it),
+  distractorsOk: distractorsOk(it),
+  pass: answerInSource(it) &amp;&amp; spanExists(it) &amp;&amp; distractorsOk(it),
+})));</code></pre>
+            <aside class="notes">
+              <p><strong>실행 결과:</strong> Q1 모두 true(pass), Q2 <code>answerInSource: false</code>, Q3 <code>distractorsOk: false</code>, Q4 <code>spanExists: false</code>.</p>
+              <p><strong>왜:</strong> 세 규칙이 서로 다른 실수를 잡는다. Q4는 정답도 인용 문장 안에 있어서 앞의 규칙만으로는 통과한다 — 인용 문장이 인용한 청크에 있는지까지 봐야 잡힌다. 한계: 단순 <code>includes</code>는 “2시간”을 “12시간” 안에서 찾는다. 위젯은 숫자 경계를 검사한다.</p>
+            </aside>
+          </section>
+
+          <section class="slide" data-title="부록 B · C4 정답" data-appendix>
+            <h2>부록 B · C4 정답</h2>
+            <pre data-run="ans-c4" data-title="C4 정답"><code class="language-javascript">// A mock LLM: no API call, just a reply string with typical format mistakes
+function mockLLM() {
+  const body = {
+    items: [
+      { type: 'mcq', question: '벡터를 정규화하면 코사인 유사도는 무엇과 같아지나?', answer: '내적',
+        choices: ['내적', '유클리드 거리', 'BM25 점수', 'RRF 점수'],
+        citation: { chunk: 'rag-embedding#1', quote: '벡터를 미리 정규화해 두면 코사인 유사도는 내적과 같아진다.' } },
+      { type: 'mcq', question: 'RRF에서 k는 보통 얼마인가?', answer: '60', choices: ['10', '100'],
+        citation: { chunk: 'rag-hybrid#1', quote: 'k는 보통 60을 쓴다.' } },
+      { type: 'short', question: 'Flat 인덱스의 단점은?', answer: '문서 수에 비례해 느려진다' },
+      { type: 'mcq', question: '크로스 인코더는 어디에 적용하나?', answer: '후보',
+        choices: ['전체 문서', '질문', '임베딩'], citation: { chunk: 'rag-hybrid#2', quote: '' } },
+    ],
+  };
+  return '다음은 요청한 퀴즈다.\n```json\n' + JSON.stringify(body, null, 2) + '\n```';
+}
+
+function parseReply(text) {
+  const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/);
+  const body = fenced ? fenced[1] : text;
+  return JSON.parse(body.slice(body.indexOf('{'), body.lastIndexOf('}') + 1));
+}
+
+function validate(data) {
+  const errors = [];
+  const str = (v) =&gt; typeof v === 'string' &amp;&amp; v.trim() !== '';
+  if (!Array.isArray(data?.items)) return ['items: 배열이어야 한다'];
+  data.items.forEach((it, i) =&gt; {
+    const p = `items[${i}]`;
+    if (!['mcq', 'short'].includes(it.type)) errors.push(`${p}.type: mcq 또는 short`);
+    if (!str(it.question)) errors.push(`${p}.question: 비어 있다`);
+    if (!str(it.answer)) errors.push(`${p}.answer: 비어 있다`);
+    if (it.type === 'mcq') {
+      if (!Array.isArray(it.choices) || it.choices.length &lt; 3 || it.choices.length &gt; 5) errors.push(`${p}.choices: 3~5개여야 한다`);
+      else if (!it.choices.includes(it.answer)) errors.push(`${p}.choices: 정답이 선택지에 없다`);
+    }
+    if (!it.citation) errors.push(`${p}.citation: 없다`);
+    else {
+      if (!str(it.citation.chunk)) errors.push(`${p}.citation.chunk: 비어 있다`);
+      if (!str(it.citation.quote)) errors.push(`${p}.citation.quote: 비어 있다`);
+    }
+  });
+  return errors;
+}
+
+const data = parseReply(mockLLM());
+const errors = validate(data);
+console.log(`문항 ${data.items.length}개, 오류 ${errors.length}개`);
+errors.forEach((e) =&gt; console.warn(e));
+const passed = data.items.map((_, i) =&gt; i).filter((i) =&gt; !errors.some((e) =&gt; e.startsWith(`items[${i}]`)));
+console.log('통과한 문항 번호:', passed);</code></pre>
+            <aside class="notes">
+              <p><strong>실행 결과:</strong> <code>문항 4개, 오류 4개</code> — <code>items[1].choices: 3~5개여야 한다</code>, <code>items[2].citation: 없다</code>, <code>items[3].choices: 정답이 선택지에 없다</code>, <code>items[3].citation.quote: 비어 있다</code>, <code>통과한 문항 번호: [0]</code>.</p>
+              <p><strong>왜:</strong> 파싱 → 스키마 → 내용 순서. 오류에 경로를 붙여야 어느 문항을 버릴지 정할 수 있다. 한 문항의 스키마 오류로 전체를 버리지 않고 통과한 문항만 쓴다. 파싱 자체가 실패하면(끝 쉼표) 문항 단위로 살릴 방법이 없다 → 재요청한다.</p>
+            </aside>
+          </section>
+
+          <section class="slide" data-title="부록 B · C5 정답" data-appendix>
+            <h2>부록 B · C5 정답</h2>
+            <pre data-run="ans-c5" data-title="C5 정답"><code class="language-javascript">function bigrams(s) {
+  const t = s.replace(/[\s\p{P}\p{S}_]+/gu, '').toLowerCase();
+  const g = new Set();
+  for (let i = 0; i &lt; t.length - 1; i++) g.add(t.slice(i, i + 2));
+  return g;
+}
+function jaccard(a, b) {
+  const A = bigrams(a), B = bigrams(b);
+  let inter = 0;
+  for (const x of A) if (B.has(x)) inter++;
+  return inter / (A.size + B.size - inter);
+}
+function dedupe(questions, threshold) {
+  const kept = [];
+  for (const q of questions) if (!kept.some((k) =&gt; jaccard(k, q) &gt;= threshold)) kept.push(q);
+  return kept;
+}
+
+const qs = [
+  'RAG 교과목 성적에서 팀 프로젝트가 차지하는 비율은?',
+  'RAG 교과목 성적 중 팀 프로젝트가 차지하는 비율은?',
+  '팀 프로젝트는 RAG 교과목 성적의 몇 %를 차지하나?',
+  '다만 실습실 PC에 설치된 ____ 환경은 원격 접속으로만 사용할 수 있다.',
+  '다만 실습실 PC에 설치된 ____ 환경은 원격 접속으로만 사용할 수 있다.',
+  'RRF 점수를 계산할 때 k는 보통 얼마를 쓰나?',
+  '실습실은 평일 오후 몇 시까지 개방되나?',
+];
+
+console.table(qs.map((a) =&gt; Object.fromEntries(qs.map((b, j) =&gt; [`Q${j + 1}`, Number(jaccard(a, b).toFixed(2))]))));
+for (const t of [0.3, 0.5, 0.7, 0.9]) console.log(`threshold ${t}: ${dedupe(qs, t).length}개 남음`);
+console.log(dedupe(qs, 0.7));</code></pre>
+            <aside class="notes">
+              <p><strong>실행 결과:</strong> Q1–Q2 <code>0.79</code>, Q1–Q3 <code>0.45</code>, Q2–Q3 <code>0.46</code>, Q4–Q5 <code>1</code>, Q4–Q7 <code>0.05</code>, 나머지 0. 남는 문항 수: 임계값 0.3 → 4개, 0.5 → 5개, 0.7 → 5개, 0.9 → 6개.</p>
+              <p><strong>왜:</strong> 0.9는 Q1·Q2 같은 조사 하나 차이를 놓친다. 0.3이면 어순을 바꾼 Q3까지 걸리지만, 문항이 많아지면 주제만 같은 다른 문항도 걸린다. 0.5~0.7 사이가 무난하다(위젯은 0.7). 어순 바꾼 중복은 글자 조각으로 잡기 어렵다 → 임베딩 유사도(5주차)로 확장할 수 있다.</p>
+            </aside>
+          </section>
+
+          <section class="slide" data-title="부록 C · 자주 막히는 지점" data-appendix>
+            <h2>부록 C · 학생이 자주 막히는 지점</h2>
+            <table>
+              <thead><tr><th>증상</th><th>원인</th><th>대응</th></tr></thead>
+              <tbody>
+                <tr><td>C1에서 “12시”가 정답</td><td><code>\d+시</code>가 “12시간”을 먼저 잡음</td><td><code>(?!간)</code> 전방탐색, 패턴 순서 확인</td></tr>
+                <tr><td>C3 Q3이 통과</td><td>정답을 지우지 않고 오답 검사</td><td>“출석률 80% 이상”과 선택지 겹침 설명</td></tr>
+                <tr><td>C4에서 JSON.parse 오류</td><td>설명 문장·펜스를 안 벗김</td><td><code>indexOf('{')</code>~<code>lastIndexOf('}')</code></td></tr>
+                <tr><td>위젯 “LLM으로 생성”이 회색</td><td>키 미저장 또는 공급자 불일치</td><td>LLM 설정에서 공급자 선택 후 키 저장</td></tr>
+                <tr><td>“검증 통과 = 좋은 문제”</td><td>규칙의 범위를 오해</td><td>“____ 크기에는 정답이 없다” 문항을 보여 준다</td></tr>
+              </tbody>
+            </table>
+          </section>
+
+          <section class="slide" data-title="부록 D · 토론 주제" data-appendix>
+            <h2>부록 D · 토론 주제</h2>
+            <ol>
+              <li>LLM으로 문항을 검증(LLM-as-judge)하면 교사 검토를 없앨 수 있는가?</li>
+              <li>규칙 기반 생성과 LLM 생성 중 시험 문제에는 어느 쪽이 적합한가? 복습 퀴즈에는?</li>
+              <li>교재 문장을 그대로 쓴 빈칸 문제를 학생들에게 배포해도 되는가? 어디까지가 인용인가?</li>
+              <li>자동 생성 문항의 정답이 틀려 성적이 바뀌었다면 누가, 어떻게 책임지는가?</li>
+            </ol>
+          </section>
+
+          <section class="slide" data-title="부록 E · 평가 루브릭" data-appendix>
+            <h2>부록 E · 평가 루브릭</h2>
+            <table>
+              <thead><tr><th>항목</th><th>우수 (3)</th><th>보통 (2)</th><th>미흡 (1)</th></tr></thead>
+              <tbody>
+                <tr><td>생성 (C1·C2)</td><td>빈칸·오답이 동작, 근거 문장 값 제외 이유 설명</td><td>동작하나 경계 사례 누락</td><td>동작하지 않음</td></tr>
+                <tr><td>검증 (C3·C4)</td><td>세 규칙 + 스키마 오류 경로, 한계 설명</td><td>규칙은 맞으나 한계 설명 없음</td><td>일부 규칙만</td></tr>
+                <tr><td>중복 (C5)</td><td>임계값 비교 표 + 선택 근거</td><td>표만 제시</td><td>미제출</td></tr>
+                <tr><td>관찰·토론</td><td>실패를 생성/데이터/검증 한계로 구분, 윤리 논점 제시</td><td>현상만 서술</td><td>참여 없음</td></tr>
+              </tbody>
+            </table>
+          </section>
+
+        </div>
+          </div>
+        </div>
+        <section class="notes-pane" aria-label="교사 노트">
+          <button type="button" class="notes-head"><span>🧑‍🏫 교사 노트</span><span class="spacer"></span><span class="notes-next"></span><span class="notes-toggle">▾ 접기</span></button>
+          <div class="notes-body"></div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <script type="module">
+    import { initDeck } from '../../assets/js/site/slides.js';
+    import { initRunners } from '../../assets/js/site/runner.js';
+    import { mount } from '../../assets/js/widgets/w15-quiz-gen.js';
+    initRunners(document.querySelector('.deck-stage'));
+    initDeck();
+    mount(document.getElementById('deck-w15-widget'), { outputTitle: '퀴즈 검증 (데모 슬라이드)' });
+  </script>
+</body>
+</html>
