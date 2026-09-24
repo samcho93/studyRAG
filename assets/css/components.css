@@ -1084,6 +1084,41 @@ a.card:hover {
   opacity: 0.55;
 }
 
+/* Course series pathway (same component as the sibling course sites) */
+.pathway {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin: 14px 0;
+}
+
+.pathway .card {
+  position: relative;
+}
+
+.pathway .card:not(:last-child)::after {
+  content: "→";
+  position: absolute;
+  top: 50%;
+  right: -12px;
+  transform: translate(50%, -50%);
+  color: var(--color-text-muted);
+  font-weight: var(--weight-bold);
+}
+
+.pathway .card.is-here {
+  border: 2px solid var(--color-accent);
+  background: var(--color-accent-soft);
+}
+
+.pathway .card .cn {
+  color: var(--color-text-muted);
+}
+
+.pathway .card.is-here .cn {
+  color: var(--color-accent);
+}
+
 .steps {
   counter-reset: step;
   list-style: none;
@@ -1741,5 +1776,15 @@ a.card:hover {
   }
   .flow {
     flex-wrap: wrap;
+  }
+  .pathway {
+    grid-template-columns: 1fr;
+  }
+  .pathway .card:not(:last-child)::after {
+    content: "↓";
+    top: auto;
+    right: 50%;
+    bottom: -12px;
+    transform: translate(50%, 50%);
   }
 }
