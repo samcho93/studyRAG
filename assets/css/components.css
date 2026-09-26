@@ -1119,6 +1119,10 @@ a.card:hover {
   color: var(--color-accent);
 }
 
+/* 다섯 과정 학습 경로 (… → RAG → 온톨로지): 가운데 칸 폭에 맞춰 줄바꿈, 순서는 ①~⑤ 번호로 */
+.pathway.path-5 { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+.pathway.path-5 .card:not(:last-child)::after { content: none; }
+
 .steps {
   counter-reset: step;
   list-style: none;
